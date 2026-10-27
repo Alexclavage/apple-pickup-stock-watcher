@@ -4,30 +4,33 @@ Apple Pickup Stock Watcher is an independent, self-hosted project. Its long-term
 
 This roadmap is directional, not a promise that a feature already exists.
 
-## Product vision — Worldwide Apple Retail coverage (top priority)
+## Product vision — Worldwide monitoring by selected area
 
-**Worldwide** means every country or region where Apple operates a physical Apple Retail Store, not merely a list of capital cities, the nearest stores, or all retailers that resell Apple products. The user should be able to:
+**Simplest onboarding:** the user chooses a **country/region + postal code or city**, adds one or more monitoring areas, selects products and optionally narrows monitoring to individual official Apple Retail Stores returned for each area. This scales conceptually to countries around the world **after their regional pickup APIs and product catalogs have been verified**.
 
-- Browse **Country/region → City → Individual Apple Retail Store**, and select any store or all stores in a supported region.
-- Choose from discoverable local product catalogs (iPhone, Mac, iPad, Apple Watch, AirPods, accessories), including region-specific SKUs, options, local prices and currencies.
-- Monitor **one product at one store**, several product/store combinations, or opt in to a broader global search.
-- Receive alerts only for chosen combinations and review freshness/last-successful-check metadata per store.
-- See explicit **Supported / Not supported / Temporarily unavailable / Not recently checked** coverage states. A missing response must never be shown as "out of stock".
+- One monitoring area is the default. Multiple areas may span different countries; each has its own market, currency, query location and discovered stores.
+- The user can choose **all Apple Retail Stores returned for an area**, or specific stores, and set notifications per product/store.
+- Areas can overlap. Deduplicate stores and overlapping product/store pairs; never treat a missed or stale check as "out of stock".
+- Support search coverage and show **last successfully checked at**, last error, and an explicit **not checked / unknown** status for each monitored area and store.
+- The number of areas is configurable but bounded by a conservative request budget. Queue and stagger checks rather than poll all areas at once.
+- The interface must display a clear warning before enabling multiple areas: more locations increase requests and may cause Apple's rate limits, slower refresh, missed checks, or temporary suspension of monitoring.
+- Estimate request cost before saving (areas × regional product batches, after deduplication), and communicate a realistic *approximate* refresh cadence. Never promise fixed intervals or uninterrupted coverage.
+- The goal is broad worldwide choice **without maintaining or querying every store on Earth by default**. A postal code or city only covers whatever nearby stores that regional endpoint returns; it is not guaranteed to include every store in the city or country.
 
-### International architecture milestones
+### Implementation milestones
 
-- [ ] Country/region registry: storefront domain/path, locale, currency, local product SKUs, tax-estimate capability, and supported pickup query behavior
-- [ ] Verified index of **every official Apple Retail Store** per supported country, including stable store ID, city and geographic coordinates where available
-- [ ] Store discovery/refresh job from publicly accessible official lists or verified regional responses; detect renamed, closed and newly opened stores
-- [ ] Location-query coverage planner: identify the minimum reasonable postal-code/location queries needed to reach **each selected store**, since nearby-store endpoints return only a subset
-- [ ] Per-country product catalog adapters; validate representative SKU/store responses for each new country before marking it supported
-- [ ] One store and multi-store selectors in the visual setup wizard; filters and groups for country/city
-- [ ] Rate-limited scheduler shared across selected products/stores, deduped requests, response cache, batching when supported, bounded concurrency, backoff, and observation timestamps
-- [ ] Coverage verification tests: no duplicate store IDs, every published store has a tested query location, no incorrect "available" or "unavailable" on failures
-- [ ] Regional rollout: US/Canada validation → France/UK and nearby European markets → Asia-Pacific → all verified official retail regions
-- [ ] Optional **global monitoring** mode with explicitly slower refresh and transparent resource limits; do not poll every SKU in every store by default
+- [ ] Introduce a region adapter per verified country (endpoint, country code, postal format, local SKU, currency, store metadata, tax policy)
+- [ ] Replace US ZIP/one Canadian location inputs with a reusable **list of country + postal/city monitoring areas**
+- [ ] Keep backward compatibility or supply a documented migration from `search_zips` / `ca_location`
+- [ ] Make the local setup wizard add, edit, and remove multiple monitoring areas across supported countries
+- [ ] Discover nearby Apple Retail Stores for each area and let the user select individual stores or all returned stores
+- [ ] Deduplicate overlapping store/product combinations and batch requests where supported
+- [ ] Add a scheduler with per-market rate budgets, pacing, retry backoff, cache and status/freshness metadata
+- [ ] Show a multiple-area warning and conservative defaults, not an unconditional "unlimited" scan
+- [ ] Validate regions gradually: US/Canada → France/UK → further European markets → Asia-Pacific and other regions with verifiable responses
+- [ ] Add optional coverage reports and store index **only if** useful for finding gaps; a global authoritative store registry is not required for the basic UX
 
-**Limits:** This depends on undocumented regional Apple pickup responses that can change, rate-limit, or be unavailable. Not all products have store-pickup availability. Worldwide support is a goal, not a current feature; the app currently implements only US and Canadian checks. Country or store coverage is only claimed after successful validation.
+**Limits:** Apple's pickup endpoints are undocumented and may change or throttle traffic. Product SKUs and supported search formats vary by market, and not all goods can be collected in store. Worldwide coverage is a roadmap goal, **not a current feature**. Today the live checker supports US ZIP searches and one Canadian location.
 
 ## P0 — Reliability and privacy
 
