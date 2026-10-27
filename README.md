@@ -2,6 +2,16 @@
 
 An independent, unofficial, self-hosted Apple Store pickup availability checker. Includes a Flask dashboard, Discord alerts on stock changes, selectable product SKUs, optional EUR conversions, and tax estimates. **It does not purchase or reserve products.** Not affiliated with Apple.
 
+## Long-term vision: worldwide monitoring by postal code or city
+
+The long-term goal is to let anyone check pickup availability for selected Apple products in **supported countries worldwide**, by entering a **country plus a postal code or city**. Users will be able to add multiple areas and, for each area, monitor all returned official Apple Retail Stores or select individual stores.
+
+Multiple monitoring areas mean more regional requests. The setup wizard will warn that this can increase refresh delays, trigger Apple rate limits, or temporarily interrupt monitoring. The scheduler will deduplicate overlapping stores, bound request volume, and report the last successful check. An unverified or stale result must **never** be shown as a confirmed out-of-stock result.
+
+**Current status:** the live checker supports US ZIP search areas and one Canadian location only. A worldwide multi-country setup interface, per-country SKU discovery and the global scheduler are **planned, not implemented**. A search area may return nearby stores, not every Apple Store in a country; broader coverage requires additional areas.
+
+See [ROADMAP.md](ROADMAP.md) for the implementation plan and validation criteria.
+
 ## Requirements
 
 Python 3.10+ and network access for live availability checks. The watcher reads an Apple retail pickup endpoint that can change or impose rate limits. Respect Apple's terms and do not increase request frequency excessively.
@@ -19,6 +29,20 @@ copy config.example.json config.json
 Open http://localhost:8080. On macOS/Linux use `python3 -m venv .venv`, `source .venv/bin/activate`, `pip install -r requirements.txt`, `cp .env.example .env`, `cp config.example.json config.json`, `python app.py`.
 
 Set `DISCORD_WEBHOOK` only in your private `.env` file (or deployment environment), **never in `.env.example`**. Keep `config.json` private to avoid accidentally sharing location preferences. The included `.gitignore` and `.dockerignore` exclude these files.
+
+## Visual setup wizard (local computer only)
+
+The watcher includes a **separate browser-based setup wizard**, so you can manage products, Apple SKUs, US ZIP search areas, Canadian store, estimated tax and Discord alert filters without manually editing JSON.
+
+On Windows CMD, after installing dependencies with the Quick start commands:
+
+```bat
+.venv\Scripts\python.exe setup_wizard.py
+```
+
+On macOS/Linux run `python setup_wizard.py` inside the activated environment. Open **http://127.0.0.1:8091**, edit the fields and click **Save private configuration**. The wizard reads `config.json` or starts with `config.example.json`. If it overwrites an existing config, it keeps one private backup in `config.json.bak`; both are excluded from Git and Docker. Restart the watcher after saving.
+
+**Security:** the wizard is not part of the public dashboard. It binds to `127.0.0.1` only, checks origin and request tokens for saves, and never displays or saves your Discord webhook. Do not forward this port to the public Internet. An Apple SKU still needs to be obtained and verified manually; this UI does not scrape a SKU catalogue or validate actual inventory.
 
 ## Customize products and stores
 
