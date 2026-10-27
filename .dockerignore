@@ -9,3 +9,5 @@ session*.json
 capture*.txt
 __pycache__
 *.pyc
+history*.json
+history*.json.tmp
