@@ -20,6 +20,20 @@ Open http://localhost:8080. On macOS/Linux use `python3 -m venv .venv`, `source 
 
 Set `DISCORD_WEBHOOK` only in your private `.env` file (or deployment environment), **never in `.env.example`**. Keep `config.json` private to avoid accidentally sharing location preferences. The included `.gitignore` and `.dockerignore` exclude these files.
 
+## Visual setup wizard (local computer only)
+
+The watcher includes a **separate browser-based setup wizard**, so you can manage products, Apple SKUs, US ZIP search areas, Canadian store, estimated tax and Discord alert filters without manually editing JSON.
+
+On Windows CMD, after installing dependencies with the Quick start commands:
+
+```bat
+.venv\Scripts\python.exe setup_wizard.py
+```
+
+On macOS/Linux run `python setup_wizard.py` inside the activated environment. Open **http://127.0.0.1:8091**, edit the fields and click **Save private configuration**. The wizard reads `config.json` or starts with `config.example.json`. If it overwrites an existing config, it keeps one private backup in `config.json.bak`; both are excluded from Git and Docker. Restart the watcher after saving.
+
+**Security:** the wizard is not part of the public dashboard. It binds to `127.0.0.1` only, checks origin and request tokens for saves, and never displays or saves your Discord webhook. Do not forward this port to the public Internet. An Apple SKU still needs to be obtained and verified manually; this UI does not scrape a SKU catalogue or validate actual inventory.
+
 ## Customize products and stores
 
 Edit `config.json`. Each item in `products` requires `market` (`US` or `CA`), `name`, Apple's region-specific `part` / SKU, `price` (number), and `currency`. Set `search_zips` for US searches, with `allowed_states` as a whitelist of results. For Canada, set `ca_location` to a postal code. Set `ca_target_store` to an Apple Store ID, or `""` to include all returned Canadian stores. `us_priority_store` highlights a US store and sends individual notifications.
