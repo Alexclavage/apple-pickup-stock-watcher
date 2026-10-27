@@ -1,0 +1,32 @@
+{
+  "products": {
+    "us_pro_512": {
+      "market": "US",
+      "name": "iPhone 18 Pro 512GB Silver",
+      "part": "MJQ84LL/A",
+      "price": 1399,
+      "currency": "USD"
+    },
+    "ca_pro_512": {
+      "market": "CA",
+      "name": "iPhone 18 Pro 512GB Silver",
+      "part": "MJRC4VC/A",
+      "price": 2049,
+      "currency": "CAD"
+    }
+  },
+  "search_zips": {
+    "DELAWARE": "19702",
+    "BUFFALO": "14225"
+  },
+  "allowed_states": [
+    "DE",
+    "NY",
+    "NJ",
+    "PA"
+  ],
+  "us_priority_store": "R102",
+  "ca_location": "M5B 2H1",
+  "ca_target_store": "R121",
+  "ca_tax_rate": 0.13
+}

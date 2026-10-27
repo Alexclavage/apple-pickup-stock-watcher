@@ -1,0 +1,471 @@
+import os, json, time, random, threading
+from datetime import datetime, timezone
+from pathlib import Path
+
+import requests
+from dotenv import load_dotenv
+from flask import Flask, jsonify, render_template_string
+
+load_dotenv()
+
+# ========================= CONFIG =========================
+INTERVAL = max(120, int(os.getenv("CHECK_INTERVAL", "300")))
+DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK", "")
+STATE_FILE = Path(os.getenv("STATE_FILE", "state_v43.json"))
+
+US_URL = "https://www.apple.com/shop/retail/pickup-message"
+CA_URL = "https://www.apple.com/ca/shop/retail/pickup-message"
+HEADERS = {"User-Agent": "Mozilla/5.0", "Accept": "application/json,text/plain,*/*"}
+
+PRODUCTS = {
+    "us_max": {"market":"US","name":"iPhone 18 Pro Max 1TB Silver","part":"MJWE4LL/A","price":1899.0,"currency":"USD"},
+    "us_pro": {"market":"US","name":"iPhone 18 Pro 1TB Silver","part":"MJQD4LL/A","price":1799.0,"currency":"USD"},
+    "us_pro_512": {"market":"US","name":"iPhone 18 Pro 512GB Silver","part":"MJQ84LL/A","price":1399.0,"currency":"USD"},
+    "ca_max": {"market":"CA","name":"iPhone 18 Pro Max 1TB Silver","part":"MJXF4VC/A","price":2799.0,"currency":"CAD"},
+    "ca_pro": {"market":"CA","name":"iPhone 18 Pro 1TB Silver","part":"MJRG4VC/A","price":2649.0,"currency":"CAD"},
+    "ca_pro_512": {"market": "CA","name": "iPhone 18 Pro 512GB Silver","part": "MJRC4VC/A","price": 2049.0,"currency": "CAD"},
+}
+
+US_PRODUCT_IDS = ["us_max", "us_pro", "us_pro_512"]
+CA_PRODUCT_IDS = ["ca_max", "ca_pro", "ca_pro_512"]
+SEARCH_ZIPS = {"NYC":"10001", "DELAWARE":"19702", "DC":"20001", "BUFFALO":"14225", "CLARENDON":"22201"}
+ALLOWED_STATES = {"DE","NY","NJ","PA","MD","DC","VA"}
+US_PRIORITY_STORE = "R102"       # Christiana Mall
+CA_TARGET_STORE = "R121"         # Eaton Centre
+CA_LOCATION = "M5B 2H1"
+
+# Optional user configuration. See config.example.json.
+# Missing config.json preserves the original V4.5 defaults.
+CONFIG_PATH = Path(os.getenv("WATCHER_CONFIG", "config.json"))
+if CONFIG_PATH.exists():
+    cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    if not isinstance(cfg, dict):
+        raise ValueError("Watcher config must be a JSON object")
+    if "products" in cfg:
+        products = cfg["products"]
+        if not isinstance(products, dict) or not products:
+            raise ValueError("products must be a nonempty JSON object")
+        for pid, product in products.items():
+            if not isinstance(product, dict) or product.get("market") not in {"US", "CA"}:
+                raise ValueError(f"Invalid market for product {pid}")
+            if not all(product.get(field) for field in ("name", "part", "currency")):
+                raise ValueError(f"Product {pid} must have name, part and currency")
+            price = product.get("price")
+            if isinstance(price, bool) or not isinstance(price, (int, float)) or price < 0:
+                raise ValueError(f"Product {pid} must have nonnegative numeric price")
+        PRODUCTS = products
+    if "search_zips" in cfg:
+        if not isinstance(cfg["search_zips"], dict):
+            raise ValueError("search_zips must be an object")
+        SEARCH_ZIPS = {str(k): str(v) for k, v in cfg["search_zips"].items()}
+    if "allowed_states" in cfg:
+        if not isinstance(cfg["allowed_states"], list):
+            raise ValueError("allowed_states must be a list")
+        ALLOWED_STATES = {str(s).upper() for s in cfg["allowed_states"]}
+    US_PRIORITY_STORE = str(cfg.get("us_priority_store", US_PRIORITY_STORE))
+    CA_TARGET_STORE = str(cfg.get("ca_target_store", CA_TARGET_STORE))
+    CA_LOCATION = str(cfg.get("ca_location", CA_LOCATION))
+    CA_TAX_RATE = float(cfg.get("ca_tax_rate", 0.13))
+else:
+    CA_TAX_RATE = 0.13
+US_PRODUCT_IDS = [pid for pid, p in PRODUCTS.items() if p["market"] == "US"]
+CA_PRODUCT_IDS = [pid for pid, p in PRODUCTS.items() if p["market"] == "CA"]
+if not US_PRODUCT_IDS and not CA_PRODUCT_IDS:
+    raise ValueError("Configure at least one US or CA product")
+if not 0 <= CA_TAX_RATE <= 1:
+    raise ValueError("ca_tax_rate must be a fraction between 0 and 1")
+
+FX_REFRESH_SECONDS = 21600
+fx_cache = {}
+
+app = Flask(__name__)
+lock = threading.Lock()
+latest = {"status":"starting","checked_at":None,"items":[],"error":None,"consecutive_errors":0}
+
+# ========================= UTILS =========================
+def now():
+    return datetime.now(timezone.utc).isoformat()
+
+def load_state():
+    try: return json.loads(STATE_FILE.read_text(encoding="utf-8"))
+    except Exception: return {}
+
+def save_state(data):
+    try:
+        tmp = STATE_FILE.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        tmp.replace(STATE_FILE)
+    except Exception as e:
+        print("State save error:", e, flush=True)
+
+def safe_discord(message=None, embeds=None):
+    if not DISCORD_WEBHOOK: return
+    payload = {}
+    if message: payload["content"] = message
+    if embeds: payload["embeds"] = embeds
+    if not payload: return
+    try:
+        r = requests.post(DISCORD_WEBHOOK, json=payload, timeout=15)
+        r.raise_for_status()
+    except Exception as e:
+        print("Discord error:", e, flush=True)
+
+# ========================= FX =========================
+def get_eur_rate(currency):
+    if currency == "EUR": return 1.0, None
+    t = time.time(); cached = fx_cache.get(currency)
+    if cached and t - cached["updated_at"] < FX_REFRESH_SECONDS:
+        return cached["rate"], cached["date"]
+    try:
+        url = f"https://api.frankfurter.dev/v2/rate/{currency.lower()}/eur"
+        r = requests.get(url, headers=HEADERS, timeout=15); r.raise_for_status()
+        data = r.json(); rate = float(data["rate"]); date = data.get("date")
+        if rate <= 0: raise ValueError("invalid FX rate")
+        fx_cache[currency] = {"rate":rate,"date":date,"updated_at":t}
+        print(f"FX {currency}/EUR: {rate} ({date})", flush=True)
+        return rate, date
+    except Exception as e:
+        print(f"FX {currency}/EUR error:", e, flush=True)
+        if cached: return cached["rate"], cached["date"]
+        return None, None
+
+# ========================= TAXES / MONEY =========================
+def us_tax_rate(store):
+    state = (store.get("state") or "").upper()
+    city = (store.get("city") or "").lower()
+    name = (store.get("storeName") or "").lower()
+
+    if state == "DE":
+        return 0.0
+    if state == "NJ":
+        return 0.06625
+    if state == "VA" and (city == "arlington" or "clarendon" in name):
+        return 0.06
+    if state == "MD":
+        return 0.06
+    if state == "DC":
+        return 0.06
+    if state == "PA":
+        return 0.08 if city == "philadelphia" or "walnut street" in name else 0.06
+
+    if state == "NY":
+        nyc_names = {
+            "fifth avenue",
+            "grand central",
+            "soho",
+            "upper west side",
+            "upper east side",
+            "west 14th street",
+            "world trade center"
+        }
+
+        if city in {
+            "new york",
+            "manhattan",
+            "brooklyn",
+            "bronx",
+            "queens",
+            "staten island"
+        } or any(x in name for x in nyc_names):
+            return 0.08875
+
+        if city in {"buffalo", "cheektowaga"} or "walden galleria" in name:
+            return 0.0875
+
+        return None
+
+    return None
+
+def money_info(product, store):
+    tax = CA_TAX_RATE if product["market"] == "CA" else us_tax_rate(store)
+    if tax is None:
+        return {"tax_rate":None,"tax_amount":None,"total":None,"price_eur":None,"tax_amount_eur":None,"total_eur":None,"fx_rate":None,"fx_date":None}
+    price = product["price"]
+    tax_amount = round(price * tax + 1e-9, 2); total = round(price + tax_amount + 1e-9, 2)
+    rate, date = get_eur_rate(product["currency"])
+    conv = lambda x: round(x * rate, 2) if rate is not None else None
+    return {"tax_rate":tax,"tax_amount":tax_amount,"total":total,"price_eur":conv(price),"tax_amount_eur":conv(tax_amount),"total_eur":conv(total),"fx_rate":rate,"fx_date":date}
+
+# ========================= APPLE =========================
+def fetch_market(url, location, product_ids):
+    params = {"pl":"true", "location":location}
+    for i, pid in enumerate(product_ids):
+        params[f"mts.{i}"] = "regular"
+        params[f"parts.{i}"] = PRODUCTS[pid]["part"]
+    r = requests.get(url, params=params, headers=HEADERS, timeout=30)
+    if r.status_code == 541: raise RuntimeError("APPLE_541")
+    if r.status_code != 200: raise RuntimeError(f"Apple HTTP {r.status_code}")
+    try: data = r.json()
+    except Exception: raise RuntimeError("Apple returned invalid JSON")
+    return (data.get("body") or {}).get("stores") or []
+
+def status_from_availability(av):
+    display = av.get("pickupDisplay")
+    if not display: return "unknown"
+    d = str(display).strip().lower()
+    if d == "available": return "available"
+    if d in {"unavailable","notavailable","not-available"}: return "unavailable"
+    return "unknown"
+
+def parse_item(raw, pid):
+    product = PRODUCTS[pid]
+    av = ((raw.get("partsAvailability") or {}).get(product["part"]) or {})
+    item = {
+        "key": f"{pid}:{raw.get('storeNumber')}", "product_id":pid, "market":product["market"],
+        "productName":product["name"], "part":product["part"], "price":product["price"], "currency":product["currency"],
+        "storeNumber":raw.get("storeNumber"), "storeName":raw.get("storeName"), "city":raw.get("city"), "state":raw.get("state"),
+        "postalCode":((raw.get("address") or {}).get("postalCode") or raw.get("postalCode")),
+        "distance":raw.get("storeDistanceWithUnit"), "pickupDisplay":av.get("pickupDisplay") or "unknown",
+        "quote":av.get("pickupSearchQuote") or "Unknown", "status":status_from_availability(av),
+    }
+    item.update(money_info(product, item)); return item
+
+def fetch_all():
+    dedup = {}; errors = []; rate_limited = []
+    # US: 4 requests, 3 SKUs in each request
+    for area, zip_code in (SEARCH_ZIPS.items() if US_PRODUCT_IDS else []):
+        try:
+            stores = fetch_market(US_URL, zip_code, US_PRODUCT_IDS)
+            for raw in stores:
+                if (raw.get("state") or "").upper() not in ALLOWED_STATES: continue
+                for pid in US_PRODUCT_IDS:
+                    item = parse_item(raw, pid)
+                    if item["storeNumber"]: dedup[item["key"]] = item
+        except Exception as e:
+            err = str(e)
+            if err == "APPLE_541": rate_limited.append(area); errors.append(f"{area}: Apple 541"); print(f"{area}: APPLE_541 - zone skipped", flush=True)
+            else: errors.append(f"{area}: {err}"); print(f"{area}: {err}", flush=True)
+        time.sleep(random.uniform(2.0,4.0))
+
+    # Canada: 1 request, 2 SKUs; only Eaton Centre is kept
+    if CA_PRODUCT_IDS:
+        try:
+            stores = fetch_market(CA_URL, CA_LOCATION, CA_PRODUCT_IDS)
+            targets = [st for st in stores if not CA_TARGET_STORE or st.get("storeNumber") == CA_TARGET_STORE]
+            if not targets:
+                errors.append(f"CANADA: target store {CA_TARGET_STORE} not returned")
+            else:
+                for target in targets:
+                    for pid in CA_PRODUCT_IDS:
+                        item = parse_item(target, pid); dedup[item["key"]] = item
+        except Exception as e:
+            err = str(e)
+            if err == "APPLE_541": rate_limited.append("TORONTO"); errors.append("TORONTO: Apple 541"); print("TORONTO: APPLE_541 - zone skipped", flush=True)
+            else: errors.append(f"TORONTO: {err}"); print(f"TORONTO: {err}", flush=True)
+
+    if not dedup:
+        if rate_limited: raise RuntimeError("APPLE_541_ALL")
+        if errors: raise RuntimeError(" | ".join(errors))
+        raise RuntimeError("No Apple stores returned")
+
+    status_order = {"available":0,"unavailable":1,"unknown":2}
+    product_order = {pid: n for n, pid in enumerate(PRODUCTS)}
+    def sk(x):
+        priority = 0 if (x["market"]=="US" and x["storeNumber"]==US_PRIORITY_STORE) or (x["market"]=="CA" and x["storeNumber"]==CA_TARGET_STORE) else 1
+        return (product_order[x["product_id"]], status_order.get(x["status"],3), priority, x["total"] if x["total"] is not None else 999999, x["storeName"] or "")
+    items = sorted(dedup.values(), key=sk)
+    return items, errors
+
+# ========================= DISCORD =========================
+def money_symbol(currency): return "$" if currency in {"USD","CAD"} else currency+" "
+
+def compact_product_name(item):
+    return item["productName"]
+
+def price_total_text(item):
+    sym = money_symbol(item["currency"]); cur = item["currency"]
+    if item.get("total") is None:
+        return f"{sym}{item['price']:,.2f} {cur} • total inconnu"
+    eur = f" • €{item['total_eur']:,.2f}" if item.get("total_eur") is not None else ""
+    return f"{sym}{item['total']:,.2f} {cur}{eur}"
+
+def christiana_embed(item, available=True):
+    sym = money_symbol(item["currency"]); cur = item["currency"]
+    if available:
+        title = f"⭐ PRIORITY STORE — {compact_product_name(item)} DISPONIBLE"
+        color = 0xF5A623
+        description = "**PRIORITY STORE • verify local tax before purchase**"
+    else:
+        title = f"❌ PRIORITY STORE — {compact_product_name(item)} n’est plus disponible"
+        color = 0xE74C3C
+        description = "La cible prioritaire était disponible au cycle précédent."
+    tax = "Inconnue" if item.get("tax_rate") is None else f"{item['tax_rate']*100:.3f}% • +{sym}{item['tax_amount']:,.2f}"
+    return {
+        "title": title, "description": description, "color": color,
+        "fields": [
+            {"name":"📍 Magasin","value":f"Apple {item['storeName']} — {item.get('city') or ''}, {item.get('state') or ''}","inline":False},
+            {"name":"💵 Prix","value":f"{sym}{item['price']:,.2f} {cur}","inline":True},
+            {"name":"🧾 Taxe","value":tax,"inline":True},
+            {"name":"💳 Total","value":price_total_text(item),"inline":True},
+            {"name":"📦 Retrait","value":item.get("quote") or item.get("pickupDisplay") or "—","inline":True},
+            {"name":"🔎 SKU","value":f"`{item['part']}` • `{item['storeNumber']}`","inline":True},
+        ],
+        "footer":{"text":"Apple Stock Watcher V4.5 • vérifie sur Apple avant de te déplacer"}
+    }
+
+def normal_available_embed(items):
+    # One compact card per cycle, instead of one Discord message per store.
+    lines=[]
+    for item in items[:20]:
+        where=f"Apple {item['storeName']} — {item.get('city') or ''}, {item.get('state') or ''}"
+        lines.append(f"🟢 **{compact_product_name(item)}** • {where}\n↳ **{price_total_text(item)}** • {item.get('quote') or 'Available'}")
+    extra = len(items)-20
+    if extra>0: lines.append(f"… et **{extra}** autre(s) disponibilité(s).")
+    return {"title":f"🟢 {len(items)} nouvelle(s) disponibilité(s)","description":"\n\n".join(lines),"color":0x2ECC71,"footer":{"text":"Apple Stock Watcher V4.5 • non-priority stores"}}
+
+def unavailable_embed(items):
+    lines=[]
+    for item in items[:20]:
+        lines.append(f"🔴 **{compact_product_name(item)}** • Apple {item['storeName']} — {item.get('city') or ''}, {item.get('state') or ''}")
+    extra=len(items)-20
+    if extra>0: lines.append(f"… et **{extra}** autre(s) rupture(s).")
+    return {"title":f"🔴 {len(items)} stock(s) redevenu(s) indisponible(s)","description":"\n".join(lines),"color":0xE74C3C,"footer":{"text":"Transition confirmée AVAILABLE → UNAVAILABLE"}}
+
+def send_stock_changes(new_available, newly_unavailable):
+    christiana_up=[x for x in new_available if x.get("storeNumber")==US_PRIORITY_STORE]
+    normal_up=[x for x in new_available if x.get("storeNumber")!=US_PRIORITY_STORE]
+    christiana_down=[x for x in newly_unavailable if x.get("storeNumber")==US_PRIORITY_STORE]
+    normal_down=[x for x in newly_unavailable if x.get("storeNumber")!=US_PRIORITY_STORE]
+    for item in christiana_up: safe_discord(embeds=[christiana_embed(item, True)])
+    if normal_up: safe_discord(embeds=[normal_available_embed(normal_up)])
+    for item in christiana_down: safe_discord(embeds=[christiana_embed(item, False)])
+    if normal_down: safe_discord(embeds=[unavailable_embed(normal_down)])
+
+# ========================= POLLING =========================
+def poll_once():
+    global latest
+    checked = now(); previous = load_state()
+    try:
+        items, partial_errors = fetch_all()
+        available = [x for x in items if x["status"] == "available"]
+        previous_available = set(previous.get("available_keys") or [])
+        # backward compatibility: do not import old store-only state as availability for V4.3
+        seen = {x["key"]: x["status"] for x in items}
+        current_available = {x["key"] for x in available} | {
+            key for key in previous_available if seen.get(key) in (None, "unknown")
+        }
+        new_available = [x for x in available if x["key"] not in previous_available]
+
+        # Alert only on a confirmed AVAILABLE -> UNAVAILABLE transition.
+        # Missing/UNKNOWN rows (for example during a partial Apple 541) never trigger a false stock-out alert.
+        current_by_key = {x["key"]: x for x in items}
+        newly_unavailable = []
+        for key in previous_available - current_available:
+            item = current_by_key.get(key)
+            if item and item.get("status") == "unavailable":
+                newly_unavailable.append(item)
+
+        send_stock_changes(new_available, newly_unavailable)
+
+        if previous.get("watcher_error") is True:
+            safe_discord("✅ **Apple Stock Watcher V4.5 rétabli**\nLa surveillance fonctionne de nouveau.")
+        save_state({"available_keys":sorted(current_available),"watcher_error":False,"checked_at":checked})
+        if available: overall = "available"
+        elif partial_errors: overall = "partial"
+        elif any(x["status"]=="unknown" for x in items): overall = "partial"
+        else: overall = "unavailable"
+        with lock:
+            latest = {"status":overall,"checked_at":checked,"items":items,"error":" | ".join(partial_errors) if partial_errors else None,"consecutive_errors":0}
+        print(checked, f"{len(items)} product/store rows", f"{len(available)} available", ("PARTIAL" if partial_errors else "OK"), flush=True)
+        return INTERVAL
+    except Exception as e:
+        error = str(e)
+        with lock: errors = latest.get("consecutive_errors",0)+1
+        if previous.get("watcher_error") is not True:
+            safe_discord(f"⚠️ **Apple Stock Watcher V4.5 en erreur**\nErreur : {error}\nLe statut est UNKNOWN — jamais interprété comme rupture.")
+        save_state({"available_keys":previous.get("available_keys",[]),"watcher_error":True,"checked_at":checked,"error":error})
+        with lock: latest = {"status":"unknown","checked_at":checked,"items":latest.get("items",[]),"error":error,"consecutive_errors":errors}
+        print(checked,"UNKNOWN:",error,flush=True)
+        if error in {"APPLE_541","APPLE_541_ALL"}: return 900
+        return min(900,max(INTERVAL,INTERVAL*errors))
+
+def worker():
+    while True:
+        delay = poll_once(); time.sleep(max(120, delay + random.randint(-15,15)))
+
+# ========================= WEB UI =========================
+HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Apple Stock Watcher V4.5</title><style>
+
+/* Apple-inspired dashboard skin */
+:root{color-scheme:dark;--bg:#000000;--panel:#11151c;--panel2:#161b24;--line:#2b3442;--text:#f5f6fa;--muted:#9ba8bd;--green:#32d583;--red:#ff6475;--input:#151b25}
+:root[data-theme="light"]{color-scheme:light;--bg:#f4f6fa;--panel:#fff;--panel2:#f7f9fc;--line:#dbe1e9;--text:#111827;--muted:#64748b;--green:#128a50;--red:#c83548;--input:#f9fafb}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;max-width:1550px;margin:0 auto;padding:28px;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
+.header{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:22px}.header h1{font-size:clamp(25px,3vw,38px);letter-spacing:-.045em;margin:0 0 7px}.header .sub{color:var(--muted);margin:0;font-size:14px}.theme-toggle,.filter-btn{background:var(--panel);border:1px solid var(--line);border-radius:999px;color:var(--text);padding:11px 16px;font-size:14px;cursor:pointer;transition:border-color .2s,background .2s}.theme-toggle:hover,.filter-btn:hover{border-color:var(--muted)}.theme-toggle:focus-visible,.filter-btn:focus-visible,#shopSearch:focus-visible{outline:2px solid #83b4ff;outline-offset:2px}
+.search-panel,.summary,.section{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:18px;box-shadow:0 8px 30px #00000012}.search-panel{padding:14px 18px}.search-panel input,#shopSearch{display:block;width:100%;padding:14px 15px;font-size:16px;background:var(--input);border:1px solid var(--line);border-radius:13px;color:var(--text);outline:none}.search-panel input::placeholder{color:var(--muted)}#searchCount{font-size:12px;color:var(--muted);margin:9px 3px 0}.summary{line-height:1.8;color:var(--muted)}.summary b{color:var(--text)}.filters{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 20px}.filter-btn.active{background:#273a53;border-color:#79aaff;color:#fff}:root[data-theme="light"] .filter-btn.active{background:#e5f0ff;color:#174b9b}
+.section{padding:22px}.section h2{font-size:clamp(19px,2vw,26px);letter-spacing:-.035em;margin:0 0 8px}.meta{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.7}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{min-width:0;background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:18px;transition:transform .15s,border-color .15s}.card:hover{transform:translateY(-2px)}.card.available{border-color:var(--green);background:linear-gradient(145deg,rgba(30,160,100,.11),var(--panel2) 65%)}.card.unavailable{border-color:var(--red);background:linear-gradient(145deg,rgba(215,60,80,.08),var(--panel2) 65%)}.card.unknown{border-color:var(--line)}.card.target{box-shadow:inset 0 0 0 1px #e5b74b}.name{font-weight:700;font-size:17px;margin-bottom:7px}.card .badge{display:inline-block;border-radius:999px;padding:5px 10px;margin:11px 0;font-weight:700;font-size:11px;letter-spacing:.035em}.available .badge{background:rgba(50,213,131,.14);color:var(--green)}.unavailable .badge{background:rgba(255,100,117,.13);color:var(--red)}.unknown .badge{background:rgba(148,163,184,.16);color:var(--muted)}.card .money{line-height:1.7;font-size:14px;margin-top:10px}.card .sku{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.card>div:nth-child(2){color:var(--muted);font-size:13px}.error{color:var(--red);font-weight:650}.empty-search{display:none;text-align:center;color:var(--muted);padding:28px 12px}.empty-search.visible{display:block}
+@media(max-width:950px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){body{padding:14px}.header{align-items:flex-start}.header h1{font-size:25px}.theme-toggle{padding:9px 11px;font-size:12px}.grid{grid-template-columns:1fr}.section,.summary{padding:16px}.search-panel{padding:12px}}
+
+</style></head><body><header class="header"><div><h1> Apple Stock Watcher V4.5</h1><p class="sub">{{products|length}} configured products • US / CA pickup availability • dashboard refresh 30 s</p></div><button type="button" id="themeToggle" class="theme-toggle" aria-label="Changer le thème">☀ Mode clair</button></header>
+
+<div class="search-panel">
+    <input id="shopSearch" type="search"
+           placeholder="Rechercher un Apple Store, une ville, un Etat..."
+           aria-label="Rechercher un Apple Store"
+           autocomplete="off">
+    <div id="searchCount"></div>
+</div>
+<div class="summary"><b>Global:</b> {{latest.status|upper}} &nbsp; • &nbsp; <b>Dernier check:</b> {{latest.checked_at or '—'}} &nbsp; • &nbsp; <b>Intervalle:</b> ~{{interval}} s{% if latest.error %}<div class="error">⚠ {{latest.error}}</div>{% endif %}</div>
+<div class="filters" aria-label="Filtrer les disponibilités"><button type="button" class="filter-btn active" data-filter="all" aria-pressed="true">Tous</button><button type="button" class="filter-btn" data-filter="available" aria-pressed="false">● Disponibles</button><button type="button" class="filter-btn" data-filter="unavailable" aria-pressed="false">● En rupture</button><button type="button" class="filter-btn" data-filter="unknown" aria-pressed="false">● Inconnus</button><button type="button" class="filter-btn" data-filter="priority" aria-pressed="false">★ Prioritaires</button></div>
+<div id="emptySearch" class="empty-search">Aucun magasin ne correspond à cette recherche.</div>
+{% for pid,p in products.items() %}<div class="section"><h2>{{'🇺🇸' if p.market=='US' else '🇨🇦'}} {{p.name}}</h2><div class="meta">SKU {{p.part}} • {{'$' if p.currency in ['USD','CAD'] else ''}}{{'%.2f'|format(p.price)}} {{p.currency}}{% if p.market=='US' %} • US priority store {{priority_us}}{% else %} • CA target store {{target_ca or "all"}}{% endif %}</div><div class="grid">
+{% set rows = latest['items']|selectattr('product_id','equalto',pid)|list %}{% if not rows %}<div class="card unknown"><div class="name">Aucune donnée</div><div class="badge">UNKNOWN / zone non vérifiée</div></div>{% endif %}
+{% for x in rows %}<div class="card {{x.status}} {% if x.storeNumber in [priority_us, target_ca] %}target{% endif %}" data-search="{{ (x.storeName ~ ' ' ~ x.city ~ ' ' ~ x.state ~ ' ' ~ x.storeNumber)|lower|e }}"><div class="name">Apple {{x.storeName}}</div><div>{{x.city}}, {{x.state}} • {{x.distance or '—'}}</div><div class="badge">{{x.status|upper}} — {{x.quote}}</div><div class="sku">{{x.storeNumber}} • {{x.part}}</div><div class="money">Prix: <b>${{'%.2f'|format(x.price)}} {{x.currency}}</b>{% if x.price_eur is not none %} (€{{'%.2f'|format(x.price_eur)}}){% endif %}<br>{% if x.tax_rate is not none %}Taxe: {{'%.3f'|format(x.tax_rate*100)}}% = +${{'%.2f'|format(x.tax_amount)}}{% if x.tax_amount_eur is not none %} (€{{'%.2f'|format(x.tax_amount_eur)}}){% endif %}<br>Total: <b>${{'%.2f'|format(x.total)}} {{x.currency}}</b>{% if x.total_eur is not none %} (€{{'%.2f'|format(x.total_eur)}}){% endif %}{% else %}Taxe/total: inconnu{% endif %}</div></div>{% endfor %}</div></div>{% endfor %}
+
+
+
+<script id="watcher-redesign-js">
+(function(){
+ const root=document.documentElement;
+ const themeButton=document.getElementById('themeToggle');
+ function applyTheme(theme){root.dataset.theme=theme;themeButton.textContent=theme==='dark'?'☀ Mode clair':'☾ Mode sombre';try{localStorage.setItem('watcher-theme',theme)}catch(e){}}
+ let theme='dark';try{theme=localStorage.getItem('watcher-theme')||'dark'}catch(e){}
+ applyTheme(theme);
+ themeButton.addEventListener('click',()=>applyTheme(root.dataset.theme==='dark'?'light':'dark'));
+ const input=document.getElementById('shopSearch');
+ const count=document.getElementById('searchCount');
+ const buttons=[...document.querySelectorAll('.filter-btn')];
+ const sections=[...document.querySelectorAll('.section')];
+ const empty=document.getElementById('emptySearch');
+ let filter='all';
+ function update(){
+   const q=(input?.value||'').trim().toLocaleLowerCase();let shown=0,total=0;
+   sections.forEach(section=>{
+     let sectionVisible=0;
+     section.querySelectorAll('.card[data-search]').forEach(card=>{
+       total++;
+       const matchesText=!q||(card.dataset.search||'').toLocaleLowerCase().includes(q);
+       const matchesFilter=filter==='all'||(filter==='priority'?card.classList.contains('target'):card.classList.contains(filter));
+       const show=matchesText&&matchesFilter;card.style.display=show?'':'none';
+       if(show){shown++;sectionVisible++}
+     });
+     section.style.display=sectionVisible||(!q&&filter==='all'&&!section.querySelector('.card[data-search]'))?'':'none';
+   });
+   if(count)count.textContent=shown+' magasin(s) affiché(s) sur '+total;
+   if(empty)empty.classList.toggle('visible',shown===0);
+ }
+ if(input){try{input.value=sessionStorage.getItem('watcher-search')||''}catch(e){}input.addEventListener('input',()=>{try{sessionStorage.setItem('watcher-search',input.value)}catch(e){}update()})}
+ buttons.forEach(btn=>btn.addEventListener('click',()=>{filter=btn.dataset.filter;buttons.forEach(b=>{b.classList.toggle('active',b===btn);b.setAttribute('aria-pressed',String(b===btn))});update()}));
+ update();
+ // Keep 30-second refresh without losing search or theme.
+ setInterval(()=>window.location.reload(),30000);
+})();
+</script>
+</body></html>'''
+
+@app.route("/")
+def home():
+    with lock: snap = dict(latest); snap["items"] = list(latest.get("items",[]))
+    return render_template_string(HTML, latest=snap, products=PRODUCTS, interval=INTERVAL, priority_us=US_PRIORITY_STORE, target_ca=CA_TARGET_STORE)
+
+@app.route("/api/status")
+def api_status():
+    with lock: return jsonify(latest)
+
+@app.route("/health")
+def health(): return jsonify({"ok":True,"version":"4.5"})
+
+if __name__ == "__main__":
+    threading.Thread(target=worker, daemon=True).start()
+    port = int(os.getenv("PORT","8080"))
+    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)

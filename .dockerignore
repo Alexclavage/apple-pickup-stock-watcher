@@ -1,0 +1,11 @@
+.git
+.venv
+.env
+.env.*
+!.env.example
+config.json
+state*.json
+session*.json
+capture*.txt
+__pycache__
+*.pyc

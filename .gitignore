@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+config.json
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+state*.json
+session*.json
+capture*.txt
+*.log
