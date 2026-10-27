@@ -58,6 +58,21 @@ For Railway or Docker deployments, use a persistent volume for **both** state an
 - The dashboard and API are **not authenticated**. Keep the service private or put it behind your own access control before exposing it to the Internet.
 - Treat local tax and currency conversions as estimates; verify price and availability on Apple's official website before travelling or buying.
 
+## One-command local deployment with Docker Compose
+
+Docker Compose keeps the dashboard bound to **127.0.0.1** and stores state/history on a named volume:
+
+```sh
+# Copy the sample files first (Windows: use 'copy' instead of 'cp')
+cp .env.example .env
+cp config.example.json config.json
+docker compose up -d --build
+```
+
+Visit http://localhost:8080. Stop with `docker compose down`; **do not** use `docker compose down -v` unless you deliberately want to delete the saved data. To follow runtime checks, run `docker compose logs -f watcher`.
+
+For Windows CMD, use `copy .env.example .env` and `copy config.example.json config.json` before running `docker compose up -d --build`. The local dashboard is intentionally not accessible from other computers. There is no built-in authentication, so do not publish the port to the public Internet.
+
 ## Tests
 
 Run `python -m unittest discover -s tests -v`. Tests use mock stock data and do not contact Apple or Discord.
