@@ -28,11 +28,33 @@ The supplied example contains illustrative SKU / price configuration from Octobe
 
 Without `config.json`, defaults from the original V4.5 are used. Minimum check interval is 120 seconds, but slower monitoring is recommended.
 
+## Targeted notifications
+
+In `config.json`, optional fields `alert_store_ids` and `alert_product_ids` control which confirmed stock transitions generate **Discord** notifications. For example:
+
+```json
+{
+  "alert_store_ids": ["R102", "R121"],
+  "alert_product_ids": ["us_pro_512", "ca_pro_512"]
+}
+```
+
+An omitted field means **all** stores or products; an empty array disables notifications for that dimension. These filters do not hide stores from the dashboard or its stock history. Product IDs must match keys inside `products`; store IDs are returned by Apple. The configured `us_priority_store` has a more prominent notification style.
+
+## Stock history
+
+Confirmed availability changes are retained locally in `history.json`, and recent events appear on the dashboard. The read-only endpoint `/api/history` returns the latest 100 events. Initial availability is treated as an event when the watcher has no prior state. Unknown or missing Apple responses do not create stock-out events.
+
+Set `HISTORY_FILE` in `.env` to change the path and `HISTORY_MAX_EVENTS` to adjust the maximum number of retained entries (default 500; `0` disables history). `history.json` is excluded from Git and Docker builds. It contains product/store names and observation timestamps, so protect it alongside other monitoring data. The file is written on a best-effort basis; a history I/O failure does not interrupt polling.
+
+For Railway or Docker deployments, use a persistent volume for **both** state and history if you want them to survive instance restarts or redeploys. This implementation is intended for a **single polling worker**, not multiple web workers sharing the same state files.
+
 ## Operation and limitations
 
-- `/` dashboard; `/api/status` latest state; `/health` reports Flask process liveness (not proof of Apple connectivity).
+- `/` dashboard; `/api/status` latest state; `/api/history` recent stock changes; `/health` reports Flask process liveness (not proof of Apple connectivity).
 - A failed Apple request produces UNKNOWN/partial results, not a confirmed stock-out. Previously available stores are retained when absent from a partial response to avoid repeated false "back in stock" alerts.
 - First run may notify on products already available because the state file starts empty.
+- Apple HTTP 429/541 responses trigger a longer cooldown (approximately 15 minutes), even when other regions returned usable results.
 - The dashboard and API are **not authenticated**. Keep the service private or put it behind your own access control before exposing it to the Internet.
 - Treat local tax and currency conversions as estimates; verify price and availability on Apple's official website before travelling or buying.
 
