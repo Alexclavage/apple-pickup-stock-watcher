@@ -2,6 +2,14 @@
 
 An independent, unofficial, self-hosted Apple Store pickup availability checker. Includes a Flask dashboard, Discord alerts on stock changes, selectable product SKUs, optional EUR conversions, and tax estimates. **It does not purchase or reserve products.** Not affiliated with Apple.
 
+## Long-term vision: worldwide, every Apple Retail Store
+
+The project's main long-term goal is **global, per-store pickup availability monitoring**, not only nearby US and Canadian stores. Users should be able to browse all verified official Apple Retail Store locations country by country, select an individual store, a city, a country, or an opt-in global search, and configure per-product/store alerts. Local product variants and SKUs differ across regions; the catalog and pickup query paths must be verified per country.
+
+**Current status:** the implemented live stock checker supports US and Canadian Apple Store queries only. Worldwide store indexing, catalogs and full regional validation are **not available yet**. Stores cannot be declared "out of stock" if their last check failed or was not performed. Global searches will need batching, caching and conservative scheduling instead of continuously polling every possible product/store combination.
+
+See [ROADMAP.md](ROADMAP.md) for the phased implementation and coverage criteria.
+
 ## Requirements
 
 Python 3.10+ and network access for live availability checks. The watcher reads an Apple retail pickup endpoint that can change or impose rate limits. Respect Apple's terms and do not increase request frequency excessively.
