@@ -5,6 +5,7 @@ from pathlib import Path
 import requests
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template_string
+from history import append_history, read_history, transition_event
 
 load_dotenv()
 
@@ -12,6 +13,8 @@ load_dotenv()
 INTERVAL = max(120, int(os.getenv("CHECK_INTERVAL", "300")))
 DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK", "")
 STATE_FILE = Path(os.getenv("STATE_FILE", "state_v43.json"))
+HISTORY_FILE = Path(os.getenv("HISTORY_FILE", "history.json"))
+HISTORY_MAX_EVENTS = max(0, int(os.getenv("HISTORY_MAX_EVENTS", "500")))
 
 US_URL = "https://www.apple.com/shop/retail/pickup-message"
 CA_URL = "https://www.apple.com/ca/shop/retail/pickup-message"
@@ -37,6 +40,8 @@ CA_LOCATION = "M5B 2H1"
 # Optional user configuration. See config.example.json.
 # Missing config.json preserves the original V4.5 defaults.
 CONFIG_PATH = Path(os.getenv("WATCHER_CONFIG", "config.json"))
+ALERT_STORE_IDS = None
+ALERT_PRODUCT_IDS = None
 if CONFIG_PATH.exists():
     cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     if not isinstance(cfg, dict):
@@ -66,6 +71,19 @@ if CONFIG_PATH.exists():
     CA_TARGET_STORE = str(cfg.get("ca_target_store", CA_TARGET_STORE))
     CA_LOCATION = str(cfg.get("ca_location", CA_LOCATION))
     CA_TAX_RATE = float(cfg.get("ca_tax_rate", 0.13))
+    for option in ("alert_store_ids", "alert_product_ids"):
+        if option not in cfg:
+            continue
+        value = cfg[option]
+        if not isinstance(value, list) or any(not isinstance(v, str) or not v.strip() for v in value):
+            raise ValueError(f"{option} must be a list of nonempty strings")
+        if option == "alert_store_ids":
+            ALERT_STORE_IDS = set(value)
+        else:
+            unknown_ids = set(value) - set(PRODUCTS)
+            if unknown_ids:
+                raise ValueError(f"Unknown alert product IDs: {sorted(unknown_ids)}")
+            ALERT_PRODUCT_IDS = set(value)
 else:
     CA_TAX_RATE = 0.13
 US_PRODUCT_IDS = [pid for pid, p in PRODUCTS.items() if p["market"] == "US"]
@@ -193,7 +211,7 @@ def fetch_market(url, location, product_ids):
         params[f"mts.{i}"] = "regular"
         params[f"parts.{i}"] = PRODUCTS[pid]["part"]
     r = requests.get(url, params=params, headers=HEADERS, timeout=30)
-    if r.status_code == 541: raise RuntimeError("APPLE_541")
+    if r.status_code in (429, 541): raise RuntimeError(f"APPLE_{r.status_code}")
     if r.status_code != 200: raise RuntimeError(f"Apple HTTP {r.status_code}")
     try: data = r.json()
     except Exception: raise RuntimeError("Apple returned invalid JSON")
@@ -233,7 +251,7 @@ def fetch_all():
                     if item["storeNumber"]: dedup[item["key"]] = item
         except Exception as e:
             err = str(e)
-            if err == "APPLE_541": rate_limited.append(area); errors.append(f"{area}: Apple 541"); print(f"{area}: APPLE_541 - zone skipped", flush=True)
+            if err in {"APPLE_541", "APPLE_429"}: rate_limited.append(area); errors.append(f"{area}: Apple {err[-3:]}"); print(f"{area}: {err} - zone skipped", flush=True)
             else: errors.append(f"{area}: {err}"); print(f"{area}: {err}", flush=True)
         time.sleep(random.uniform(2.0,4.0))
 
@@ -250,11 +268,11 @@ def fetch_all():
                         item = parse_item(target, pid); dedup[item["key"]] = item
         except Exception as e:
             err = str(e)
-            if err == "APPLE_541": rate_limited.append("TORONTO"); errors.append("TORONTO: Apple 541"); print("TORONTO: APPLE_541 - zone skipped", flush=True)
+            if err in {"APPLE_541", "APPLE_429"}: rate_limited.append("CANADA"); errors.append(f"CANADA: Apple {err[-3:]}"); print(f"CANADA: {err} - zone skipped", flush=True)
             else: errors.append(f"TORONTO: {err}"); print(f"TORONTO: {err}", flush=True)
 
     if not dedup:
-        if rate_limited: raise RuntimeError("APPLE_541_ALL")
+        if rate_limited: raise RuntimeError("APPLE_RATE_LIMIT_ALL")
         if errors: raise RuntimeError(" | ".join(errors))
         raise RuntimeError("No Apple stores returned")
 
@@ -367,6 +385,8 @@ def poll_once():
         with lock:
             latest = {"status":overall,"checked_at":checked,"items":items,"error":" | ".join(partial_errors) if partial_errors else None,"consecutive_errors":0}
         print(checked, f"{len(items)} product/store rows", f"{len(available)} available", ("PARTIAL" if partial_errors else "OK"), flush=True)
+        if any(("Apple 429" in err or "Apple 541" in err) for err in partial_errors):
+            return max(INTERVAL, 900)
         return INTERVAL
     except Exception as e:
         error = str(e)
@@ -376,7 +396,7 @@ def poll_once():
         save_state({"available_keys":previous.get("available_keys",[]),"watcher_error":True,"checked_at":checked,"error":error})
         with lock: latest = {"status":"unknown","checked_at":checked,"items":latest.get("items",[]),"error":error,"consecutive_errors":errors}
         print(checked,"UNKNOWN:",error,flush=True)
-        if error in {"APPLE_541","APPLE_541_ALL"}: return 900
+        if error in {"APPLE_429", "APPLE_541", "APPLE_RATE_LIMIT_ALL"}: return 900
         return min(900,max(INTERVAL,INTERVAL*errors))
 
 def worker():
