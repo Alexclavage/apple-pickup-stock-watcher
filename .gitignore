@@ -10,3 +10,5 @@ state*.json
 session*.json
 capture*.txt
 *.log
+history*.json
+history*.json.tmp
