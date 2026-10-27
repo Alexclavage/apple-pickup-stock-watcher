@@ -297,7 +297,7 @@ def price_total_text(item):
     eur = f" • €{item['total_eur']:,.2f}" if item.get("total_eur") is not None else ""
     return f"{sym}{item['total']:,.2f} {cur}{eur}"
 
-def christiana_embed(item, available=True):
+def priority_store_embed(item, available=True):
     sym = money_symbol(item["currency"]); cur = item["currency"]
     if available:
         title = f"⭐ PRIORITY STORE — {compact_product_name(item)} DISPONIBLE"
@@ -339,14 +339,23 @@ def unavailable_embed(items):
     if extra>0: lines.append(f"… et **{extra}** autre(s) rupture(s).")
     return {"title":f"🔴 {len(items)} stock(s) redevenu(s) indisponible(s)","description":"\n".join(lines),"color":0xE74C3C,"footer":{"text":"Transition confirmée AVAILABLE → UNAVAILABLE"}}
 
+def is_alert_target(item):
+    return (
+        (ALERT_STORE_IDS is None or item.get("storeNumber") in ALERT_STORE_IDS)
+        and (ALERT_PRODUCT_IDS is None or item.get("product_id") in ALERT_PRODUCT_IDS)
+    )
+
+
 def send_stock_changes(new_available, newly_unavailable):
-    christiana_up=[x for x in new_available if x.get("storeNumber")==US_PRIORITY_STORE]
-    normal_up=[x for x in new_available if x.get("storeNumber")!=US_PRIORITY_STORE]
-    christiana_down=[x for x in newly_unavailable if x.get("storeNumber")==US_PRIORITY_STORE]
-    normal_down=[x for x in newly_unavailable if x.get("storeNumber")!=US_PRIORITY_STORE]
-    for item in christiana_up: safe_discord(embeds=[christiana_embed(item, True)])
+    new_available = [x for x in new_available if is_alert_target(x)]
+    newly_unavailable = [x for x in newly_unavailable if is_alert_target(x)]
+    priority_up = [x for x in new_available if x.get("storeNumber") == US_PRIORITY_STORE and x.get("market") == "US"]
+    normal_up = [x for x in new_available if x not in priority_up]
+    priority_down = [x for x in newly_unavailable if x.get("storeNumber") == US_PRIORITY_STORE and x.get("market") == "US"]
+    normal_down = [x for x in newly_unavailable if x not in priority_down]
+    for item in priority_up: safe_discord(embeds=[priority_store_embed(item, True)])
     if normal_up: safe_discord(embeds=[normal_available_embed(normal_up)])
-    for item in christiana_down: safe_discord(embeds=[christiana_embed(item, False)])
+    for item in priority_down: safe_discord(embeds=[priority_store_embed(item, False)])
     if normal_down: safe_discord(embeds=[unavailable_embed(normal_down)])
 
 # ========================= POLLING =========================
@@ -378,6 +387,11 @@ def poll_once():
         if previous.get("watcher_error") is True:
             safe_discord("✅ **Apple Stock Watcher V4.5 rétabli**\nLa surveillance fonctionne de nouveau.")
         save_state({"available_keys":sorted(current_available),"watcher_error":False,"checked_at":checked})
+        changes = (
+            [transition_event(item, "available", checked) for item in new_available]
+            + [transition_event(item, "unavailable", checked) for item in newly_unavailable]
+        )
+        append_history(HISTORY_FILE, changes, max_entries=HISTORY_MAX_EVENTS)
         if available: overall = "available"
         elif partial_errors: overall = "partial"
         elif any(x["status"]=="unknown" for x in items): overall = "partial"
