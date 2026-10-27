@@ -11,10 +11,11 @@ class WatcherSmokeTests(unittest.TestCase):
         self.assertEqual(c.get('/').status_code, 200)
         self.assertEqual(c.get('/api/status').status_code, 200)
         self.assertEqual(c.get('/health').status_code, 200)
+        self.assertEqual(c.get('/api/history').status_code, 200)
 
     def test_partial_apple_response_does_not_repeat_available_alert(self):
         item = {'key': 'test:R102', 'status': 'available'}
-        with tempfile.TemporaryDirectory() as temp, patch.object(watcher, 'STATE_FILE', Path(temp) / 'state.json'), patch.object(watcher, 'send_stock_changes') as send:
+        with tempfile.TemporaryDirectory() as temp, patch.object(watcher, 'STATE_FILE', Path(temp) / 'state.json'), patch.object(watcher, 'HISTORY_FILE', Path(temp) / 'history.json'), patch.object(watcher, 'send_stock_changes') as send:
             with patch.object(watcher, 'fetch_all', side_effect=[([item], []), ([], ['Apple 541']), ([item], [])]):
                 watcher.poll_once()
                 self.assertEqual(send.call_count, 1)
