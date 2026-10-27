@@ -426,10 +426,11 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 :root[data-theme="light"]{color-scheme:light;--bg:#f4f6fa;--panel:#fff;--panel2:#f7f9fc;--line:#dbe1e9;--text:#111827;--muted:#64748b;--green:#128a50;--red:#c83548;--input:#f9fafb}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;max-width:1550px;margin:0 auto;padding:28px;background:var(--bg);color:var(--text);min-height:100vh;transition:background .2s,color .2s}
 .header{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:22px}.header h1{font-size:clamp(25px,3vw,38px);letter-spacing:-.045em;margin:0 0 7px}.header .sub{color:var(--muted);margin:0;font-size:14px}.theme-toggle,.filter-btn{background:var(--panel);border:1px solid var(--line);border-radius:999px;color:var(--text);padding:11px 16px;font-size:14px;cursor:pointer;transition:border-color .2s,background .2s}.theme-toggle:hover,.filter-btn:hover{border-color:var(--muted)}.theme-toggle:focus-visible,.filter-btn:focus-visible,#shopSearch:focus-visible{outline:2px solid #83b4ff;outline-offset:2px}
-.search-panel,.summary,.section{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:18px;box-shadow:0 8px 30px #00000012}.search-panel{padding:14px 18px}.search-panel input,#shopSearch{display:block;width:100%;padding:14px 15px;font-size:16px;background:var(--input);border:1px solid var(--line);border-radius:13px;color:var(--text);outline:none}.search-panel input::placeholder{color:var(--muted)}#searchCount{font-size:12px;color:var(--muted);margin:9px 3px 0}.summary{line-height:1.8;color:var(--muted)}.summary b{color:var(--text)}.filters{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 20px}.filter-btn.active{background:#273a53;border-color:#79aaff;color:#fff}:root[data-theme="light"] .filter-btn.active{background:#e5f0ff;color:#174b9b}
-.section{padding:22px}.section h2{font-size:clamp(19px,2vw,26px);letter-spacing:-.035em;margin:0 0 8px}.meta{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.7}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{min-width:0;background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:18px;transition:transform .15s,border-color .15s}.card:hover{transform:translateY(-2px)}.card.available{border-color:var(--green);background:linear-gradient(145deg,rgba(30,160,100,.11),var(--panel2) 65%)}.card.unavailable{border-color:var(--red);background:linear-gradient(145deg,rgba(215,60,80,.08),var(--panel2) 65%)}.card.unknown{border-color:var(--line)}.card.target{box-shadow:inset 0 0 0 1px #e5b74b}.name{font-weight:700;font-size:17px;margin-bottom:7px}.card .badge{display:inline-block;border-radius:999px;padding:5px 10px;margin:11px 0;font-weight:700;font-size:11px;letter-spacing:.035em}.available .badge{background:rgba(50,213,131,.14);color:var(--green)}.unavailable .badge{background:rgba(255,100,117,.13);color:var(--red)}.unknown .badge{background:rgba(148,163,184,.16);color:var(--muted)}.card .money{line-height:1.7;font-size:14px;margin-top:10px}.card .sku{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.card>div:nth-child(2){color:var(--muted);font-size:13px}.error{color:var(--red);font-weight:650}.empty-search{display:none;text-align:center;color:var(--muted);padding:28px 12px}.empty-search.visible{display:block}
+.search-panel,.summary,.section,.activity-panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:20px;margin-bottom:18px;box-shadow:0 8px 30px #00000012}.search-panel{padding:14px 18px}.search-panel input,#shopSearch{display:block;width:100%;padding:14px 15px;font-size:16px;background:var(--input);border:1px solid var(--line);border-radius:13px;color:var(--text);outline:none}.search-panel input::placeholder{color:var(--muted)}#searchCount{font-size:12px;color:var(--muted);margin:9px 3px 0}.summary{line-height:1.8;color:var(--muted)}.summary b{color:var(--text)}.filters{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 20px}.filter-btn.active{background:#273a53;border-color:#79aaff;color:#fff}:root[data-theme="light"] .filter-btn.active{background:#e5f0ff;color:#174b9b}
+.section{padding:22px}.section h2,.activity-panel h2{font-size:clamp(19px,2vw,26px);letter-spacing:-.035em;margin:0 0 8px}.meta{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.7}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{min-width:0;background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:18px;transition:transform .15s,border-color .15s}.card:hover{transform:translateY(-2px)}.card.available{border-color:var(--green);background:linear-gradient(145deg,rgba(30,160,100,.11),var(--panel2) 65%)}.card.unavailable{border-color:var(--red);background:linear-gradient(145deg,rgba(215,60,80,.08),var(--panel2) 65%)}.card.unknown{border-color:var(--line)}.card.target{box-shadow:inset 0 0 0 1px #e5b74b}.name{font-weight:700;font-size:17px;margin-bottom:7px}.card .badge{display:inline-block;border-radius:999px;padding:5px 10px;margin:11px 0;font-weight:700;font-size:11px;letter-spacing:.035em}.available .badge{background:rgba(50,213,131,.14);color:var(--green)}.unavailable .badge{background:rgba(255,100,117,.13);color:var(--red)}.unknown .badge{background:rgba(148,163,184,.16);color:var(--muted)}.card .money{line-height:1.7;font-size:14px;margin-top:10px}.card .sku{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.card>div:nth-child(2){color:var(--muted);font-size:13px}.error{color:var(--red);font-weight:650}.empty-search{display:none;text-align:center;color:var(--muted);padding:28px 12px}.empty-search.visible{display:block}
 @media(max-width:950px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){body{padding:14px}.header{align-items:flex-start}.header h1{font-size:25px}.theme-toggle{padding:9px 11px;font-size:12px}.grid{grid-template-columns:1fr}.section,.summary{padding:16px}.search-panel{padding:12px}}
 
+.activity-event{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 0;border-top:1px solid var(--line);font-size:13px}.activity-event small{color:var(--muted);margin-left:auto}.activity-status{display:inline-block;padding:5px 9px;border-radius:10px;font-size:11px;font-weight:700}.activity-status.available{background:rgba(50,213,131,.14);color:var(--green)}.activity-status.unavailable{background:rgba(255,100,117,.13);color:var(--red)}
 </style></head><body><header class="header"><div><h1> Apple Stock Watcher V4.5</h1><p class="sub">{{products|length}} configured products • US / CA pickup availability • dashboard refresh 30 s</p></div><button type="button" id="themeToggle" class="theme-toggle" aria-label="Changer le thème">☀ Mode clair</button></header>
 
 <div class="search-panel">
@@ -440,6 +441,21 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
     <div id="searchCount"></div>
 </div>
 <div class="summary"><b>Global:</b> {{latest.status|upper}} &nbsp; • &nbsp; <b>Dernier check:</b> {{latest.checked_at or '—'}} &nbsp; • &nbsp; <b>Intervalle:</b> ~{{interval}} s{% if latest.error %}<div class="error">⚠ {{latest.error}}</div>{% endif %}</div>
+<div class="activity-panel">
+<h2>Recent stock changes</h2>
+<p class="meta">Observed availability changes, including first-run availability. Latest events first.</p>
+{% if history %}
+<div class="activity-events">
+{% for e in history %}
+<div class="activity-event">
+<span class="activity-status {{e.type}}">{{'IN STOCK' if e.type=='available' else 'SOLD OUT'}}</span>
+<span>{{e.product or e.product_id}} · Apple {{e.store or e.store_id}}{% if e.city %}, {{e.city}}{% endif %}</span>
+<small>{{e.at}}</small>
+</div>
+{% endfor %}
+</div>
+{% else %}<div class="meta">No stock changes recorded yet. Monitoring will populate this automatically.</div>{% endif %}
+</div>
 <div class="filters" aria-label="Filtrer les disponibilités"><button type="button" class="filter-btn active" data-filter="all" aria-pressed="true">Tous</button><button type="button" class="filter-btn" data-filter="available" aria-pressed="false">● Disponibles</button><button type="button" class="filter-btn" data-filter="unavailable" aria-pressed="false">● En rupture</button><button type="button" class="filter-btn" data-filter="unknown" aria-pressed="false">● Inconnus</button><button type="button" class="filter-btn" data-filter="priority" aria-pressed="false">★ Prioritaires</button></div>
 <div id="emptySearch" class="empty-search">Aucun magasin ne correspond à cette recherche.</div>
 {% for pid,p in products.items() %}<div class="section"><h2>{{'🇺🇸' if p.market=='US' else '🇨🇦'}} {{p.name}}</h2><div class="meta">SKU {{p.part}} • {{'$' if p.currency in ['USD','CAD'] else ''}}{{'%.2f'|format(p.price)}} {{p.currency}}{% if p.market=='US' %} • US priority store {{priority_us}}{% else %} • CA target store {{target_ca or "all"}}{% endif %}</div><div class="grid">
@@ -490,11 +506,15 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 @app.route("/")
 def home():
     with lock: snap = dict(latest); snap["items"] = list(latest.get("items",[]))
-    return render_template_string(HTML, latest=snap, products=PRODUCTS, interval=INTERVAL, priority_us=US_PRIORITY_STORE, target_ca=CA_TARGET_STORE)
+    return render_template_string(HTML, latest=snap, products=PRODUCTS, interval=INTERVAL, priority_us=US_PRIORITY_STORE, target_ca=CA_TARGET_STORE, history=read_history(HISTORY_FILE, limit=20))
 
 @app.route("/api/status")
 def api_status():
     with lock: return jsonify(latest)
+
+@app.route("/api/history")
+def api_history():
+    return jsonify({"events": read_history(HISTORY_FILE, limit=100)})
 
 @app.route("/health")
 def health(): return jsonify({"ok":True,"version":"4.5"})
