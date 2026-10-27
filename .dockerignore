@@ -11,3 +11,5 @@ __pycache__
 *.pyc
 history*.json
 history*.json.tmp
+config.json.bak
+.watcher-config-*.tmp
