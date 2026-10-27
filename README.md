@@ -2,13 +2,15 @@
 
 An independent, unofficial, self-hosted Apple Store pickup availability checker. Includes a Flask dashboard, Discord alerts on stock changes, selectable product SKUs, optional EUR conversions, and tax estimates. **It does not purchase or reserve products.** Not affiliated with Apple.
 
-## Long-term vision: worldwide, every Apple Retail Store
+## Long-term vision: worldwide monitoring by postal code or city
 
-The project's main long-term goal is **global, per-store pickup availability monitoring**, not only nearby US and Canadian stores. Users should be able to browse all verified official Apple Retail Store locations country by country, select an individual store, a city, a country, or an opt-in global search, and configure per-product/store alerts. Local product variants and SKUs differ across regions; the catalog and pickup query paths must be verified per country.
+The long-term goal is to let anyone check pickup availability for selected Apple products in **supported countries worldwide**, by entering a **country plus a postal code or city**. Users will be able to add multiple areas and, for each area, monitor all returned official Apple Retail Stores or select individual stores.
 
-**Current status:** the implemented live stock checker supports US and Canadian Apple Store queries only. Worldwide store indexing, catalogs and full regional validation are **not available yet**. Stores cannot be declared "out of stock" if their last check failed or was not performed. Global searches will need batching, caching and conservative scheduling instead of continuously polling every possible product/store combination.
+Multiple monitoring areas mean more regional requests. The setup wizard will warn that this can increase refresh delays, trigger Apple rate limits, or temporarily interrupt monitoring. The scheduler will deduplicate overlapping stores, bound request volume, and report the last successful check. An unverified or stale result must **never** be shown as a confirmed out-of-stock result.
 
-See [ROADMAP.md](ROADMAP.md) for the phased implementation and coverage criteria.
+**Current status:** the live checker supports US ZIP search areas and one Canadian location only. A worldwide multi-country setup interface, per-country SKU discovery and the global scheduler are **planned, not implemented**. A search area may return nearby stores, not every Apple Store in a country; broader coverage requires additional areas.
+
+See [ROADMAP.md](ROADMAP.md) for the implementation plan and validation criteria.
 
 ## Requirements
 
