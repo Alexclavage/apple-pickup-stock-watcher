@@ -20,7 +20,8 @@ This roadmap is directional, not a promise that a feature already exists.
 
 ## P1 — Easier first-time experience
 
-- [ ] Guided setup tool for choosing locations and validating regional SKUs
+- [x] Local browser wizard for products, stores, prices and alert preferences (SKUs still provided manually)
+- [ ] Optional discovery/validation of regional product SKUs using verifiable public sources
 - [ ] Clearer dashboard freshness indicators and per-store last successful check
 - [ ] Browser filtering that persists across auto-refresh
 - [ ] Optional first-run notification suppression and quiet hours
