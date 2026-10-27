@@ -41,7 +41,7 @@ class StockLogicTests(unittest.TestCase):
         unavailable = {"key": "example:R999", "status": "unavailable"}
         with tempfile.TemporaryDirectory() as directory:
             state_file = Path(directory) / "state.json"
-            with patch.object(watcher, "STATE_FILE", state_file):
+            with patch.object(watcher, "STATE_FILE", state_file), patch.object(watcher, "HISTORY_FILE", Path(directory) / "history.json"):
                 with patch.object(watcher, "send_stock_changes") as send:
                     with patch.object(
                         watcher, "fetch_all",
