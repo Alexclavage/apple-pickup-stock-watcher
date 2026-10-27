@@ -28,5 +28,13 @@
   "us_priority_store": "R102",
   "ca_location": "M5B 2H1",
   "ca_target_store": "R121",
-  "ca_tax_rate": 0.13
+  "ca_tax_rate": 0.13,
+  "alert_store_ids": [
+    "R102",
+    "R121"
+  ],
+  "alert_product_ids": [
+    "us_pro_512",
+    "ca_pro_512"
+  ]
 }
