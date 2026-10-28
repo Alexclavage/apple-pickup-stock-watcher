@@ -4,15 +4,16 @@ A monitoring area makes one regional pickup availability request per scan.
 It does not imply coverage of every store in a city or country.
 """
 import re
+from regions import REGIONS, region_for, normalize_location
 
-SUPPORTED_MARKETS = {"US", "CA"}
+SUPPORTED_MARKETS = set(REGIONS)
 MAX_MONITORING_AREAS = 8
 AREA_ID = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]{0,31}$")
 STORE_ID = re.compile(r"^[a-zA-Z0-9_-]{2,20}$")
 US_ZIP = re.compile(r"^[0-9]{5}$")
 
 
-def validate_monitoring_areas(value, products):
+def validate_monitoring_areas(value, products, enable_experimental=False):
     if not isinstance(value, list) or not 1 <= len(value) <= MAX_MONITORING_AREAS:
         raise ValueError(f"monitoring_areas must contain 1-{MAX_MONITORING_AREAS} areas")
     markets_with_products = {p["market"] for p in products.values()}
@@ -30,16 +31,19 @@ def validate_monitoring_areas(value, products):
         seen_ids.add(area_id)
 
         market = raw.get("market")
-        if market not in SUPPORTED_MARKETS:
-            raise ValueError(f"Unsupported country/market for area {area_id}: {market}")
+        try:
+            region_for(market, enable_experimental)
+        except ValueError as exc:
+            raise ValueError(f"Unsupported country/market for area {area_id}: {exc}") from exc
         if market not in markets_with_products:
             raise ValueError(f"Area {area_id} has no configured {market} products")
         location = raw.get("location")
         if not isinstance(location, str) or not 2 <= len(location.strip()) <= 64:
             raise ValueError(f"Area {area_id} needs a location (2-64 characters)")
-        location = " ".join(location.split())
-        if market == "US" and not US_ZIP.fullmatch(location):
-            raise ValueError(f"Area {area_id}: US searches currently require a five-digit ZIP code")
+        try:
+            location = normalize_location(market, location)
+        except ValueError as exc:
+            raise ValueError(f"Area {area_id}: {exc}") from exc
         dedup_key = (market, location.upper())
         if dedup_key in seen_locations:
             raise ValueError(f"Duplicate search location: {market} {location}")
