@@ -168,6 +168,7 @@ def parse_catalog_html(page, market, family):
             "market": market,
             "category": category,
             "family": family,
+            "family_type": raw.get("familyType") if isinstance(raw.get("familyType"), str) else None,
         }
         if len(result) >= MAX_RESULTS:
             break
