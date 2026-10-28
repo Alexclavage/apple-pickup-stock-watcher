@@ -71,6 +71,35 @@ class PollBatchAndConfigPrivacyTests(unittest.TestCase):
             self.assertIn("batch 2", watcher.latest["error"])
             self.assertEqual(len(watcher.latest["items"]), 12)
 
+    def test_recovery_notification_requires_a_fully_verified_cycle(self):
+        sample = {
+            "key": "us:R102", "product_id": "us", "market": "US",
+            "storeNumber": "R102", "status": "unavailable",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            state = Path(directory) / "state.json"
+            state.write_text(json.dumps({
+                "available_keys": [], "watcher_error": True,
+            }), encoding="utf-8")
+            with (
+                patch.object(watcher, "STATE_FILE", state),
+                patch.object(watcher, "HISTORY_FILE", Path(directory) / "history.json"),
+                patch.object(watcher, "send_stock_changes"),
+                patch.object(watcher, "safe_discord") as discord,
+                patch.object(watcher, "fetch_all", side_effect=[
+                    ([sample], ["CA market has not been checked"]),
+                    ([sample], []),
+                ]),
+            ):
+                watcher.poll_once()
+                self.assertEqual(watcher.latest["status"], "partial")
+                self.assertEqual(discord.call_count, 0)
+                self.assertTrue(json.loads(state.read_text())["watcher_error"])
+                watcher.poll_once()
+                self.assertEqual(discord.call_count, 1)
+                self.assertIn("rétabli", discord.call_args.args[0])
+                self.assertFalse(json.loads(state.read_text())["watcher_error"])
+
     def test_store_filter_is_verified_for_every_batch(self):
         products = {f"p{i}": product(i) for i in range(13)}
         calls = []
