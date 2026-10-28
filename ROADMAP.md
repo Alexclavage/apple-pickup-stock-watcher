@@ -19,7 +19,7 @@ This roadmap is directional, not a promise that a feature already exists.
 
 ### Implementation milestones
 
-- [ ] Introduce a region adapter per verified country (endpoint, country code, postal format, local SKU, currency, store metadata, tax policy)
+- [x] Define region/currency/location adapters for established US/CA and opt-in experimental FR/GB (live validation still required)
 - [x] Introduce a reusable **list of market + postal/city monitoring areas** for US and Canada (other countries planned)
 - [x] Read legacy `search_zips` / `ca_location` and migrate automatically when no `monitoring_areas` list exists
 - [x] Let the local setup wizard add, edit and remove up to 8 areas across supported US/CA markets
@@ -29,10 +29,11 @@ This roadmap is directional, not a promise that a feature already exists.
 - [ ] Add a scheduler with per-market rate budgets, pacing, retry backoff, cache and status/freshness metadata
 - [x] Display an explicit multiple-area warning and conservative 8-area cap
 - [x] Stop remaining area requests when Apple rate-limits a scan
-- [ ] Validate regions gradually: US/Canada → France/UK → further European markets → Asia-Pacific and other regions with verifiable responses
+- [ ] Independently validate France and UK pickup queries using real local SKUs and store locations; then promote them from experimental to supported
+- [ ] Expand to other European and Asia-Pacific markets only after verification
 - [ ] Add optional coverage reports and store index **only if** useful for finding gaps; a global authoritative store registry is not required for the basic UX
 
-**Limits:** Apple's pickup endpoints are undocumented and may change or throttle traffic. Product SKUs and supported search formats vary by market, and not all goods can be collected in store. Worldwide coverage is a roadmap goal, **not a current feature**. Today the live checker supports US ZIP searches and one Canadian location.
+**Limits:** Apple's pickup endpoints are undocumented and may change or throttle traffic. Product SKUs and supported search formats vary by market, and not all goods can be collected in store. Worldwide coverage is a roadmap goal, **not a current feature**. US/CA are established; FR/GB are opt-in experimental until validated live.
 
 ## P0 — Reliability and privacy
 

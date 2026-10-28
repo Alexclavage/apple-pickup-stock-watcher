@@ -16,6 +16,7 @@ import tempfile
 
 from flask import Flask, abort, jsonify, render_template_string, request
 from monitoring_areas import MAX_MONITORING_AREAS, legacy_areas, validate_monitoring_areas
+from regions import region_for
 
 
 ROOT = Path(__file__).resolve().parent
@@ -56,6 +57,9 @@ def validate_config(cfg):
     if not isinstance(cfg, dict):
         raise InvalidConfig("Configuration must be an object")
 
+    enable_experimental = cfg.get("enable_experimental_regions", False)
+    if not isinstance(enable_experimental, bool):
+        raise InvalidConfig("enable_experimental_regions must be true or false")
     products = cfg.get("products")
     if not isinstance(products, dict) or not 1 <= len(products) <= 25:
         raise InvalidConfig("Add between 1 and 25 products")
@@ -66,10 +70,12 @@ def validate_config(cfg):
         if not isinstance(item, dict):
             raise InvalidConfig(f"Product {product_id} must be an object")
         market = item.get("market")
-        if market not in ("US", "CA"):
-            raise InvalidConfig(f"Invalid country for {product_id}")
+        try:
+            region = region_for(market, enable_experimental)
+        except ValueError as exc:
+            raise InvalidConfig(f"Invalid country for {product_id}: {exc}") from exc
         currency = item.get("currency")
-        if currency != ("USD" if market == "US" else "CAD"):
+        if currency != region.currency:
             raise InvalidConfig(f"Invalid currency for {product_id}")
         sku = _string(item.get("part"), f"SKU for {product_id}", 32)
         if not SKU.fullmatch(sku):
@@ -113,6 +119,7 @@ def validate_config(cfg):
         raise InvalidConfig("Canadian tax estimate must be between 0 and 1")
 
     output = {
+        "enable_experimental_regions": enable_experimental,
         "products": result,
         "search_zips": valid_zips,
         "allowed_states": states,
@@ -123,7 +130,7 @@ def validate_config(cfg):
     }
     if "monitoring_areas" in cfg:
         try:
-            output["monitoring_areas"] = validate_monitoring_areas(cfg["monitoring_areas"], result)
+            output["monitoring_areas"] = validate_monitoring_areas(cfg["monitoring_areas"], result, enable_experimental=enable_experimental)
         except ValueError as exc:
             raise InvalidConfig(str(exc)) from exc
     for key, regex in (("alert_store_ids", STORE_ID), ("alert_product_ids", PRODUCT_ID)):
@@ -161,7 +168,7 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 </head><body><main>
 <header><small>APPLE STOCK WATCHER / LOCAL SETUP</small><h1>Make it yours.</h1><p>Configure products, stores, prices and alerts without editing JSON.</p></header>
 <div class="info">🔒 This wizard runs only on your computer (127.0.0.1). No webhook secrets are displayed or saved here.</div>
-<section><div class="toolbar"><div><h2>1. Products</h2><p>Use Apple's region-specific SKU. The example values are illustrative, not an automatically updated product catalogue.</p></div><button id="addProduct" type="button">+ Add product</button></div><div id="products"></div></section>
+<section><label class="toggle"><input id="experimentalRegions" type="checkbox"> Enable France/UK preview (experimental)</label><p>Regional pickup requests have not yet been verified by this project's maintainers. Use only real local Apple SKUs and verify results on Apple's website. Other countries remain unavailable.</p><div class="toolbar"><div><h2>1. Products</h2><p>Use Apple's region-specific SKU. The example values are illustrative, not an automatically updated product catalogue.</p></div><button id="addProduct" type="button">+ Add product</button></div><div id="products"></div></section>
 <section>
 <div class="toolbar"><div><h2>2. Monitoring areas</h2><p>Select a country and postal code or city for each area. US currently requires a five-digit ZIP; Canada also accepts a city, but postal codes are recommended. Countries beyond US/Canada will be added as validated.</p></div>
 <button id="addRegion" type="button">+ Add area</button></div>
@@ -190,14 +197,14 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 </main>
 <template id="productTemplate"><article class="entry product-entry"><div class="entry-top"><strong>Product</strong><button type="button" class="remove">Remove</button></div><div class="fields">
 <div><label>Product ID</label><input class="pid" placeholder="us_pro_512" maxlength="40"></div>
-<div><label>Market</label><select class="market"><option value="US">United States</option><option value="CA">Canada</option></select></div>
+<div><label>Market</label><select class="market"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
 <div class="full"><label>Display name</label><input class="pname" placeholder="iPhone 18 Pro 512GB Silver" maxlength="100"></div>
 <div><label>Apple SKU</label><input class="sku" placeholder="MJQ84LL/A" maxlength="32"></div>
 <div><label>Price before tax</label><input class="price" type="number" min="0" max="100000" step=".01"></div>
 </div></article></template>
 <template id="regionTemplate"><article class="entry region-entry"><div class="entry-top"><strong>Monitoring area</strong><button type="button" class="remove">Remove</button></div><div class="fields">
 <div><label>Area ID</label><input class="areaId" placeholder="us_delaware" maxlength="32"></div>
-<div><label>Country</label><select class="country"><option value="US">United States</option><option value="CA">Canada</option></select></div>
+<div><label>Country</label><select class="country"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
 <div><label>ZIP / postal code or city</label><input class="location" placeholder="19702 or M5B 2H1" maxlength="64"></div>
 <div><label>Apple Store IDs (optional; blank = all returned)</label><input class="areaStores" placeholder="R102, R121"></div>
 </div></article></template>
@@ -213,6 +220,7 @@ function productRow(id, p) {
   root.querySelector(".pname").value=p.name||"";
   root.querySelector(".sku").value=p.part||"";
   root.querySelector(".price").value=p.price??"";
+  root.querySelector(".market").addEventListener("change",()=>{if(["FR","GB"].includes(root.querySelector(".market").value)&&!el("experimentalRegions").checked)status("France/UK requires checking the experimental preview box explicitly.",true);});
   root.querySelector(".remove").addEventListener("click",()=>root.remove());
   el("products").appendChild(root);
 }
@@ -233,6 +241,7 @@ function updateAreaWarning(){
 }
 function loadForm(cfg){
   original=cfg; el("products").replaceChildren();el("regions").replaceChildren();
+  el("experimentalRegions").checked=cfg.enable_experimental_regions===true;
   Object.entries(cfg.products||{}).forEach(([id,p])=>productRow(id,p));
   const areas=Object.hasOwn(cfg,"monitoring_areas")?cfg.monitoring_areas:[
     ...Object.entries(cfg.search_zips||{}).map(([name,zip],i)=>({id:"us_"+(i+1),market:"US",location:zip,store_ids:[]})),
@@ -254,6 +263,7 @@ function toggleAlertFields(){
 }
 function collect(){
   const data={...original,products:{}};
+  data.enable_experimental_regions=el("experimentalRegions").checked;
   document.querySelectorAll(".product-entry").forEach(root=>{
     const id=root.querySelector(".pid").value.trim();
     if(!id)throw Error("Every product needs an ID.");
@@ -266,7 +276,7 @@ function collect(){
       name:root.querySelector(".pname").value.trim(),
       part:root.querySelector(".sku").value.trim(),
       price:Number(priceInput),
-      currency:market==="US"?"USD":"CAD"
+      currency:({US:"USD",CA:"CAD",FR:"EUR",GB:"GBP"})[market]
     };
   });
   data.monitoring_areas=[];

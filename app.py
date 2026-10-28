@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template_string
 from history import append_history, read_history, transition_event
 from monitoring_areas import legacy_areas, validate_monitoring_areas, MAX_MONITORING_AREAS
+from regions import REGIONS, region_for
 
 load_dotenv()
 
@@ -43,17 +44,27 @@ CA_LOCATION = "M5B 2H1"
 CONFIG_PATH = Path(os.getenv("WATCHER_CONFIG", "config.json"))
 ALERT_STORE_IDS = None
 ALERT_PRODUCT_IDS = None
+ENABLE_EXPERIMENTAL_REGIONS = False
 if CONFIG_PATH.exists():
     cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     if not isinstance(cfg, dict):
         raise ValueError("Watcher config must be a JSON object")
+    ENABLE_EXPERIMENTAL_REGIONS = cfg.get("enable_experimental_regions", False)
+    if not isinstance(ENABLE_EXPERIMENTAL_REGIONS, bool):
+        raise ValueError("enable_experimental_regions must be a boolean")
     if "products" in cfg:
         products = cfg["products"]
         if not isinstance(products, dict) or not products:
             raise ValueError("products must be a nonempty JSON object")
         for pid, product in products.items():
-            if not isinstance(product, dict) or product.get("market") not in {"US", "CA"}:
-                raise ValueError(f"Invalid market for product {pid}")
+            if not isinstance(product, dict):
+                raise ValueError(f"Invalid product configuration: {pid}")
+            try:
+                region = region_for(product.get("market"), ENABLE_EXPERIMENTAL_REGIONS)
+            except ValueError as exc:
+                raise ValueError(f"Invalid market for product {pid}: {exc}") from exc
+            if product.get("currency") != region.currency:
+                raise ValueError(f"Product {pid} requires currency {region.currency}")
             if not all(product.get(field) for field in ("name", "part", "currency")):
                 raise ValueError(f"Product {pid} must have name, part and currency")
             price = product.get("price")
@@ -87,17 +98,22 @@ if CONFIG_PATH.exists():
             ALERT_PRODUCT_IDS = set(value)
 else:
     CA_TAX_RATE = 0.13
-US_PRODUCT_IDS = [pid for pid, p in PRODUCTS.items() if p["market"] == "US"]
-CA_PRODUCT_IDS = [pid for pid, p in PRODUCTS.items() if p["market"] == "CA"]
+MARKET_PRODUCT_IDS = {market: [pid for pid, p in PRODUCTS.items() if p["market"] == market] for market in REGIONS}
+US_PRODUCT_IDS = MARKET_PRODUCT_IDS["US"]
+CA_PRODUCT_IDS = MARKET_PRODUCT_IDS["CA"]
+if any(p["market"] in {"FR", "GB"} for p in PRODUCTS.values()) and (
+    not CONFIG_PATH.exists() or "monitoring_areas" not in cfg
+):
+    raise ValueError("France/UK products require explicit monitoring_areas in config.json")
 MONITORING_AREAS = (
-    validate_monitoring_areas(cfg["monitoring_areas"], PRODUCTS)
+    validate_monitoring_areas(cfg["monitoring_areas"], PRODUCTS, enable_experimental=ENABLE_EXPERIMENTAL_REGIONS)
     if CONFIG_PATH.exists() and "monitoring_areas" in cfg
     else legacy_areas(SEARCH_ZIPS, CA_LOCATION, CA_TARGET_STORE, PRODUCTS)
 )
 # With several locations, avoid polling as aggressively as a single-location watcher.
 INTERVAL = max(INTERVAL, 300 if len(MONITORING_AREAS) > 1 else 120, 600 if len(MONITORING_AREAS) > 4 else 120)
-if not US_PRODUCT_IDS and not CA_PRODUCT_IDS:
-    raise ValueError("Configure at least one US or CA product")
+if not any(MARKET_PRODUCT_IDS.values()):
+    raise ValueError("Configure at least one product")
 if not 0 <= CA_TAX_RATE <= 1:
     raise ValueError("ca_tax_rate must be a fraction between 0 and 1")
 
@@ -203,6 +219,16 @@ def us_tax_rate(store):
     return None
 
 def money_info(product, store):
+    if product["market"] in {"FR", "GB"}:
+        # Consumer list prices provided by the user are presumed VAT-inclusive.
+        # Itemized VAT is not calculated without verified product/invoice data.
+        price = product["price"]
+        rate, date = get_eur_rate(product["currency"])
+        converted = round(price * rate, 2) if rate is not None else None
+        return {"tax_rate": None, "tax_amount": None, "total": price,
+                "price_eur": converted, "tax_amount_eur": None,
+                "total_eur": converted, "fx_rate": rate, "fx_date": date,
+                "tax_included": True}
     tax = CA_TAX_RATE if product["market"] == "CA" else us_tax_rate(store)
     if tax is None:
         return {"tax_rate":None,"tax_amount":None,"total":None,"price_eur":None,"tax_amount_eur":None,"total_eur":None,"fx_rate":None,"fx_date":None}
@@ -273,8 +299,8 @@ def fetch_all():
     rate_limited = False
     for index, area in enumerate(MONITORING_AREAS):
         market = area["market"]
-        product_ids = US_PRODUCT_IDS if market == "US" else CA_PRODUCT_IDS
-        url = US_URL if market == "US" else CA_URL
+        product_ids = US_PRODUCT_IDS if market == "US" else CA_PRODUCT_IDS if market == "CA" else MARKET_PRODUCT_IDS.get(market, [])
+        url = REGIONS[market].pickup_url
         if not product_ids:
             continue
         try:
@@ -324,7 +350,7 @@ def fetch_all():
     return items, errors
 
 # ========================= DISCORD =========================
-def money_symbol(currency): return "$" if currency in {"USD","CAD"} else currency+" "
+def money_symbol(currency): return {"USD":"$","CAD":"$","EUR":"€","GBP":"£"}.get(currency, currency + " ")
 
 def compact_product_name(item):
     return item["productName"]
@@ -472,7 +498,7 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 @media(max-width:950px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){body{padding:14px}.header{align-items:flex-start}.header h1{font-size:25px}.theme-toggle{padding:9px 11px;font-size:12px}.grid{grid-template-columns:1fr}.section,.summary{padding:16px}.search-panel{padding:12px}}
 
 .activity-event{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 0;border-top:1px solid var(--line);font-size:13px}.activity-event small{color:var(--muted);margin-left:auto}.activity-status{display:inline-block;padding:5px 9px;border-radius:10px;font-size:11px;font-weight:700}.activity-status.available{background:rgba(50,213,131,.14);color:var(--green)}.activity-status.unavailable{background:rgba(255,100,117,.13);color:var(--red)}
-</style></head><body><header class="header"><div><h1> Apple Stock Watcher V4.5</h1><p class="sub">{{products|length}} configured products • US / CA pickup availability • dashboard refresh 30 s</p></div><button type="button" id="themeToggle" class="theme-toggle" aria-label="Changer le thème">☀ Mode clair</button></header>
+</style></head><body><header class="header"><div><h1> Apple Stock Watcher V4.5</h1><p class="sub">{{products|length}} configured products • selected regions pickup availability • dashboard refresh 30 s</p></div><button type="button" id="themeToggle" class="theme-toggle" aria-label="Changer le thème">☀ Mode clair</button></header>
 
 <div class="search-panel">
     <input id="shopSearch" type="search"
@@ -499,9 +525,9 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 </div>
 <div class="filters" aria-label="Filtrer les disponibilités"><button type="button" class="filter-btn active" data-filter="all" aria-pressed="true">Tous</button><button type="button" class="filter-btn" data-filter="available" aria-pressed="false">● Disponibles</button><button type="button" class="filter-btn" data-filter="unavailable" aria-pressed="false">● En rupture</button><button type="button" class="filter-btn" data-filter="unknown" aria-pressed="false">● Inconnus</button><button type="button" class="filter-btn" data-filter="priority" aria-pressed="false">★ Prioritaires</button></div>
 <div id="emptySearch" class="empty-search">Aucun magasin ne correspond à cette recherche.</div>
-{% for pid,p in products.items() %}<div class="section"><h2>{{'🇺🇸' if p.market=='US' else '🇨🇦'}} {{p.name}}</h2><div class="meta">SKU {{p.part}} • {{'$' if p.currency in ['USD','CAD'] else ''}}{{'%.2f'|format(p.price)}} {{p.currency}}{% if p.market=='US' %} • US priority store {{priority_us}}{% else %} • CA target store {{target_ca or "all"}}{% endif %}</div><div class="grid">
+{% for pid,p in products.items() %}<div class="section"><h2>{{ {'US':'🇺🇸','CA':'🇨🇦','FR':'🇫🇷','GB':'🇬🇧'}.get(p.market,'🌍') }} {{p.name}}</h2><div class="meta">SKU {{p.part}} • {{'$' if p.currency in ['USD','CAD'] else ''}}{{'%.2f'|format(p.price)}} {{p.currency}}{% if p.market=='US' %} • US priority store {{priority_us}}{% elif p.market=='CA' %} • CA target store {{target_ca or "all"}}{% endif %}</div><div class="grid">
 {% set rows = latest['items']|selectattr('product_id','equalto',pid)|list %}{% if not rows %}<div class="card unknown"><div class="name">Aucune donnée</div><div class="badge">UNKNOWN / zone non vérifiée</div></div>{% endif %}
-{% for x in rows %}<div class="card {{x.status}} {% if x.storeNumber in [priority_us, target_ca] %}target{% endif %}" data-search="{{ (x.storeName ~ ' ' ~ x.city ~ ' ' ~ x.state ~ ' ' ~ x.storeNumber)|lower|e }}"><div class="name">Apple {{x.storeName}}</div><div>{{x.city}}, {{x.state}} • {{x.distance or '—'}}</div><div class="badge">{{x.status|upper}} — {{x.quote}}</div><div class="sku">{{x.storeNumber}} • {{x.part}}</div><div class="money">Prix: <b>${{'%.2f'|format(x.price)}} {{x.currency}}</b>{% if x.price_eur is not none %} (€{{'%.2f'|format(x.price_eur)}}){% endif %}<br>{% if x.tax_rate is not none %}Taxe: {{'%.3f'|format(x.tax_rate*100)}}% = +${{'%.2f'|format(x.tax_amount)}}{% if x.tax_amount_eur is not none %} (€{{'%.2f'|format(x.tax_amount_eur)}}){% endif %}<br>Total: <b>${{'%.2f'|format(x.total)}} {{x.currency}}</b>{% if x.total_eur is not none %} (€{{'%.2f'|format(x.total_eur)}}){% endif %}{% else %}Taxe/total: inconnu{% endif %}</div></div>{% endfor %}</div></div>{% endfor %}
+{% for x in rows %}<div class="card {{x.status}} {% if x.storeNumber in [priority_us, target_ca] %}target{% endif %}" data-search="{{ (x.storeName ~ ' ' ~ x.city ~ ' ' ~ x.state ~ ' ' ~ x.storeNumber)|lower|e }}"><div class="name">Apple {{x.storeName}}</div><div>{{x.city}}, {{x.state}} • {{x.distance or '—'}}</div><div class="badge">{{x.status|upper}} — {{x.quote}}</div><div class="sku">{{x.storeNumber}} • {{x.part}}</div><div class="money">Prix: <b>{{money_symbol(x.currency)}}{{'%.2f'|format(x.price)}} {{x.currency}}</b>{% if x.price_eur is not none %} (€{{'%.2f'|format(x.price_eur)}}){% endif %}<br>{% if x.tax_rate is not none %}Taxe: {{'%.3f'|format(x.tax_rate*100)}}% = +{{money_symbol(x.currency)}}{{'%.2f'|format(x.tax_amount)}}{% if x.tax_amount_eur is not none %} (€{{'%.2f'|format(x.tax_amount_eur)}}){% endif %}<br>Total: <b>{{money_symbol(x.currency)}}{{'%.2f'|format(x.total)}} {{x.currency}}</b>{% if x.total_eur is not none %} (€{{'%.2f'|format(x.total_eur)}}){% endif %}{% elif x.tax_included %}Prix catalogue TTC indicatif : <b>{{money_symbol(x.currency)}}{{'%.2f'|format(x.total)}} {{x.currency}}</b>{% else %}Taxe/total: inconnu{% endif %}</div></div>{% endfor %}</div></div>{% endfor %}
 
 
 
@@ -547,7 +573,7 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 @app.route("/")
 def home():
     with lock: snap = dict(latest); snap["items"] = list(latest.get("items",[]))
-    return render_template_string(HTML, latest=snap, products=PRODUCTS, interval=INTERVAL, priority_us=US_PRIORITY_STORE, target_ca=CA_TARGET_STORE, history=read_history(HISTORY_FILE, limit=20))
+    return render_template_string(HTML, latest=snap, products=PRODUCTS, interval=INTERVAL, priority_us=US_PRIORITY_STORE, target_ca=CA_TARGET_STORE, history=read_history(HISTORY_FILE, limit=20), money_symbol=money_symbol)
 
 @app.route("/api/status")
 def api_status():
