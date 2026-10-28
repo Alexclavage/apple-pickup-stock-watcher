@@ -1003,6 +1003,12 @@ def create_wizard_app(config_path=None, sample_path=None):
                 if not isinstance(existing, dict):
                     raise InvalidConfig("Existing configuration must be a JSON object")
             data = {**existing, **incoming, **clean}
+            # These are optional *wizard-owned* keys, not unknown legacy
+            # settings. Omitting them means "all" and must remove any old
+            # filter instead of retaining it from the preserved JSON.
+            for option in ("alert_store_ids", "alert_product_ids"):
+                if option not in clean:
+                    data.pop(option, None)
             path.parent.mkdir(parents=True, exist_ok=True)
             # Preserve the most recent working configuration before replacing it.
             if path.is_file():
