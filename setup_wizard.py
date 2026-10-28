@@ -15,6 +15,7 @@ import secrets
 import tempfile
 
 from flask import Flask, abort, jsonify, render_template_string, request
+from monitoring_areas import MAX_MONITORING_AREAS, legacy_areas, validate_monitoring_areas
 
 
 ROOT = Path(__file__).resolve().parent
@@ -94,7 +95,7 @@ def validate_config(cfg):
         if not isinstance(postal, str) or not US_ZIP.fullmatch(postal):
             raise InvalidConfig(f"US ZIP for {name} must contain exactly 5 digits")
         valid_zips[name] = postal
-    if any(item["market"] == "US" for item in result.values()) and not valid_zips:
+    if "monitoring_areas" not in cfg and any(item["market"] == "US" for item in result.values()) and not valid_zips:
         raise InvalidConfig("Add a US ZIP search region for US products")
 
     states = _string_list(cfg.get("allowed_states", []), "Allowed US states", STATE, 51)
@@ -105,7 +106,7 @@ def validate_config(cfg):
             raise InvalidConfig(f"{title} has invalid characters")
 
     ca_postal = _string(cfg.get("ca_location", ""), "Canadian location", 24, empty=True)
-    if any(item["market"] == "CA" for item in result.values()) and not ca_postal:
+    if "monitoring_areas" not in cfg and any(item["market"] == "CA" for item in result.values()) and not ca_postal:
         raise InvalidConfig("Enter a Canadian location when monitoring Canadian products")
     tax = cfg.get("ca_tax_rate", 0.13)
     if isinstance(tax, bool) or not isinstance(tax, (int, float)) or not math.isfinite(tax) or not 0 <= tax <= 1:
@@ -120,6 +121,11 @@ def validate_config(cfg):
         "ca_target_store": ca_store,
         "ca_tax_rate": tax,
     }
+    if "monitoring_areas" in cfg:
+        try:
+            output["monitoring_areas"] = validate_monitoring_areas(cfg["monitoring_areas"], result)
+        except ValueError as exc:
+            raise InvalidConfig(str(exc)) from exc
     for key, regex in (("alert_store_ids", STORE_ID), ("alert_product_ids", PRODUCT_ID)):
         if key in cfg:
             values = _string_list(cfg[key], key, regex)
@@ -150,21 +156,25 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 .entry-top strong{font-size:13px}small{font-size:12px;color:var(--muted)}.info{background:#102218;border:1px solid #225238;padding:11px 15px;border-radius:12px;color:#d6f7df;margin-bottom:16px}
 .actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:20px 0}#message{min-height:22px;color:var(--muted)}.toggle{display:flex;align-items:center;gap:8px;color:var(--text);margin:7px 0 12px}.toggle input{width:auto}
 @media(max-width:750px){.grid,.fields{grid-template-columns:1fr}.full{grid-column:1}section{padding:16px}body{padding:20px 12px}}
+.area-warning{border:1px solid #b18533;background:#30230f;color:#ffd997;padding:14px 16px;border-radius:14px;margin-top:12px}.area-warning p{color:#f0d3a6;margin:4px 0 0}.area-warning[hidden]{display:none}
 </style>
 </head><body><main>
 <header><small>APPLE STOCK WATCHER / LOCAL SETUP</small><h1>Make it yours.</h1><p>Configure products, stores, prices and alerts without editing JSON.</p></header>
 <div class="info">🔒 This wizard runs only on your computer (127.0.0.1). No webhook secrets are displayed or saved here.</div>
 <section><div class="toolbar"><div><h2>1. Products</h2><p>Use Apple's region-specific SKU. The example values are illustrative, not an automatically updated product catalogue.</p></div><button id="addProduct" type="button">+ Add product</button></div><div id="products"></div></section>
+<section>
+<div class="toolbar"><div><h2>2. Monitoring areas</h2><p>Select a country and postal code or city for each area. US currently requires a five-digit ZIP; Canada also accepts a city, but postal codes are recommended. Countries beyond US/Canada will be added as validated.</p></div>
+<button id="addRegion" type="button">+ Add area</button></div>
+<div id="regions"></div>
+<div class="info" id="areaEstimate" role="status" aria-live="polite">Estimated requests: 1 per area per scan.</div>
+<div id="areaWarning" class="area-warning" hidden><strong>⚠ Multiple monitoring areas</strong><p>More areas mean more Apple requests. Monitoring may become slower, return partial results, or be temporarily interrupted by rate limits. The app spaces requests, stops a scan when Apple throttles it, and never reports missed checks as confirmed out-of-stock.</p></div>
+</section>
 <div class="grid">
-<section><div class="toolbar"><div><h2>2. US search regions</h2><p>Search around ZIP codes.</p></div><button id="addRegion" type="button">+ Region</button></div><div id="regions"></div>
-<label for="states">Allowed US states (comma separated)</label><input id="states" placeholder="DE, NY, NJ, PA">
-<label for="priority" style="margin-top:12px">Priority US store ID (optional)</label><input id="priority" placeholder="R102">
-</section>
-<section><h2>3. Canada</h2><p>Canadian store and estimated tax.</p>
-<div class="fields"><div class="full"><label for="caLocation">Postal code or search location</label><input id="caLocation" placeholder="M5B 2H1"></div>
-<div><label for="caStore">Target store ID (blank = all returned)</label><input id="caStore" placeholder="R121"></div>
-<div><label for="caTax">Estimated sales tax (%)</label><input id="caTax" type="number" min="0" max="100" step=".01" placeholder="13"></div></div>
-</section>
+<section><h2>3. United States</h2><p>Advanced: filter which US states may appear in monitoring results.</p>
+<label for="states">Allowed US states (comma-separated, blank = all)</label><input id="states" placeholder="DE, NY, NJ, PA">
+<label for="priority" style="margin-top:12px">Priority US store ID (optional)</label><input id="priority" placeholder="R102"></section>
+<section><h2>Canadian tax estimate</h2><p>Only a configurable estimate, not a nationwide tax rate.</p>
+<label for="caTax">Estimated sales tax (%)</label><input id="caTax" type="number" min="0" max="100" step=".01" placeholder="13"></section>
 </div>
 <section><h2>4. Discord alert filters</h2><p>These filters affect notifications, not what appears on the dashboard. Configure your Discord webhook separately in your private .env file.</p>
 <div class="grid"><div>
@@ -185,7 +195,12 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 <div><label>Apple SKU</label><input class="sku" placeholder="MJQ84LL/A" maxlength="32"></div>
 <div><label>Price before tax</label><input class="price" type="number" min="0" max="100000" step=".01"></div>
 </div></article></template>
-<template id="regionTemplate"><article class="entry region-entry"><div class="entry-top"><strong>Search region</strong><button type="button" class="remove">Remove</button></div><div class="fields"><div><label>Region label</label><input class="regionName" placeholder="DELAWARE" maxlength="32"></div><div><label>ZIP code</label><input class="regionZip" placeholder="19702" inputmode="numeric" maxlength="5"></div></div></article></template>
+<template id="regionTemplate"><article class="entry region-entry"><div class="entry-top"><strong>Monitoring area</strong><button type="button" class="remove">Remove</button></div><div class="fields">
+<div><label>Area ID</label><input class="areaId" placeholder="us_delaware" maxlength="32"></div>
+<div><label>Country</label><select class="country"><option value="US">United States</option><option value="CA">Canada</option></select></div>
+<div><label>ZIP / postal code or city</label><input class="location" placeholder="19702 or M5B 2H1" maxlength="64"></div>
+<div><label>Apple Store IDs (optional; blank = all returned)</label><input class="areaStores" placeholder="R102, R121"></div>
+</div></article></template>
 <script>
 const TOKEN = {{ token | tojson }};
 let original = {};
@@ -201,27 +216,37 @@ function productRow(id, p) {
   root.querySelector(".remove").addEventListener("click",()=>root.remove());
   el("products").appendChild(root);
 }
-function regionRow(name, zip){
+function regionRow(area){
   const root=el("regionTemplate").content.firstElementChild.cloneNode(true);
-  root.querySelector(".regionName").value=name||"";
-  root.querySelector(".regionZip").value=zip||"";
-  root.querySelector(".remove").addEventListener("click",()=>root.remove());
-  el("regions").appendChild(root);
+  root.querySelector(".areaId").value=area.id||"";
+  root.querySelector(".country").value=area.market||"US";
+  root.querySelector(".location").value=area.location||"";
+  root.querySelector(".areaStores").value=(area.store_ids||[]).join(", ");
+  root.querySelector(".remove").addEventListener("click",()=>{root.remove();updateAreaWarning()});
+  root.querySelectorAll("input,select").forEach(input=>input.addEventListener("input",updateAreaWarning));
+  el("regions").appendChild(root);updateAreaWarning();
+}
+function updateAreaWarning(){
+  const count=document.querySelectorAll(".region-entry").length;
+  el("areaWarning").hidden=count<2;
+  el("areaEstimate").textContent="Approximately "+count+" pickup request"+(count===1?"":"s")+" per complete scan (before retries). The app checks areas sequentially. Maximum "+8+" areas.";
 }
 function loadForm(cfg){
   original=cfg; el("products").replaceChildren();el("regions").replaceChildren();
   Object.entries(cfg.products||{}).forEach(([id,p])=>productRow(id,p));
-  Object.entries(cfg.search_zips||{}).forEach(([name,zip])=>regionRow(name,zip));
+  const areas=Object.hasOwn(cfg,"monitoring_areas")?cfg.monitoring_areas:[
+    ...Object.entries(cfg.search_zips||{}).map(([name,zip],i)=>({id:"us_"+(i+1),market:"US",location:zip,store_ids:[]})),
+    ...(Object.values(cfg.products||{}).some(p=>p.market==="CA")&&cfg.ca_location?[{id:"ca_1",market:"CA",location:cfg.ca_location,store_ids:cfg.ca_target_store?[cfg.ca_target_store]:[]}]:[])
+  ];
+  areas.forEach(area=>regionRow(area));
   el("states").value=(cfg.allowed_states||[]).join(", ");
   el("priority").value=cfg.us_priority_store||"";
-  el("caLocation").value=cfg.ca_location||"";
-  el("caStore").value=cfg.ca_target_store||"";
   el("caTax").value=Number(cfg.ca_tax_rate??0.13)*100;
   el("allStores").checked=!Object.hasOwn(cfg,"alert_store_ids");
   el("allProducts").checked=!Object.hasOwn(cfg,"alert_product_ids");
   el("alertStores").value=(cfg.alert_store_ids||[]).join(", ");
   el("alertProducts").value=(cfg.alert_product_ids||[]).join(", ");
-  toggleAlertFields();
+  toggleAlertFields();updateAreaWarning();
 }
 function toggleAlertFields(){
   el("alertStores").disabled=el("allStores").checked;
@@ -244,17 +269,16 @@ function collect(){
       currency:market==="US"?"USD":"CAD"
     };
   });
+  data.monitoring_areas=[];
   document.querySelectorAll(".region-entry").forEach(root=>{
-    const name=root.querySelector(".regionName").value.trim();
-    const zip=root.querySelector(".regionZip").value.trim();
-    if(!name)throw Error("Every region needs a label.");
-    if(Object.hasOwn(data.search_zips,name))throw Error("Duplicate search region: "+name);
-    data.search_zips[name]=zip;
+    const id=root.querySelector(".areaId").value.trim();
+    const market=root.querySelector(".country").value;
+    const location=root.querySelector(".location").value.trim();
+    if(!id)throw Error("Every monitoring area needs an ID.");
+    data.monitoring_areas.push({id,market,location,store_ids:splitIds(root.querySelector(".areaStores").value)});
   });
   data.allowed_states=splitIds(el("states").value).map(s=>s.toUpperCase());
   data.us_priority_store=el("priority").value.trim();
-  data.ca_location=el("caLocation").value.trim();
-  data.ca_target_store=el("caStore").value.trim();
   if(el("caTax").value==="")throw Error("Enter an estimated Canadian tax percentage.");
   data.ca_tax_rate=Number(el("caTax").value)/100;
   if(el("allStores").checked)delete data.alert_store_ids;
@@ -273,7 +297,13 @@ async function start(){
   }catch(error){status(String(error),true);}
 }
 el("addProduct").addEventListener("click",()=>productRow("",{market:"US"}));
-el("addRegion").addEventListener("click",()=>regionRow("",""));
+el("addRegion").addEventListener("click",()=>{
+  const count=document.querySelectorAll(".region-entry").length;
+  if(count>=8){status("Maximum 8 areas to protect Apple endpoints; remove an area first.",true);return}
+  const existing=new Set([...document.querySelectorAll(".areaId")].map(v=>v.value));
+  let n=1;while(existing.has("area_"+n))n++;
+  regionRow({id:"area_"+n,market:"US",location:"",store_ids:[]});
+});
 el("allStores").addEventListener("change",toggleAlertFields);
 el("allProducts").addEventListener("change",toggleAlertFields);
 el("save").addEventListener("click",async()=>{
