@@ -250,6 +250,8 @@ def merge_area_results(existing, current):
     """Conflicting nearby-area observations must not cause a false notification."""
     if existing is None:
         return current
+    if existing.get("quote") == "Conflicting results across monitoring areas":
+        return existing
     old_status = existing["status"]
     new_status = current["status"]
     if old_status == new_status:
@@ -429,10 +431,12 @@ def poll_once():
             + [transition_event(item, "unavailable", checked) for item in newly_unavailable]
         )
         append_history(HISTORY_FILE, changes, max_entries=HISTORY_MAX_EVENTS)
-        if available: overall = "available"
-        elif partial_errors: overall = "partial"
-        elif any(x["status"]=="unknown" for x in items): overall = "partial"
-        else: overall = "unavailable"
+        if partial_errors or any(x["status"] == "unknown" for x in items):
+            overall = "partial"
+        elif available:
+            overall = "available"
+        else:
+            overall = "unavailable"
         with lock:
             latest = {"status":overall,"checked_at":checked,"items":items,"error":" | ".join(partial_errors) if partial_errors else None,"consecutive_errors":0}
         print(checked, f"{len(items)} product/store rows", f"{len(available)} available", ("PARTIAL" if partial_errors else "OK"), flush=True)
