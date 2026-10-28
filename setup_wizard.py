@@ -187,6 +187,11 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 @media(max-width:750px){.grid,.fields{grid-template-columns:1fr}.full{grid-column:1}section{padding:16px}body{padding:20px 12px}}
 .area-warning{border:1px solid #b18533;background:#30230f;color:#ffd997;padding:14px 16px;border-radius:14px;margin-top:12px}.area-warning p{color:#f0d3a6;margin:4px 0 0}.area-warning[hidden]{display:none}
 .model-filters{border:1px solid var(--border);padding:15px;border-radius:15px;background:#191c25;margin:15px 0}.model-filters[hidden]{display:none}.filter-help{font-size:12px;color:var(--muted);padding:4px 0}.model-watch{border:1px solid #315580;background:#142337;border-radius:14px;padding:13px 15px;margin:9px 0;display:flex;gap:12px;align-items:center;justify-content:space-between}.model-watch strong{display:block}.model-watch small{display:block}.model-watch button{flex-shrink:0}.advanced{margin-top:18px}.advanced summary{cursor:pointer;color:#9dbef0;font-weight:600;padding:10px 0}
+.toast-zone{position:fixed;right:20px;bottom:20px;z-index:1000;width:min(390px,calc(100vw - 32px));pointer-events:none}
+.toast-success{background:#123926;border:1px solid #2e9566;color:#e1ffeb;border-radius:14px;padding:13px 17px;box-shadow:0 14px 45px #000a;display:flex;gap:12px;align-items:center;animation:toast-in .2s ease-out}
+.toast-success strong{color:#81e8ae;font-size:19px}.toast-success span{font-size:13px;line-height:1.4}
+@keyframes toast-in{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+.area-subtitle{font-size:12px;color:var(--muted)}.area-entry-title{display:flex;flex-direction:column;gap:2px}
 .catalog-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-top:1px solid var(--border)}.catalog-entry strong{display:block;font-size:13px}.catalog-entry small{display:block}.catalog-entry button{flex-shrink:0}.catalog-list{max-height:330px;overflow:auto;margin:12px 0}.catalog-status{font-size:13px;color:var(--muted);margin:12px 0}
 </style>
 </head><body><main>
@@ -242,7 +247,7 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 </details>
 <section>
 <div class="toolbar"><div><h2>2. Monitoring areas</h2><p>Select a country and postal code or city for each area. US currently requires a five-digit ZIP; Canada also accepts a city, but postal codes are recommended. Countries beyond US/Canada will be added as validated.</p></div>
-<button id="addRegion" type="button">+ Add area</button></div>
+<div class="toolbar"><button id="addRegion" type="button">+ Add area</button><button id="renameAreas" type="button">Rename area IDs from locations</button></div></div>
 <div id="regions"></div>
 <div class="info" id="areaEstimate" role="status" aria-live="polite">Estimated requests: 1 per area per scan.</div>
 <div id="areaWarning" class="area-warning" hidden><strong>⚠ Multiple monitoring areas</strong><p>More areas mean more Apple requests. Monitoring may become slower, return partial results, or be temporarily interrupted by rate limits. The app spaces requests, stops a scan when Apple throttles it, and never reports missed checks as confirmed out-of-stock.</p></div>
@@ -266,15 +271,16 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 <div class="actions"><button class="primary" type="button" id="save">Save private configuration</button><span id="message" role="status" aria-live="polite"></span></div>
 <p>Saved to <code>config.json</code> next to the watcher. Restart the watcher to apply changes. This wizard does not start monitoring or send notifications.</p>
 </main>
+<div id="toastZone" class="toast-zone" role="status" aria-live="polite" aria-atomic="true"></div>
 <template id="productTemplate"><article class="entry product-entry"><div class="entry-top"><strong>Product</strong><button type="button" class="remove">Remove</button></div><div class="fields">
-<div><label>Product ID</label><input class="pid" placeholder="us_pro_512" maxlength="40"></div>
+<div><label>Product ID (auto-generated for selected variants)</label><input class="pid" placeholder="iphone_18_pro_max_512gb_silver_ca" maxlength="40"></div>
 <div><label>Market</label><select class="market"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
 <div class="full"><label>Display name</label><input class="pname" placeholder="iPhone 18 Pro 512GB Silver" maxlength="100"></div>
 <div><label>Apple SKU</label><input class="sku" placeholder="MJQ84LL/A" maxlength="32"></div>
 <div><label>Price before tax</label><input class="price" type="number" min="0" max="100000" step=".01"></div>
 </div></article></template>
-<template id="regionTemplate"><article class="entry region-entry"><div class="entry-top"><strong>Monitoring area</strong><button type="button" class="remove">Remove</button></div><div class="fields">
-<div><label>Area ID</label><input class="areaId" placeholder="us_delaware" maxlength="32"></div>
+<template id="regionTemplate"><article class="entry region-entry"><div class="entry-top"><div class="area-entry-title"><strong class="areaTitle">Monitoring area</strong><span class="area-subtitle">One location can monitor multiple products in this country</span></div><button type="button" class="remove">Remove</button></div><div class="fields">
+<div><label>Area ID (country + postal code / city)</label><input class="areaId" placeholder="us_19702" maxlength="32"></div>
 <div><label>Country</label><select class="country"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
 <div><label>ZIP / postal code or city</label><input class="location" placeholder="19702 or M5B 2H1" maxlength="64"></div>
 <div><label>Apple Store IDs (optional; blank = all returned)</label><input class="areaStores" placeholder="R102, R121"></div>
@@ -284,6 +290,46 @@ const TOKEN = {{ token | tojson }};
 let original = {};
 const el = id => document.getElementById(id);
 const splitIds = value => value.split(",").map(s=>s.trim()).filter(Boolean);
+function slugPart(value){
+  return String(value||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
+    .replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"");
+}
+function productIdForVariant(item,modelId){
+  const model=slugPart(modelId||item.name||"apple").slice(0,23);
+  const storage=slugPart(item.storage).replace(/^([0-9]+)_?(gb|tb)$/,"$1$2");
+  const details=[model,storage,slugPart(item.color)];
+  if(item.carrier)details.push(item.carrier==="unlocked"?"simfree":slugPart(item.carrier));
+  const market=slugPart(item.market||"us");
+  const suffix="_"+market;
+  const head=details.filter(Boolean).join("_").slice(0,40-suffix.length).replace(/_+$/g,"");
+  return (head||"apple_product")+suffix;
+}
+function uniqueId(base,used,maxLength){
+  let id=base.slice(0,maxLength),number=2;
+  while(used.has(id)){
+    const suffix="_"+number++;
+    id=base.slice(0,maxLength-suffix.length).replace(/_+$/g,"")+suffix;
+  }
+  used.add(id);
+  return id;
+}
+function areaIdFromLocation(market,location){
+  const code=slugPart(market||"us");
+  const raw=String(location||"new").trim();
+  const postal=/^[A-Za-z][0-9][A-Za-z]\s?[0-9][A-Za-z][0-9]$/.test(raw);
+  const place=slugPart(postal?raw.replace(/\s/g,""):raw);
+  return (code+"_"+place).slice(0,32).replace(/_+$/g,"");
+}
+function showToast(message){
+  const host=el("toastZone");
+  host.replaceChildren();
+  const toast=document.createElement("div");toast.className="toast-success";
+  const check=document.createElement("strong");check.textContent="✓";
+  const label=document.createElement("span");label.textContent=message;
+  toast.append(check,label);host.append(toast);
+  const current=toast;
+  setTimeout(()=>{if(host.firstChild===current)current.remove();},4200);
+}
 let catalogRows = [];
 function renderCatalog(){
   const container=el("catalogResults");container.replaceChildren();
@@ -300,11 +346,12 @@ function renderCatalog(){
       const already=[...document.querySelectorAll(".product-entry")].some(root=>
         root.querySelector(".market").value===item.market&&root.querySelector(".sku").value.toUpperCase()===item.part.toUpperCase());
       if(already){status("This SKU is already in your product list.",true);return;}
-      const id=(item.market.toLowerCase()+"_"+item.part.replace(/[^a-zA-Z0-9]/g,"_")).slice(0,40);
+      const id=productIdForVariant(item,item.family||item.name);
       const existing=new Set([...document.querySelectorAll(".pid")].map(node=>node.value));
-      let finalId=id,n=2;
-      while(existing.has(finalId)){finalId=(id.slice(0,36)+"_"+n++).slice(0,40);}
-      productRow(finalId,item);status("Added "+item.part+". Review its price before saving.");
+      const finalId=uniqueId(id,existing,40);
+      productRow(finalId,item);
+      status("Added "+item.part+". Review details before saving.");
+      showToast("Added "+item.name+" to your selection. Save to apply.");
       el("advancedProducts").open=true;
       el("products").lastElementChild.scrollIntoView({behavior:"smooth",block:"center"});
     });
@@ -357,7 +404,9 @@ function renderMonitoredModels(){
       document.querySelectorAll(".product-entry").forEach(root=>{
         if(root.dataset.watchModel===model&&root.querySelector(".market").value===market)root.remove();
       });
-      renderMonitoredModels();updateAreaWarning();status("Model removed from the local editor. Save to apply.");
+      renderMonitoredModels();updateAreaWarning();
+      status("Model removed from the local editor. Save to apply.");
+      showToast("Removed "+count+" variant"+(count===1?"":"s")+" of "+model+". Save to apply.");
     });
     row.append(text,remove);container.append(row);
   });
@@ -492,10 +541,8 @@ function applyModelSelection(){
     const duplicate=[...document.querySelectorAll(".product-entry")].some(root=>
       root.querySelector(".market").value===item.market&&root.querySelector(".sku").value.toUpperCase()===item.part.toUpperCase());
     if(duplicate){overlaps++;continue;}
-    const id=(item.market.toLowerCase()+"_"+item.part.replace(/[^a-zA-Z0-9]/g,"_")).slice(0,40);
-    let unique=id,n=2;
-    while(taken.has(unique))unique=(id.slice(0,35)+"_"+n++).slice(0,40);
-    taken.add(unique);
+    const id=productIdForVariant(item,modelId);
+    const unique=uniqueId(id,taken,40);
     productRow(unique,{...item,watch_model:modelId});added++;
   }
   renderMonitoredModels();updateAreaWarning();
@@ -503,6 +550,7 @@ function applyModelSelection(){
   el("modelStatus").textContent=added+" variants prepared for monitoring"+
     (overlaps?" ("+overlaps+" already present)":"")+
     ". "+missing+" prices unconfirmed. Click Save to apply.";
+  if(added>0)showToast("Added "+added+" variant"+(added===1?"":"s")+" to your selection. Save to apply.");
 }
 function productRow(id, p) {
   const root=el("productTemplate").content.firstElementChild.cloneNode(true);
@@ -516,18 +564,45 @@ function productRow(id, p) {
   root.dataset.storage=p.storage||"";
   root.dataset.carrier=p.carrier||"";
   root.querySelector(".market").addEventListener("change",()=>{if(["FR","GB"].includes(root.querySelector(".market").value)&&!el("experimentalRegions").checked)status("France/UK requires checking the experimental preview box explicitly.",true);});
-  root.querySelector(".remove").addEventListener("click",()=>{root.remove();renderMonitoredModels();updateAreaWarning();});
+  root.querySelector(".remove").addEventListener("click",()=>{
+    const name=root.querySelector(".pname").value||root.querySelector(".pid").value||"product";
+    root.remove();renderMonitoredModels();updateAreaWarning();
+    showToast("Removed "+name+". Save to apply.");
+  });
   el("products").appendChild(root);renderMonitoredModels();
+}
+function refreshAreaRow(root){
+  const market=root.querySelector(".country").value;
+  const location=root.querySelector(".location").value.trim();
+  const country=root.querySelector(".country").selectedOptions[0]?.textContent||market;
+  root.querySelector(".areaTitle").textContent=country+(location?" · "+location:" · new location");
+  if(root.dataset.autoAreaId==="true"){
+    const used=new Set([...document.querySelectorAll(".region-entry")].filter(row=>row!==root)
+      .map(row=>row.querySelector(".areaId").value));
+    root.querySelector(".areaId").value=uniqueId(areaIdFromLocation(market,location),used,32);
+  }
+  updateAreaWarning();
 }
 function regionRow(area){
   const root=el("regionTemplate").content.firstElementChild.cloneNode(true);
-  root.querySelector(".areaId").value=area.id||"";
-  root.querySelector(".country").value=area.market||"US";
-  root.querySelector(".location").value=area.location||"";
+  const id=root.querySelector(".areaId"),country=root.querySelector(".country");
+  const location=root.querySelector(".location");
+  root.dataset.autoAreaId=area.autoId||!area.id?"true":"false";
+  id.value=area.id||"";
+  country.value=area.market||"US";
+  location.value=area.location||"";
   root.querySelector(".areaStores").value=(area.store_ids||[]).join(", ");
-  root.querySelector(".remove").addEventListener("click",()=>{root.remove();updateAreaWarning()});
-  root.querySelectorAll("input,select").forEach(input=>input.addEventListener("input",updateAreaWarning));
-  el("regions").appendChild(root);updateAreaWarning();
+  id.addEventListener("input",()=>{root.dataset.autoAreaId="false";updateAreaWarning()});
+  country.addEventListener("change",()=>refreshAreaRow(root));
+  location.addEventListener("input",()=>refreshAreaRow(root));
+  root.querySelector(".remove").addEventListener("click",()=>{
+    const label=root.querySelector(".areaTitle").textContent;
+    root.remove();updateAreaWarning();
+    showToast("Removed area "+label+". Save to apply.");
+  });
+  root.querySelector(".areaStores").addEventListener("input",updateAreaWarning);
+  el("regions").appendChild(root);
+  refreshAreaRow(root);
 }
 function updateAreaWarning(){
   const count=document.querySelectorAll(".region-entry").length;
@@ -628,9 +703,16 @@ el("catalogFilter").addEventListener("input",renderCatalog);
 el("addRegion").addEventListener("click",()=>{
   const count=document.querySelectorAll(".region-entry").length;
   if(count>=8){status("Maximum 8 areas to protect Apple endpoints; remove an area first.",true);return}
-  const existing=new Set([...document.querySelectorAll(".areaId")].map(v=>v.value));
-  let n=1;while(existing.has("area_"+n))n++;
-  regionRow({id:"area_"+n,market:"US",location:"",store_ids:[]});
+  regionRow({market:"US",location:"",store_ids:[],autoId:true});
+});
+el("renameAreas").addEventListener("click",()=>{
+  const roots=[...document.querySelectorAll(".region-entry")];
+  if(!roots.length){status("Add a monitoring area first.",true);return;}
+  roots.forEach(root=>{
+    root.dataset.autoAreaId="true";
+    refreshAreaRow(root);
+  });
+  showToast("Updated "+roots.length+" area IDs using country and location. Save to apply.");
 });
 el("allStores").addEventListener("change",toggleAlertFields);
 el("allProducts").addEventListener("change",toggleAlertFields);
@@ -646,6 +728,7 @@ el("save").addEventListener("click",async()=>{
     if(!r.ok)throw Error(response.error||"Save failed");
     loadForm(response.config);
     status("Saved locally. Restart your watcher to use the new settings.");
+    showToast("Configuration saved. Restart the watcher to apply.");
   }catch(error){status(error.message||String(error),true);}
   finally{button.disabled=false;}
 });

@@ -54,6 +54,14 @@ The UI shows how many actual SKUs match each combination and enforces the existi
 
 If colour/storage/carrier data is missing or the selected combination yields no verifiable SKU, the wizard reports this instead of guessing. Selection is currently one value per attribute (or **All**) and may be repeated to change an existing model subscription. Carrier selection cannot guarantee a prepaid eSIM or a specific activation plan at pickup.
 
+## Clear product IDs, monitoring area names and local confirmation toasts
+
+The wizard creates descriptive **product IDs** when a model variant is selected, using **model → storage → color → optional verified carrier → country**. Example: `iphone_18_pro_max_512gb_silver_ca`. If two Apple SKUs map to the same descriptive name, a short numeric suffix keeps the 40-character ID unique. Existing product IDs are preserved unless you manually edit them.
+
+**Area IDs identify the geographic search**, not the product. One location may monitor many selected models simultaneously; therefore new areas receive IDs such as `us_19702` or `ca_m5b2h1`, rather than a device-specific identifier. A button **Rename area IDs from locations** updates old `us_1`/`ca_1` entries in the editor on request; names already saved in private `config.json` remain unchanged until you explicitly save. Changing a generated area location updates its draft ID automatically; manually edited IDs remain manual.
+
+A small **green toast at the bottom right** confirms adding/removing selected variants, deleting a watched model, changing areas, and saving. Product/area changes are only **draft edits** until you press Save private configuration; restart the running watcher afterward to apply them. The confirmation always explains that distinction.
+
 ## One-click monitoring by Apple model
 
 **Default experience:** in the local setup wizard, first choose your monitoring country/location, then select a model name such as **iPhone 18 Pro** or **iPhone 18 Pro Max** and click **Monitor this model**. The app requests the official regional Apple buy-page catalog, matches the requested model, and adds **every discovered color/storage SKU variant** automatically. It does not ask for a part number or an individual price. The selected model appears as one removable group in the wizard; raw SKUs remain accessible under Advanced.

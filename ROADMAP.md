@@ -59,6 +59,14 @@ This roadmap is directional, not a promise that a feature already exists.
 - [ ] Validate carrier selection behavior against real Apple checkout pages; carrier account activation may be separate from stock SKUs
 - [ ] Provide multiple value selection per dimension (several colours/capacities in one group) when needed
 
+## Human-friendly identifiers and selection feedback
+
+- [x] Generate descriptive product IDs from model, capacity, colour, verified carrier when available and country; preserve existing IDs
+- [x] Generate geographic area IDs from market and ZIP/postal code/city for newly added areas
+- [x] Offer an opt-in one-click rename for existing area IDs without silently altering private configuration
+- [x] Add accessible green bottom-right confirmations for adding/removing selections, changing areas and saving
+- [ ] Allow a custom friendly display title independent of stable internal IDs in the dashboard
+
 ## Model-first configuration
 
 - [x] Select an Apple model name in the local wizard and resolve all *currently discoverable* country-specific SKU variants in one operation
