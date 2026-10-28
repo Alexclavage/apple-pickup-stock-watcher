@@ -103,13 +103,19 @@ def build_model_groups(products, observations, scan_status="starting", checked_a
             for variant in group["variants"]:
                 row = store["items"].get(variant["product_id"])
                 status = row.get("status", "unknown") if row else "unknown"
-                if status not in {"available", "unavailable"}:
+                unconfirmed_negative = scan_status == "partial" and status == "unavailable"
+                if unconfirmed_negative or status not in {"available", "unavailable"}:
                     status = "unknown"
                     has_unknown = True
+                quote = (
+                    "Negative result from a partial scan; awaiting a complete recheck"
+                    if unconfirmed_negative else
+                    str(row.get("quote") or "") if row else "Not returned in this check"
+                )
                 entries.append({
                     **variant,
                     "status": status,
-                    "quote": str(row.get("quote") or "") if row else "Not returned in this check",
+                    "quote": quote,
                     "price": row.get("price", variant["price"]) if row else variant["price"],
                     "total": row.get("total") if row else None,
                     "total_eur": row.get("total_eur") if row else None,

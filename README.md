@@ -177,6 +177,12 @@ For Railway or Docker deployments, use a persistent volume for **both** state an
 
 The dashboard renders its most recent UTC timestamp in the viewer's local browser timezone when JavaScript is available; the original canonical timestamp remains attached for reference.
 
+## Safe stock transitions and Discord log privacy
+
+When any part of a polling cycle is incomplete (an Apple store batch failed, a country was not checked, or an observed variant has unknown status), the watcher can still report **confirmed newly available stock**, but it will **not send an unavailable transition** or remove a previously available key until a subsequent **fully verified cycle**. This avoids false negative notifications while preserving the ability to detect genuine stock-outs on the next complete scan. The overall dashboard status remains partial during such cycles, and the historical event log does not claim a stock-out until it has been confirmed. Likewise, the model dashboard displays **negative responses from partial cycles as unknown/pending recheck**, while retaining confirmed positive observations; a negative is shown as unavailable only following a complete cycle. Multi-batch requests without a fixed Apple Store filter also compare the returned store sets; if the sets differ across batches, coverage is marked partial instead of assuming every SKU was checked at each store.
+
+Webhook delivery errors are logged by **exception type or HTTP status only**. Full exception messages, which may contain a sensitive Discord webhook URL and secret token, are deliberately not printed. Discord credentials must remain in the private environment and are never needed by the visual setup wizard.
+
 ## Additional regression hardening: multi-batch coverage and config privacy
 
 A selection may contain more than one 12-product batch. The watcher now validates **Apple Store coverage for every batch**, not just the combined results for the search area. If a subsequent batch returns no matching store, the overall status is **partial**, and those unverified variants must never be treated as sold out. After an outage, a Discord **recovered** notice is sent only when a later scan has no remaining partial errors or unknown variants; partial progress is not falsely reported as a full recovery. The request budget counts the real number of **configured product IDs sent to Apple**, including repeated SKUs under different IDs, rather than understating the requests by deduplicating part numbers. The setup wizard uses the same estimate.
