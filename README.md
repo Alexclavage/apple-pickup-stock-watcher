@@ -8,7 +8,7 @@ The long-term goal is to let anyone check pickup availability for selected Apple
 
 Multiple monitoring areas mean more regional requests. The setup wizard will warn that this can increase refresh delays, trigger Apple rate limits, or temporarily interrupt monitoring. The scheduler will deduplicate overlapping stores, bound request volume, and report the last successful check. An unverified or stale result must **never** be shown as a confirmed out-of-stock result.
 
-**Current status:** the live checker supports US ZIP search areas and one Canadian location only. A worldwide multi-country setup interface, per-country SKU discovery and the global scheduler are **planned, not implemented**. A search area may return nearby stores, not every Apple Store in a country; broader coverage requires additional areas.
+**Current status:** the US/Canadian monitor supports multiple selected areas. France and the UK now have **opt-in experimental adapters**, but their live responses have not been independently validated by this project. Other countries, automatic SKU discovery and worldwide coverage remain future work. A search area may return nearby stores, not every Apple Store in a country; broader coverage requires additional areas.
 
 See [ROADMAP.md](ROADMAP.md) for the implementation plan and validation criteria.
 
@@ -32,7 +32,7 @@ Set `DISCORD_WEBHOOK` only in your private `.env` file (or deployment environmen
 
 ## Visual setup wizard (local computer only)
 
-The watcher includes a **separate browser-based setup wizard**, so you can manage products, Apple SKUs, US ZIP search areas, Canadian store, estimated tax and Discord alert filters without manually editing JSON.
+The watcher includes a **separate browser-based setup wizard**, so you can manage products, Apple SKUs, selected monitoring areas, estimated tax and Discord alert filters without manually editing JSON.
 
 On Windows CMD, after installing dependencies with the Quick start commands:
 
@@ -46,7 +46,7 @@ On macOS/Linux run `python setup_wizard.py` inside the activated environment. Op
 
 ## Customize products and stores
 
-Edit `config.json`. Each item in `products` requires `market` (`US` or `CA`), `name`, Apple's region-specific `part` / SKU, `price` (number), and `currency`. Set `search_zips` for US searches, with `allowed_states` as a whitelist of results. For Canada, set `ca_location` to a postal code. Set `ca_target_store` to an Apple Store ID, or `""` to include all returned Canadian stores. `us_priority_store` highlights a US store and sends individual notifications.
+Edit `config.json`. Each item in `products` requires `market` (`US`, `CA`, or explicitly enabled experimental `FR` / `GB`), `name`, Apple's region-specific `part` / SKU, `price` (number), and `currency`. Set `search_zips` for US searches, with `allowed_states` as a whitelist of results. For Canada, set `ca_location` to a postal code. Set `ca_target_store` to an Apple Store ID, or `""` to include all returned Canadian stores. `us_priority_store` highlights a US store and sends individual notifications.
 
 The supplied example contains illustrative SKU / price configuration from October 2026; prices, product availability, SKU identifiers, exchange rates and local tax estimates need independent verification. Only US jurisdictions implemented in `us_tax_rate` return tax estimates; unknown US jurisdictions show unknown totals. **Canadian tax is a manually configurable estimate (`ca_tax_rate`, default 0.13), not a nationwide tax rate.**
 
@@ -54,7 +54,7 @@ Without `config.json`, defaults from the original V4.5 are used. Minimum check i
 
 ## Multiple monitoring areas (US and Canada)
 
-Use the **local setup wizard** to add up to **8** monitored regions, each with its own country and location. For US locations, enter a five-digit ZIP; for Canadian locations, use a postal code (recommended) or city. These are the **only two countries verified and supported by the current watcher**. Future market adapters are planned, but the wizard deliberately rejects unsupported countries.
+Use the **local setup wizard** to add up to **8** monitored regions, each with its own country and location. For US locations, enter a five-digit ZIP; for Canadian locations, use a postal code (recommended) or city. US and Canada are the established markets. France and the UK are available as **experimental previews only** with explicit opt-in; other markets are rejected.
 
 You can optionally enter specific Apple Retail Store IDs for each area. Leaving the area store filter blank monitors **all stores returned by Apple's nearby-pickup response**, not every Apple Store in the city or country. Overlapping regions are deduplicated by product and Apple Store ID.
 
@@ -72,6 +72,21 @@ The new `monitoring_areas` field in `config.json` looks like:
 The watcher still accepts **legacy** `search_zips`, `ca_location`, and `ca_target_store` settings whenever `monitoring_areas` is absent. As soon as `monitoring_areas` is present, its area list takes precedence. The wizard retains legacy fields in private configurations for rollback purposes, but old and new fields need not describe the same selected locations. Keep a backup before switching back to an older watcher version.
 
 **Multiple-area warning:** each configured area generally means one additional regional Apple pickup request per scan, and adding locations can lead to slower updates, missed checks and temporary Apple HTTP 429/541 rate limits. The watcher limits the number of areas to 8, staggers requests, slows the polling interval with 2+ areas, and stops the remaining requests in a cycle if Apple throttles the service. It does **not** guarantee continuous per-store monitoring or complete city coverage. If some areas fail, the overall status is `partial`, even when another store appears available. **Partial/unknown is not out of stock.**
+
+## Experimental France and UK support (not yet live-validated)
+
+The regional routing groundwork is available for the following markets:
+
+| Market | Region | Endpoint | Currency | Location |
+| --- | --- | --- | --- | --- |
+| `FR` | France | `/fr/shop/retail/pickup-message` | EUR | French five-digit postal code or city |
+| `GB` | United Kingdom | `/uk/shop/retail/pickup-message` | GBP | UK postcode or city |
+
+To activate these markets, check **Enable France/UK preview (experimental)** in the local setup wizard. Add a product with a **real, region-specific Apple SKU**, then create at least one monitoring area in that country. The wizard saves `enable_experimental_regions: true` into `config.json`. The actual regional endpoint response, product compatibility and precise store coverage have **not** been confirmed by our own live tests.
+
+**Pricing:** entered EUR and GBP product prices are treated as **user-supplied VAT-inclusive retail estimates**. The app does not calculate an itemized French or British VAT amount or promise a verified checkout total. GBP may be converted into EUR using the existing public FX provider. Never treat a failed or missing response as confirmed stock-out.
+
+The beta flag has no effect unless the user selects FR/GB products and areas. It does not change existing US/Canada setups. This is experimental read-only pickup monitoring, not a purchasing or reservation tool.
 
 ## Targeted notifications
 
