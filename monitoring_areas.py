@@ -85,3 +85,13 @@ def legacy_areas(search_zips, ca_location, ca_target_store, products):
             "store_ids": [ca_target_store] if ca_target_store else [],
         })
     return validate_monitoring_areas(result, products)
+
+
+def uncovered_product_markets(products, areas):
+    """Countries with configured SKUs but no matching monitoring area.
+
+    These countries have NOT been checked. Do not report unavailable for them.
+    """
+    selected = {p["market"] for p in products.values()}
+    covered = {area["market"] for area in areas}
+    return sorted(selected - covered)
