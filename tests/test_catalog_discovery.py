@@ -21,6 +21,7 @@ def example_page():
              "price": {"fullPrice": 1399}},
             {"partNumber": "bad SKU", "dimensionCapacity": "256gb"},
             {"partNumber": "FOO4LL/A", "price": {"fullPrice": "unknown"}},
+            {"partNumber": "MJWE4LL/A", "familyType": "iphone18promax", "dimensionCapacity": "1tb", "dimensionColor": "silver"},
         ],
         "sample": {"complex": 'quoted "text" and braces { inside } an escaped JSON string'},
     }
@@ -52,13 +53,14 @@ class CatalogDiscoveryTests(unittest.TestCase):
 
     def test_parses_realistic_bootstrap_without_guessing_price(self):
         rows = catalog.parse_catalog_html(example_page(), "US", "iphone-18-pro")
-        self.assertEqual(len(rows), 3)
+        self.assertEqual(len(rows), 4)
         by_sku = {item["part"]: item for item in rows}
         self.assertIn("512Gb", by_sku["MJQ84LL/A"]["name"])
         self.assertIn("Silver", by_sku["MJQ84LL/A"]["name"])
         self.assertIsNone(by_sku["MJQ84LL/A"]["price"])
         self.assertEqual(by_sku["MJQ74LL/A"]["price"], 1399.0)
         self.assertIsNone(by_sku["FOO4LL/A"]["price"])
+        self.assertIn("iPhone 18 Pro Max", by_sku["MJWE4LL/A"]["name"])
 
     def test_missing_or_ambiguous_data_fails_closed(self):
         with self.assertRaises(catalog.CatalogError):
