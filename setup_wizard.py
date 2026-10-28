@@ -568,15 +568,38 @@ function productRow(id, p) {
   });
   el("products").appendChild(root);renderMonitoredModels();
 }
+function refreshAreaRow(root){
+  const market=root.querySelector(".country").value;
+  const location=root.querySelector(".location").value.trim();
+  const country=root.querySelector(".country").selectedOptions[0]?.textContent||market;
+  root.querySelector(".areaTitle").textContent=country+(location?" · "+location:" · new location");
+  if(root.dataset.autoAreaId==="true"){
+    const used=new Set([...document.querySelectorAll(".region-entry")].filter(row=>row!==root)
+      .map(row=>row.querySelector(".areaId").value));
+    root.querySelector(".areaId").value=uniqueId(areaIdFromLocation(market,location),used,32);
+  }
+  updateAreaWarning();
+}
 function regionRow(area){
   const root=el("regionTemplate").content.firstElementChild.cloneNode(true);
-  root.querySelector(".areaId").value=area.id||"";
-  root.querySelector(".country").value=area.market||"US";
-  root.querySelector(".location").value=area.location||"";
+  const id=root.querySelector(".areaId"),country=root.querySelector(".country");
+  const location=root.querySelector(".location");
+  root.dataset.autoAreaId=area.autoId||!area.id?"true":"false";
+  id.value=area.id||"";
+  country.value=area.market||"US";
+  location.value=area.location||"";
   root.querySelector(".areaStores").value=(area.store_ids||[]).join(", ");
-  root.querySelector(".remove").addEventListener("click",()=>{root.remove();updateAreaWarning()});
-  root.querySelectorAll("input,select").forEach(input=>input.addEventListener("input",updateAreaWarning));
-  el("regions").appendChild(root);updateAreaWarning();
+  id.addEventListener("input",()=>{root.dataset.autoAreaId="false";updateAreaWarning()});
+  country.addEventListener("change",()=>refreshAreaRow(root));
+  location.addEventListener("input",()=>refreshAreaRow(root));
+  root.querySelector(".remove").addEventListener("click",()=>{
+    const label=root.querySelector(".areaTitle").textContent;
+    root.remove();updateAreaWarning();
+    showToast("Removed area "+label+". Save to apply.");
+  });
+  root.querySelector(".areaStores").addEventListener("input",updateAreaWarning);
+  el("regions").appendChild(root);
+  refreshAreaRow(root);
 }
 function updateAreaWarning(){
   const count=document.querySelectorAll(".region-entry").length;
@@ -677,9 +700,16 @@ el("catalogFilter").addEventListener("input",renderCatalog);
 el("addRegion").addEventListener("click",()=>{
   const count=document.querySelectorAll(".region-entry").length;
   if(count>=8){status("Maximum 8 areas to protect Apple endpoints; remove an area first.",true);return}
-  const existing=new Set([...document.querySelectorAll(".areaId")].map(v=>v.value));
-  let n=1;while(existing.has("area_"+n))n++;
-  regionRow({id:"area_"+n,market:"US",location:"",store_ids:[]});
+  regionRow({market:"US",location:"",store_ids:[],autoId:true});
+});
+el("renameAreas").addEventListener("click",()=>{
+  const roots=[...document.querySelectorAll(".region-entry")];
+  if(!roots.length){status("Add a monitoring area first.",true);return;}
+  roots.forEach(root=>{
+    root.dataset.autoAreaId="true";
+    refreshAreaRow(root);
+  });
+  showToast("Updated "+roots.length+" area IDs using country and location. Save to apply.");
 });
 el("allStores").addEventListener("change",toggleAlertFields);
 el("allProducts").addEventListener("change",toggleAlertFields);
@@ -695,6 +725,7 @@ el("save").addEventListener("click",async()=>{
     if(!r.ok)throw Error(response.error||"Save failed");
     loadForm(response.config);
     status("Saved locally. Restart your watcher to use the new settings.");
+    showToast("Configuration saved. Restart the watcher to apply.");
   }catch(error){status(error.message||String(error),true);}
   finally{button.disabled=false;}
 });
