@@ -54,6 +54,14 @@ The UI shows how many actual SKUs match each combination and enforces the existi
 
 If colour/storage/carrier data is missing or the selected combination yields no verifiable SKU, the wizard reports this instead of guessing. Selection is currently one value per attribute (or **All**) and may be repeated to change an existing model subscription. Carrier selection cannot guarantee a prepaid eSIM or a specific activation plan at pickup.
 
+## Model-first monitoring dashboard
+
+The read-only monitoring dashboard (`/`, generally port 8080) now displays **one section per monitored Apple model and country**, not one section per SKU. Each model section summarizes its selected colors/capacities, verified store results and the number of locations with an available variant. A store card opens a variant-by-variant breakdown (availability, Apple SKU, price if supplied). Manually configured products without a model subscription appear as individual sections.
+
+**Status accuracy:** a missing SKU response or missing store remains **UNKNOWN**; it is never counted as confirmed out of stock. Partially completed checks are labelled **partial** even if some store stock is confirmed. After a full watcher error, previously cached rows are not displayed as current verified stock. "Unavailable" only describes **checked Apple Stores**, never every retailer or every store worldwide. Filters and store search still operate on the grouped cards.
+
+The dashboard does **not** automatically start the monitoring worker when visited. Running `setup_wizard.py` separately only edits `config.json`; launch or restart `app.py` to use it. Existing `/api/status` and `/api/history` JSON responses remain unchanged for integrations.
+
 ## Setup status: found, selected, saved, and active
 
 The visual wizard distinguishes four stages so it is always clear what happens after clicking:

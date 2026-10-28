@@ -9,6 +9,7 @@ from history import append_history, read_history, transition_event
 from monitoring_areas import legacy_areas, validate_monitoring_areas, MAX_MONITORING_AREAS
 from regions import REGIONS, region_for
 from model_watch import PRODUCT_BATCH_SIZE, MAX_PRODUCTS, validate_request_budget
+from dashboard_groups import build_model_groups
 
 load_dotenv()
 
@@ -513,12 +514,28 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 .section{padding:22px}.section h2,.activity-panel h2{font-size:clamp(19px,2vw,26px);letter-spacing:-.035em;margin:0 0 8px}.meta{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.7}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{min-width:0;background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:18px;transition:transform .15s,border-color .15s}.card:hover{transform:translateY(-2px)}.card.available{border-color:var(--green);background:linear-gradient(145deg,rgba(30,160,100,.11),var(--panel2) 65%)}.card.unavailable{border-color:var(--red);background:linear-gradient(145deg,rgba(215,60,80,.08),var(--panel2) 65%)}.card.unknown{border-color:var(--line)}.card.target{box-shadow:inset 0 0 0 1px #e5b74b}.name{font-weight:700;font-size:17px;margin-bottom:7px}.card .badge{display:inline-block;border-radius:999px;padding:5px 10px;margin:11px 0;font-weight:700;font-size:11px;letter-spacing:.035em}.available .badge{background:rgba(50,213,131,.14);color:var(--green)}.unavailable .badge{background:rgba(255,100,117,.13);color:var(--red)}.unknown .badge{background:rgba(148,163,184,.16);color:var(--muted)}.card .money{line-height:1.7;font-size:14px;margin-top:10px}.card .sku{font-size:12px;color:var(--muted);overflow-wrap:anywhere}.card>div:nth-child(2){color:var(--muted);font-size:13px}.error{color:var(--red);font-weight:650}.empty-search{display:none;text-align:center;color:var(--muted);padding:28px 12px}.empty-search.visible{display:block}
 @media(max-width:950px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){body{padding:14px}.header{align-items:flex-start}.header h1{font-size:25px}.theme-toggle{padding:9px 11px;font-size:12px}.grid{grid-template-columns:1fr}.section,.summary{padding:16px}.search-panel{padding:12px}}
 
+.model-head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+.model-status{border:1px solid var(--line);padding:7px 12px;border-radius:999px;font-size:12px;font-weight:650;max-width:100%}
+.model-status.available{color:var(--green);border-color:var(--green)}
+.model-status.unavailable{color:var(--red);border-color:var(--red)}
+.model-status.partial,.model-status.unknown{color:var(--muted)}
+.model-note{color:var(--muted);font-size:12px;margin:12px 0}
+.variant-details{border-top:1px solid var(--line);margin:15px 0 0;padding:12px 0 0;color:var(--muted);font-size:13px}
+.variant-details summary{cursor:pointer;color:var(--text);font-weight:600}
+.variant-details ul{padding-left:21px;margin-bottom:0}
+.variant-details li{padding:4px 0;overflow-wrap:anywhere}
+.store-variant-list{margin:8px 0 0;padding:0;list-style:none}
+.store-variant-list li{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding:9px 0}
+.variant-availability{font-weight:650;font-size:12px}
+.variant-availability.available{color:var(--green)}.variant-availability.unavailable{color:var(--red)}.variant-availability.unknown{color:var(--muted)}
+.coverage-notice{margin:10px 0;padding:11px 13px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:13px}
+.store-meta{font-size:12px;color:var(--muted)}
 .activity-event{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 0;border-top:1px solid var(--line);font-size:13px}.activity-event small{color:var(--muted);margin-left:auto}.activity-status{display:inline-block;padding:5px 9px;border-radius:10px;font-size:11px;font-weight:700}.activity-status.available{background:rgba(50,213,131,.14);color:var(--green)}.activity-status.unavailable{background:rgba(255,100,117,.13);color:var(--red)}
 </style></head><body><header class="header"><div><h1> Apple Stock Watcher V4.5</h1><p class="sub">{{products|length}} configured products • selected regions pickup availability • dashboard refresh 30 s</p></div><button type="button" id="themeToggle" class="theme-toggle" aria-label="Changer le thème">☀ Mode clair</button></header>
 
 <div class="search-panel">
     <input id="shopSearch" type="search"
-           placeholder="Rechercher un Apple Store, une ville, un Etat..."
+           placeholder="Rechercher un modèle, Apple Store, une ville..."
            aria-label="Rechercher un Apple Store"
            autocomplete="off">
     <div id="searchCount"></div>
@@ -540,11 +557,61 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 {% else %}<div class="meta">No stock changes recorded yet. Monitoring will populate this automatically.</div>{% endif %}
 </div>
 <div class="filters" aria-label="Filtrer les disponibilités"><button type="button" class="filter-btn active" data-filter="all" aria-pressed="true">Tous</button><button type="button" class="filter-btn" data-filter="available" aria-pressed="false">● Disponibles</button><button type="button" class="filter-btn" data-filter="unavailable" aria-pressed="false">● En rupture</button><button type="button" class="filter-btn" data-filter="unknown" aria-pressed="false">● Inconnus</button><button type="button" class="filter-btn" data-filter="priority" aria-pressed="false">★ Prioritaires</button></div>
-<div id="emptySearch" class="empty-search">Aucun magasin ne correspond à cette recherche.</div>
-{% for pid,p in products.items() %}<div class="section"><h2>{{ {'US':'🇺🇸','CA':'🇨🇦','FR':'🇫🇷','GB':'🇬🇧'}.get(p.market,'🌍') }} {{p.name}}</h2><div class="meta">SKU {{p.part}} • {{'$' if p.currency in ['USD','CAD'] else ''}}{{'%.2f'|format(p.price) if p.price is not none else 'prix à vérifier'}} {{p.currency}}{% if p.market=='US' %} • US priority store {{priority_us}}{% elif p.market=='CA' %} • CA target store {{target_ca or "all"}}{% endif %}</div><div class="grid">
-{% set rows = latest['items']|selectattr('product_id','equalto',pid)|list %}{% if not rows %}<div class="card unknown"><div class="name">Aucune donnée</div><div class="badge">UNKNOWN / zone non vérifiée</div></div>{% endif %}
-{% for x in rows %}<div class="card {{x.status}} {% if x.storeNumber in [priority_us, target_ca] %}target{% endif %}" data-search="{{ (x.storeName ~ ' ' ~ x.city ~ ' ' ~ x.state ~ ' ' ~ x.storeNumber)|lower|e }}"><div class="name">Apple {{x.storeName}}</div><div>{{x.city}}, {{x.state}} • {{x.distance or '—'}}</div><div class="badge">{{x.status|upper}} — {{x.quote}}</div><div class="sku">{{x.storeNumber}} • {{x.part}}</div><div class="money">Prix: <b>{% if x.price is not none %}{{money_symbol(x.currency)}}{{'%.2f'|format(x.price)}} {{x.currency}}{% else %}Non confirmé{% endif %}</b>{% if x.price_eur is not none %} (€{{'%.2f'|format(x.price_eur)}}){% endif %}<br>{% if x.tax_rate is not none %}Taxe: {{'%.3f'|format(x.tax_rate*100)}}% = +{{money_symbol(x.currency)}}{{'%.2f'|format(x.tax_amount)}}{% if x.tax_amount_eur is not none %} (€{{'%.2f'|format(x.tax_amount_eur)}}){% endif %}<br>Total: <b>{{money_symbol(x.currency)}}{{'%.2f'|format(x.total)}} {{x.currency}}</b>{% if x.total_eur is not none %} (€{{'%.2f'|format(x.total_eur)}}){% endif %}{% elif x.tax_included %}Prix catalogue TTC indicatif : <b>{{money_symbol(x.currency)}}{{'%.2f'|format(x.total)}} {{x.currency}}</b>{% else %}Taxe/total: inconnu{% endif %}</div></div>{% endfor %}</div></div>{% endfor %}
-
+<div id="emptySearch" class="empty-search">Aucun magasin confirmé ne correspond aux filtres. Les zones inconnues ne sont pas des ruptures de stock.</div>
+{% for group in groups %}
+<section class="section" data-model="{{group.id|e}}">
+  <div class="model-head">
+    <div>
+      <h2>{{ {'US':'🇺🇸','CA':'🇨🇦','FR':'🇫🇷','GB':'🇬🇧'}.get(group.market,'🌍') }} {{group.title}}</h2>
+      <div class="meta">{{group.market}} · {{group.variant_count}} selected variant{{'s' if group.variant_count != 1 else ''}}
+      {% if group.colors %} · {{group.colors|join(', ')}}{% endif %}
+      {% if group.storages %} · {{group.storages|join(', ')}}{% endif %}</div>
+    </div>
+    <span class="model-status {{group.status}}">{{group.status_label}}</span>
+  </div>
+  {% if not group.reliable %}
+    <div class="coverage-notice">No current verified availability. The watcher may be starting, paused or experiencing an error. Previous results are not shown as confirmed stock.</div>
+  {% elif group.partial %}
+    <div class="coverage-notice">Partial verification: some stores, products or areas may be missing. Missing results do not mean out of stock.</div>
+  {% endif %}
+  <div class="grid">
+  {% for store in group.stores %}
+    <article class="card {{store.status}} {% if store.id in [priority_us, target_ca] %}target{% endif %}"
+       data-search="{{ (group.title ~ ' ' ~ store.name ~ ' ' ~ store.city ~ ' ' ~ store.state ~ ' ' ~ store.id)|lower|e }}">
+      <div class="name">Apple {{store.name}}</div>
+      <div class="store-meta">{{store.city}}{% if store.state %}, {{store.state}}{% endif %} · {{store.id}}</div>
+      <div class="badge">{{store.status_label}}</div>
+      <div class="store-meta">{{store.available}} available · {{store.unavailable}} unavailable · {{store.unknown}} unknown</div>
+      <details class="variant-details">
+        <summary>See {{store.variants|length}} selected variants</summary>
+        <ul class="store-variant-list">
+        {% for v in store.variants %}
+          <li>
+            <span><b>{{v.label}}</b><br><small>{{v.part}}</small></span>
+            <span class="variant-availability {{v.status}}">{{v.status|upper}}
+            {% if v.price is not none %}<br><small>{{money_symbol(v.currency)}}{{'%.2f'|format(v.price)}} {{v.currency}}</small>{% else %}<br><small>Price unconfirmed</small>{% endif %}
+            </span>
+          </li>
+        {% endfor %}
+        </ul>
+      </details>
+    </article>
+  {% else %}
+    <div class="card unknown">
+      <div class="name">No confirmed store observations</div>
+      <div class="badge">UNKNOWN — not a stock-out</div>
+      <p class="store-meta">No verified results for this model in the chosen monitoring areas.</p>
+    </div>
+  {% endfor %}
+  </div>
+  <details class="variant-details">
+    <summary>Show configured model variants ({{group.variant_count}})</summary>
+    <ul>{% for v in group.variants %}
+      <li>{{v.label}} · {{v.part}}{% if v.carrier %} · {{v.carrier}}{% endif %}</li>
+    {% endfor %}</ul>
+  </details>
+</section>
+{% endfor %}
 
 
 <script id="watcher-redesign-js">
@@ -589,7 +656,8 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 @app.route("/")
 def home():
     with lock: snap = dict(latest); snap["items"] = list(latest.get("items",[]))
-    return render_template_string(HTML, latest=snap, products=PRODUCTS, interval=INTERVAL, priority_us=US_PRIORITY_STORE, target_ca=CA_TARGET_STORE, history=read_history(HISTORY_FILE, limit=20), money_symbol=money_symbol)
+    groups = build_model_groups(PRODUCTS, snap["items"], scan_status=snap.get("status", "starting"), checked_at=snap.get("checked_at"))
+    return render_template_string(HTML, latest=snap, groups=groups, products=PRODUCTS, interval=INTERVAL, priority_us=US_PRIORITY_STORE, target_ca=CA_TARGET_STORE, history=read_history(HISTORY_FILE, limit=20), money_symbol=money_symbol)
 
 @app.route("/api/status")
 def api_status():
