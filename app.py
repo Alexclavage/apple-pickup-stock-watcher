@@ -153,7 +153,11 @@ def safe_discord(message=None, embeds=None):
         r = requests.post(DISCORD_WEBHOOK, json=payload, timeout=15)
         r.raise_for_status()
     except Exception as e:
-        print("Discord error:", e, flush=True)
+        # Requests exceptions can include the complete webhook URL (with its
+        # secret token). Never print URLs or response bodies to console logs.
+        status = getattr(getattr(e, "response", None), "status_code", None)
+        detail = f"HTTP {status}" if isinstance(status, int) else type(e).__name__
+        print(f"Discord delivery error: {detail}", flush=True)
 
 # ========================= FX =========================
 def get_eur_rate(currency):
@@ -456,28 +460,31 @@ def poll_once():
         items, partial_errors = fetch_all()
         available = [x for x in items if x["status"] == "available"]
         previous_available = set(previous.get("available_keys") or [])
-        # backward compatibility: do not import old store-only state as availability for V4.3
+        # A partial scan can report "unavailable" at one store while another
+        # regional/batched request failed. Never clear a previously available
+        # key or send a stock-out alert until the entire cycle has succeeded.
+        # Confirmed "available" observations can still be announced immediately.
+        fully_verified = not partial_errors and all(x["status"] != "unknown" for x in items)
         seen = {x["key"]: x["status"] for x in items}
         current_available = {x["key"] for x in available} | {
-            key for key in previous_available if seen.get(key) in (None, "unknown")
+            key for key in previous_available
+            if not fully_verified or seen.get(key) in (None, "unknown")
         }
         new_available = [x for x in available if x["key"] not in previous_available]
 
-        # Alert only on a confirmed AVAILABLE -> UNAVAILABLE transition.
-        # Missing/UNKNOWN rows (for example during a partial Apple 541) never trigger a false stock-out alert.
         current_by_key = {x["key"]: x for x in items}
         newly_unavailable = []
-        for key in previous_available - current_available:
-            item = current_by_key.get(key)
-            if item and item.get("status") == "unavailable":
-                newly_unavailable.append(item)
+        if fully_verified:
+            for key in previous_available - current_available:
+                item = current_by_key.get(key)
+                if item and item.get("status") == "unavailable":
+                    newly_unavailable.append(item)
 
         send_stock_changes(new_available, newly_unavailable)
 
         # A partial batch/region response is not a complete recovery from an
         # earlier outage. Do not send a misleading "restored" notification
         # until every configured area and selected SKU has been checked.
-        fully_verified = not partial_errors and all(x["status"] != "unknown" for x in items)
         was_in_error = previous.get("watcher_error") is True
         if was_in_error and fully_verified:
             safe_discord("✅ **Apple Stock Watcher V4.5 rétabli**\nLa surveillance fonctionne de nouveau.")
