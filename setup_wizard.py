@@ -418,34 +418,67 @@ async function discoverCatalog(){
 }
 function renderMonitoredModels(){
   const container=el("monitoredModels");container.replaceChildren();
+  const roots=[...document.querySelectorAll(".product-entry")];
   const groups=new Map();
-  document.querySelectorAll(".product-entry").forEach(root=>{
+  const manual=[];
+  for(const root of roots){
     const model=root.dataset.watchModel;
-    if(!model)return;
+    if(!model){manual.push(root);continue;}
     const market=root.querySelector(".market").value;
     const key=market+"|"+model;
-    groups.set(key,(groups.get(key)||0)+1);
-  });
-  groups.forEach((count,key)=>{
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(root);
+  }
+  el("watchSummaryCount").textContent=roots.length+" variant"+(roots.length===1?"":"s")+" selected";
+  el("watchSummaryHelp").textContent=roots.length
+    ? "This is your actual selection. Any change requires Save, then a watcher restart."
+    : "Nothing selected yet. Finding variants is only a preview: click Add selected variants before Save.";
+  for(const [key,variants] of groups){
     const [market,model]=key.split("|");
-    const row=document.createElement("div");row.className="model-watch";
-    const text=document.createElement("div");
+    const row=document.createElement("div");row.className="watch-group";
+    const details=document.createElement("div");
     const name=document.createElement("strong");
     name.textContent=(el("modelPicker").querySelector('option[value="'+model+'"]')?.textContent||model)+" · "+market;
-    const sub=document.createElement("small");sub.textContent=count+" SKU variants selected";
-    text.append(name,sub);
-    const remove=document.createElement("button");remove.className="remove";remove.type="button";remove.textContent="Stop monitoring";
+    const colors=[...new Set(variants.map(root=>root.dataset.color).filter(Boolean))];
+    const capacities=[...new Set(variants.map(root=>root.dataset.storage).filter(Boolean))];
+    const descriptions=[
+      variants.length+" SKU variant"+(variants.length===1?"":"s"),
+      colors.length?colors.slice(0,3).join(", ")+(colors.length>3?" +"+(colors.length-3):""):"colour unspecified",
+      capacities.length?capacities.join(", "):"storage unspecified",
+    ];
+    const info=document.createElement("small");info.textContent=descriptions.join(" · ");
+    details.append(name,info);
+    const remove=document.createElement("button");remove.className="remove";remove.type="button";remove.textContent="Remove";
     remove.addEventListener("click",()=>{
-      document.querySelectorAll(".product-entry").forEach(root=>{
-        if(root.dataset.watchModel===model&&root.querySelector(".market").value===market)root.remove();
-      });
-      renderMonitoredModels();updateAreaWarning();
-      status("Model removed from the local editor. Save to apply.");
-      showToast("Removed "+count+" variant"+(count===1?"":"s")+" of "+model+". Save to apply.");
+      for(const root of variants)root.remove();
+      markDirty();
+      status("Model removed from the editor. Save changes to apply.");
+      showToast("Removed "+variants.length+" variant"+(variants.length===1?"":"s")+" of "+model+". Save to apply.");
     });
-    row.append(text,remove);container.append(row);
+    row.append(details,remove);container.append(row);
+  }
+  if(manual.length){
+    const row=document.createElement("div");row.className="watch-group";
+    const info=document.createElement("div");
+    const title=document.createElement("strong");title.textContent="Other manually configured products";
+    const detail=document.createElement("small");
+    detail.textContent=manual.length+" SKU variant"+(manual.length===1?"":"s")+
+      " · Edit or remove individually in Advanced";
+    info.append(title,detail);row.append(info);container.append(row);
+  }
+  if(!roots.length){
+    const empty=document.createElement("div");empty.className="watch-empty";
+    empty.textContent="No products in your watchlist yet. Select a model, find variants, then click Add selected variants.";
+    container.append(empty);
+  }
+  const areaRows=[...document.querySelectorAll(".region-entry")];
+  const areas=areaRows.map(root=>{
+    const market=root.querySelector(".country").value;
+    const location=root.querySelector(".location").value.trim()||"location not entered";
+    const stores=root.querySelector(".areaStores").value.trim();
+    return market+" "+location+(stores?" · stores "+stores:" · all nearby returned stores");
   });
-  if(groups.size===0){const p=document.createElement("p");p.textContent="No model-level subscriptions yet. Existing individual SKUs are available under Advanced.";container.append(p);}
+  el("watchAreaSummary").textContent="Monitoring areas ("+areas.length+"): "+(areas.join(" | ")||"none configured");
 }
 let modelPreview=null;
 
