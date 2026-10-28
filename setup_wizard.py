@@ -323,7 +323,38 @@ body.has-pending{padding-bottom:95px}
 <script>
 const TOKEN = {{ token | tojson }};
 let original = {};
+let isLoadingConfig=true;
+let hasSavedFile=false;
+let hasUnsavedChanges=false;
 const el = id => document.getElementById(id);
+function refreshSetupState(){
+  const products=document.querySelectorAll(".product-entry").length;
+  const areas=document.querySelectorAll(".region-entry").length;
+  const state=hasUnsavedChanges?"dirty":hasSavedFile?"saved":"example";
+  el("setupState").dataset.state=state;
+  el("setupStateIcon").textContent=hasUnsavedChanges?"●":hasSavedFile?"✓":"○";
+  el("setupStateTitle").textContent=hasUnsavedChanges
+    ?"Changes not saved"
+    :hasSavedFile?"Configuration saved on this computer":"Example configuration — not yet saved";
+  el("setupStateDetail").textContent=hasUnsavedChanges
+    ?products+" selected variants in "+areas+" areas. Save changes, then restart the watcher."
+    :hasSavedFile?"Saved in config.json. Restart the watcher to apply; this page does not check whether monitoring is running."
+    :"This example is not your active setup. Add a model, save a private configuration and restart the watcher.";
+  el("stepFind").classList.toggle("current",!!modelPreview&&!hasUnsavedChanges);
+  el("stepChoose").classList.toggle("current",!!modelPreview);
+  el("stepSave").classList.toggle("current",hasUnsavedChanges);
+  const showDock=hasUnsavedChanges;
+  el("saveDock").hidden=!showDock;
+  document.body.classList.toggle("has-pending",showDock);
+  el("saveDockText").textContent=products+" selected variants · "+areas+" areas · unsaved changes";
+}
+function markDirty(){
+  if(isLoadingConfig)return;
+  hasUnsavedChanges=true;
+  renderMonitoredModels();
+  updateAreaWarning();
+  refreshSetupState();
+}
 const splitIds = value => value.split(",").map(s=>s.trim()).filter(Boolean);
 function slugPart(value){
   return String(value||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
@@ -485,8 +516,10 @@ let modelPreview=null;
 function clearModelPreview(){
   modelPreview=null;
   el("modelOptions").hidden=true;
+  el("previewWarning").hidden=true;
   el("modelStatus").textContent="";
   el("modelCount").textContent="";
+  refreshSetupState();
 }
 function fillFacetSelect(id,values,allLabel){
   const select=el(id);select.replaceChildren();
@@ -547,6 +580,7 @@ function updateModelPreview(){
     (missing?" · "+missing+" prices unknown":"")+
     (count>48?" · exceeds 48-SKU model limit":"");
   el("applyModelFilters").disabled=count===0||count>48;
+  el("applyModelFilters").textContent="2. Add "+count+" selected variant"+(count===1?"":"s")+" to watchlist";
 }
 async function watchSelectedModel(){
   const btn=el("watchModel"),modelId=el("modelPicker").value,market=el("modelMarket").value;
@@ -569,7 +603,9 @@ async function watchSelectedModel(){
     fillFacetSelect("modelStorage",options.storages||[],"All discovered capacities");
     populateCarrierFilter(options);
     el("modelOptions").hidden=false;
+    el("previewWarning").hidden=false;
     updateModelPreview();
+    refreshSetupState();
     el("modelStatus").textContent=result.count+" variants found ("+
       (result.cached?"cached":"fresh")+"). Select filters, then click Add selected variants.";
   }catch(error){el("modelStatus").textContent=String(error.message||error);}
@@ -613,12 +649,19 @@ function applyModelSelection(){
     const unique=uniqueId(id,taken,40);
     productRow(unique,{...item,watch_model:modelId});added++;
   }
-  renderMonitoredModels();updateAreaWarning();
+  markDirty();
   const missing=wanted.filter(x=>x.price===null).length;
   el("modelStatus").textContent=added+" variants prepared for monitoring"+
     (overlaps?" ("+overlaps+" already present)":"")+
     ". "+missing+" prices unconfirmed. Click Save to apply.";
-  if(added>0)showToast("Added "+added+" variant"+(added===1?"":"s")+" to your selection. Save to apply.");
+  if(added>0){
+    showToast("Added "+added+" variant"+(added===1?"":"s")+" to your watchlist. Save to apply.");
+    // A completed selection is no longer an uncommitted preview.
+    modelPreview=null;
+    el("modelOptions").hidden=true;
+    el("previewWarning").hidden=true;
+    el("watchSummary").scrollIntoView({behavior:"smooth",block:"center"});
+  }
 }
 function productRow(id, p) {
   const root=el("productTemplate").content.firstElementChild.cloneNode(true);
@@ -634,7 +677,7 @@ function productRow(id, p) {
   root.querySelector(".market").addEventListener("change",()=>{if(["FR","GB"].includes(root.querySelector(".market").value)&&!el("experimentalRegions").checked)status("France/UK requires checking the experimental preview box explicitly.",true);});
   root.querySelector(".remove").addEventListener("click",()=>{
     const name=root.querySelector(".pname").value||root.querySelector(".pid").value||"product";
-    root.remove();renderMonitoredModels();updateAreaWarning();
+    root.remove();markDirty();
     showToast("Removed "+name+". Save to apply.");
   });
   el("products").appendChild(root);renderMonitoredModels();
@@ -665,12 +708,13 @@ function regionRow(area){
   location.addEventListener("input",()=>refreshAreaRow(root));
   root.querySelector(".remove").addEventListener("click",()=>{
     const label=root.querySelector(".areaTitle").textContent;
-    root.remove();updateAreaWarning();
+    root.remove();markDirty();
     showToast("Removed area "+label+". Save to apply.");
   });
   root.querySelector(".areaStores").addEventListener("input",updateAreaWarning);
   el("regions").appendChild(root);
   refreshAreaRow(root);
+  markDirty();
 }
 function updateAreaWarning(){
   const count=document.querySelectorAll(".region-entry").length;
@@ -689,6 +733,7 @@ function updateAreaWarning(){
     " pickup requests per scan (limit 24; up to 12 SKUs per request). Estimates exclude retries. Maximum 8 areas.";
 }
 function loadForm(cfg){
+  isLoadingConfig=true;
   original=cfg; el("products").replaceChildren();el("regions").replaceChildren();
   el("experimentalRegions").checked=cfg.enable_experimental_regions===true;
   Object.entries(cfg.products||{}).forEach(([id,p])=>productRow(id,p));
@@ -707,6 +752,9 @@ function loadForm(cfg){
   el("alertStores").value=(cfg.alert_store_ids||[]).join(", ");
   el("alertProducts").value=(cfg.alert_product_ids||[]).join(", ");
   toggleAlertFields();updateAreaWarning();renderMonitoredModels();
+  isLoadingConfig=false;
+  hasUnsavedChanges=false;
+  refreshSetupState();
 }
 function toggleAlertFields(){
   el("alertStores").disabled=el("allStores").checked;
@@ -757,6 +805,7 @@ async function start(){
   try{
     const r=await fetch("/api/config",{cache:"no-store"});
     const payload=await r.json();if(!r.ok)throw Error(payload.error||"Cannot read configuration");
+    hasSavedFile=payload.exists===true;
     loadForm(payload.config);
     status(payload.exists?"Existing private configuration loaded.":"Example configuration loaded; save to create your own.");
   }catch(error){status(String(error),true);}
@@ -772,6 +821,7 @@ el("addRegion").addEventListener("click",()=>{
   const count=document.querySelectorAll(".region-entry").length;
   if(count>=8){status("Maximum 8 areas to protect Apple endpoints; remove an area first.",true);return}
   regionRow({market:"US",location:"",store_ids:[],autoId:true});
+  markDirty();
 });
 el("renameAreas").addEventListener("click",()=>{
   const roots=[...document.querySelectorAll(".region-entry")];
@@ -780,9 +830,22 @@ el("renameAreas").addEventListener("click",()=>{
     root.dataset.autoAreaId="true";
     refreshAreaRow(root);
   });
+  markDirty();
   showToast("Updated "+roots.length+" area IDs using country and location. Save to apply.");
 });
 el("allStores").addEventListener("change",toggleAlertFields);
+const previewInputs=new Set(["modelPicker","modelMarket","modelColor","modelStorage","modelCarrier","catalogMarket","catalogFamily","catalogFilter"]);
+function onConfigurationEdit(event){
+  if(isLoadingConfig || previewInputs.has(event.target.id))return;
+  if(event.target.closest(".product-entry") ||
+     event.target.closest(".region-entry") ||
+     ["experimentalRegions","states","priority","caTax","allStores","alertStores","allProducts","alertProducts"].includes(event.target.id)){
+    markDirty();
+  }
+}
+document.addEventListener("input",onConfigurationEdit);
+document.addEventListener("change",onConfigurationEdit);
+el("saveSticky").addEventListener("click",()=>el("save").click());
 el("allProducts").addEventListener("change",toggleAlertFields);
 el("save").addEventListener("click",async()=>{
   const button=el("save");button.disabled=true;
@@ -794,6 +857,7 @@ el("save").addEventListener("click",async()=>{
     });
     const response=await r.json();
     if(!r.ok)throw Error(response.error||"Save failed");
+    hasSavedFile=true;
     loadForm(response.config);
     status("Saved locally. Restart your watcher to use the new settings.");
     showToast("Configuration saved. Restart the watcher to apply.");
