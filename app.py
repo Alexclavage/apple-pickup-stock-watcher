@@ -299,7 +299,7 @@ def fetch_all():
     rate_limited = False
     for index, area in enumerate(MONITORING_AREAS):
         market = area["market"]
-        product_ids = MARKET_PRODUCT_IDS.get(market, [])
+        product_ids = US_PRODUCT_IDS if market == "US" else CA_PRODUCT_IDS if market == "CA" else MARKET_PRODUCT_IDS.get(market, [])
         url = REGIONS[market].pickup_url
         if not product_ids:
             continue
