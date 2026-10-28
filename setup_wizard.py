@@ -637,19 +637,23 @@ function applyModelSelection(){
   const other=current.filter(root=>root.dataset.watchModel!==modelId||root.querySelector(".market").value!==market);
   if(other.length+wanted.length>96){el("modelCount").textContent="Too many SKU variants (96 maximum). Remove another model.";return;}
   const projected=new Map();
+  const existingVariants=new Set();
   for(const root of other){
-    const m=root.querySelector(".market").value;
-    if(!projected.has(m))projected.set(m,new Set());
-    projected.get(m).add(root.querySelector(".sku").value.toUpperCase());
+    const market=root.querySelector(".market").value;
+    const part=root.querySelector(".sku").value.toUpperCase();
+    projected.set(market,(projected.get(market)||0)+1);
+    existingVariants.add(market+"|"+part);
   }
   for(const item of wanted){
-    if(!projected.has(item.market))projected.set(item.market,new Set());
-    projected.get(item.market).add(item.part.toUpperCase());
+    const key=item.market+"|"+item.part.toUpperCase();
+    if(existingVariants.has(key))continue; // Already configured, not added twice.
+    existingVariants.add(key);
+    projected.set(item.market,(projected.get(item.market)||0)+1);
   }
   let estimated=0;
   document.querySelectorAll(".region-entry").forEach(root=>{
-    const m=root.querySelector(".country").value;
-    estimated+=Math.ceil((projected.get(m)?.size||0)/12);
+    const market=root.querySelector(".country").value;
+    estimated+=Math.ceil((projected.get(market)||0)/12);
   });
   if(estimated>24){el("modelCount").textContent=estimated+" Apple requests/scan exceeds the safe limit (24). Remove a model or area.";return;}
   for(const root of current){
@@ -735,15 +739,14 @@ function regionRow(area){
 function updateAreaWarning(){
   const count=document.querySelectorAll(".region-entry").length;
   el("areaWarning").hidden=count<2;
-  const skuCounts=new Map();
+  const configuredCounts=new Map();
   document.querySelectorAll(".product-entry").forEach(root=>{
-    const market=root.querySelector(".market").value,sku=root.querySelector(".sku").value.toUpperCase();
-    if(!skuCounts.has(market))skuCounts.set(market,new Set());
-    if(sku)skuCounts.get(market).add(sku);
+    const market=root.querySelector(".market").value;
+    configuredCounts.set(market,(configuredCounts.get(market)||0)+1);
   });
   let budget=0;
   document.querySelectorAll(".region-entry").forEach(root=>{
-    budget+=Math.ceil((skuCounts.get(root.querySelector(".country").value)?.size||0)/12);
+    budget+=Math.ceil((configuredCounts.get(root.querySelector(".country").value)||0)/12);
   });
   el("areaEstimate").textContent=count+" areas • approximately "+budget+
     " pickup requests per scan (limit 24; up to 12 SKUs per request). Estimates exclude retries. Maximum 8 areas.";
@@ -935,8 +938,9 @@ def create_wizard_app(config_path=None, sample_path=None):
             clean = validate_config(raw)
         except (OSError, ValueError) as exc:
             return jsonify({"error": f"Cannot read {target.name}: {exc}"}), 422
-        # Keep unknown settings in the browser so they survive subsequent saves.
-        return jsonify({"config": {**raw, **clean}, "exists": path.is_file()})
+        # Send only validated, UI-owned fields to the browser. Private
+        # custom settings remain on disk and are merged during saving.
+        return jsonify({"config": clean, "exists": path.is_file()})
 
     @app.post("/api/catalog/model")
     def resolve_model():
@@ -991,7 +995,20 @@ def create_wizard_app(config_path=None, sample_path=None):
         try:
             incoming = request.get_json(silent=True)
             clean = validate_config(incoming)
-            data = {**incoming, **clean}
+            # Preserve unknown local settings without revealing them through
+            # GET /api/config. Old installations may include private keys.
+            existing = {}
+            if path.is_file():
+                existing = json.loads(path.read_text(encoding="utf-8"))
+                if not isinstance(existing, dict):
+                    raise InvalidConfig("Existing configuration must be a JSON object")
+            data = {**existing, **incoming, **clean}
+            # These are optional *wizard-owned* keys, not unknown legacy
+            # settings. Omitting them means "all" and must remove any old
+            # filter instead of retaining it from the preserved JSON.
+            for option in ("alert_store_ids", "alert_product_ids"):
+                if option not in clean:
+                    data.pop(option, None)
             path.parent.mkdir(parents=True, exist_ok=True)
             # Preserve the most recent working configuration before replacing it.
             if path.is_file():
@@ -1010,9 +1027,12 @@ def create_wizard_app(config_path=None, sample_path=None):
                 temp_path.unlink(missing_ok=True)
         except InvalidConfig as exc:
             return jsonify({"error": str(exc)}), 422
+        except ValueError as exc:
+            return jsonify({"error": f"Cannot read existing configuration: {exc}"}), 422
         except OSError as exc:
             return jsonify({"error": f"Could not save local configuration: {exc}"}), 500
-        return jsonify({"saved": True, "config": data})
+        # Never echo potentially sensitive unknown JSON fields to the browser.
+        return jsonify({"saved": True, "config": clean})
 
     return app
 

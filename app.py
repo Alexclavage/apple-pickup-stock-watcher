@@ -314,10 +314,9 @@ def fetch_all():
         if not product_ids:
             continue
         desired = set(area["store_ids"])
-        found_stores = set()
-        batch_failed = False
         for offset in range(0, len(product_ids), PRODUCT_BATCH_SIZE):
             batch_ids = product_ids[offset:offset + PRODUCT_BATCH_SIZE]
+            matched_stores_in_batch = set()
             try:
                 stores = fetch_market(url, area["location"], batch_ids)
                 for raw in stores:
@@ -326,7 +325,7 @@ def fetch_all():
                         continue
                     if market == "US" and ALLOWED_STATES and (raw.get("state") or "").upper() not in ALLOWED_STATES:
                         continue
-                    found_stores.add(store_id)
+                    matched_stores_in_batch.add(store_id)
                     for product_id in batch_ids:
                         item = parse_item(raw, product_id)
                         dedup[item["key"]] = merge_area_results(dedup.get(item["key"]), item)
@@ -334,21 +333,25 @@ def fetch_all():
                 message = str(exc)
                 errors.append(f'{area["id"]} batch {offset // PRODUCT_BATCH_SIZE + 1}: {message}')
                 print(f'{area["id"]}: {message}', flush=True)
-                batch_failed = True
                 if message in {"APPLE_429", "APPLE_541"}:
                     rate_limited = True
                 break
+            # Validate store coverage for each product batch. A successful
+            # first batch cannot prove that later SKU batches were checked.
+            if not matched_stores_in_batch:
+                errors.append(
+                    f'{area["id"]} batch {offset // PRODUCT_BATCH_SIZE + 1}: '
+                    'no matching Apple Stores returned; availability unknown (selected variants not verified)'
+                )
+            elif desired - matched_stores_in_batch:
+                errors.append(
+                    f'{area["id"]} batch {offset // PRODUCT_BATCH_SIZE + 1}: '
+                    'some selected Apple Stores were not returned; selected variants not fully verified'
+                )
             if offset + PRODUCT_BATCH_SIZE < len(product_ids):
                 time.sleep(random.uniform(2.0, 4.0))
         if rate_limited:
             break
-        if not batch_failed:
-            if not found_stores:
-                errors.append(f'{area["id"]}: no matching Apple Stores returned; availability unknown')
-            elif desired and not found_stores.intersection(desired):
-                errors.append(f'{area["id"]}: none of the selected stores was returned by Apple; status unknown')
-            elif desired - found_stores:
-                errors.append(f'{area["id"]}: some selected stores were not returned; status unknown')
         if index < len(MONITORING_AREAS) - 1:
             time.sleep(random.uniform(2.0, 4.0))
 
@@ -471,9 +474,18 @@ def poll_once():
 
         send_stock_changes(new_available, newly_unavailable)
 
-        if previous.get("watcher_error") is True:
+        # A partial batch/region response is not a complete recovery from an
+        # earlier outage. Do not send a misleading "restored" notification
+        # until every configured area and selected SKU has been checked.
+        fully_verified = not partial_errors and all(x["status"] != "unknown" for x in items)
+        was_in_error = previous.get("watcher_error") is True
+        if was_in_error and fully_verified:
             safe_discord("✅ **Apple Stock Watcher V4.5 rétabli**\nLa surveillance fonctionne de nouveau.")
-        save_state({"available_keys":sorted(current_available),"watcher_error":False,"checked_at":checked})
+        save_state({
+            "available_keys": sorted(current_available),
+            "watcher_error": was_in_error and not fully_verified,
+            "checked_at": checked,
+        })
         changes = (
             [transition_event(item, "available", checked) for item in new_available]
             + [transition_event(item, "unavailable", checked) for item in newly_unavailable]

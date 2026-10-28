@@ -94,17 +94,22 @@ def model_catalog_result(model_id, market, catalog_rows):
 
 
 def expected_requests(products, areas):
-    """Conservative upper estimate: one request per 12 distinct SKU/market pairs."""
+    """Conservative request count matching the worker's real batching.
+
+    The worker submits configured product IDs, not deduplicated part numbers.
+    Two configured IDs may reference the same SKU: both occupy batch slots.
+    Counting only unique SKUs would understate the actual Apple requests.
+    """
     if not isinstance(products, dict) or not isinstance(areas, list):
         raise ModelSelectionError("Invalid product or area selection")
-    unique = {}
+    counts = {}
     for product in products.values():
         market = product.get("market")
         sku = product.get("part")
         if not isinstance(market, str) or not isinstance(sku, str):
             raise ModelSelectionError("Invalid product in request budget")
-        unique.setdefault(market, set()).add(sku)
-    return sum(ceil(len(unique.get(area.get("market"), set())) / PRODUCT_BATCH_SIZE) for area in areas)
+        counts[market] = counts.get(market, 0) + 1
+    return sum(ceil(counts.get(area.get("market"), 0) / PRODUCT_BATCH_SIZE) for area in areas)
 
 
 def validate_request_budget(products, areas):

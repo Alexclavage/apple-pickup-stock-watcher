@@ -177,6 +177,12 @@ For Railway or Docker deployments, use a persistent volume for **both** state an
 
 The dashboard renders its most recent UTC timestamp in the viewer's local browser timezone when JavaScript is available; the original canonical timestamp remains attached for reference.
 
+## Additional regression hardening: multi-batch coverage and config privacy
+
+A selection may contain more than one 12-product batch. The watcher now validates **Apple Store coverage for every batch**, not just the combined results for the search area. If a subsequent batch returns no matching store, the overall status is **partial**, and those unverified variants must never be treated as sold out. After an outage, a Discord **recovered** notice is sent only when a later scan has no remaining partial errors or unknown variants; partial progress is not falsely reported as a full recovery. The request budget counts the real number of **configured product IDs sent to Apple**, including repeated SKUs under different IDs, rather than understating the requests by deduplicating part numbers. The setup wizard uses the same estimate.
+
+The local wizard now returns only **validated, known configuration fields** from `/api/config`. Unknown legacy/private fields already present in `config.json` are retained **server-side** when you Save, without being exposed in the browser's configuration response. An existing malformed `config.json` is never silently overwritten by a new save; fix its JSON manually or restore the backup first. As always, credentials belong in private environment variables rather than in `config.json`.
+
 ## Operation and limitations
 
 - `/` dashboard; `/api/status` latest state; `/api/history` recent stock changes; `/health` reports Flask process liveness (not proof of Apple connectivity).
