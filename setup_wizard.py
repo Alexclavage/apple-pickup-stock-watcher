@@ -220,7 +220,7 @@ function productRow(id, p) {
   root.querySelector(".pname").value=p.name||"";
   root.querySelector(".sku").value=p.part||"";
   root.querySelector(".price").value=p.price??"";
-  root.querySelector(".market").addEventListener("change",()=>{if(["FR","GB"].includes(root.querySelector(".market").value))el("experimentalRegions").checked=true;});
+  root.querySelector(".market").addEventListener("change",()=>{if(["FR","GB"].includes(root.querySelector(".market").value)&&!el("experimentalRegions").checked)status("France/UK requires checking the experimental preview box explicitly.",true);});
   root.querySelector(".remove").addEventListener("click",()=>root.remove());
   el("products").appendChild(root);
 }
