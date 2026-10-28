@@ -89,8 +89,8 @@ def _selection_data(page):
 
     # Prefer the live bootstrap over similarly named historical state elsewhere.
     marker = page.find(b"PRODUCT_SELECTION_BOOTSTRAP")
-    search = page[marker:] if marker >= 0 else page
-    for search in (search,):
+    candidates = (page[marker:] if marker >= 0 else page,)
+    for search in candidates:
         for match in DATA_KEY.finditer(search):
             opening = match.end() - 1
             blob = _extract_json_object(search, opening)
