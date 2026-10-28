@@ -18,6 +18,7 @@ from flask import Flask, abort, jsonify, render_template_string, request
 from monitoring_areas import MAX_MONITORING_AREAS, legacy_areas, validate_monitoring_areas
 from regions import region_for
 from catalog_discovery import CatalogError, FAMILIES, fetch_catalog
+from model_watch import MODELS, MAX_PRODUCTS, family_for, model_catalog_result, ModelSelectionError, validate_request_budget
 
 
 ROOT = Path(__file__).resolve().parent
@@ -62,8 +63,8 @@ def validate_config(cfg):
     if not isinstance(enable_experimental, bool):
         raise InvalidConfig("enable_experimental_regions must be true or false")
     products = cfg.get("products")
-    if not isinstance(products, dict) or not 1 <= len(products) <= 25:
-        raise InvalidConfig("Add between 1 and 25 products")
+    if not isinstance(products, dict) or not 1 <= len(products) <= MAX_PRODUCTS:
+        raise InvalidConfig(f"Add between 1 and {MAX_PRODUCTS} product variants")
     result = {}
     for product_id, item in products.items():
         if not isinstance(product_id, str) or not PRODUCT_ID.fullmatch(product_id):
@@ -82,8 +83,11 @@ def validate_config(cfg):
         if not SKU.fullmatch(sku):
             raise InvalidConfig(f"Invalid SKU for {product_id}")
         price = item.get("price")
-        if isinstance(price, bool) or not isinstance(price, (int, float)) or not math.isfinite(price) or not 0 <= price <= 100000:
+        if price is not None and (isinstance(price, bool) or not isinstance(price, (int, float)) or not math.isfinite(price) or not 0 <= price <= 100000):
             raise InvalidConfig(f"Price for {product_id} must be a valid nonnegative number")
+        watch_model = item.get("watch_model")
+        if watch_model is not None and watch_model not in MODELS:
+            raise InvalidConfig(f"Unknown monitored model for {product_id}")
         result[product_id] = {
             "market": market,
             "name": _string(item.get("name"), f"Name for {product_id}", 100),
@@ -91,6 +95,8 @@ def validate_config(cfg):
             "price": price,
             "currency": currency,
         }
+        if watch_model is not None:
+            result[product_id]["watch_model"] = watch_model
 
     zips = cfg.get("search_zips", {})
     if not isinstance(zips, dict) or len(zips) > 20:
@@ -134,6 +140,17 @@ def validate_config(cfg):
             output["monitoring_areas"] = validate_monitoring_areas(cfg["monitoring_areas"], result, enable_experimental=enable_experimental)
         except ValueError as exc:
             raise InvalidConfig(str(exc)) from exc
+    if "monitoring_areas" in output:
+        areas_for_budget = output["monitoring_areas"]
+    else:
+        try:
+            areas_for_budget = legacy_areas(valid_zips, ca_postal, ca_store, result)
+        except ValueError as exc:
+            raise InvalidConfig(str(exc)) from exc
+    try:
+        validate_request_budget(result, areas_for_budget)
+    except ModelSelectionError as exc:
+        raise InvalidConfig(str(exc)) from exc
     for key, regex in (("alert_store_ids", STORE_ID), ("alert_product_ids", PRODUCT_ID)):
         if key in cfg:
             values = _string_list(cfg[key], key, regex)
@@ -429,7 +446,10 @@ def create_wizard_app(config_path=None, sample_path=None):
 
     @app.get("/")
     def index():
-        return render_template_string(WIZARD_HTML, token=csrf_token)
+        return render_template_string(
+            WIZARD_HTML, token=csrf_token,
+            model_choices=[{"id": key, "name": item[0]} for key, item in MODELS.items()],
+        )
 
     @app.get("/api/config")
     def read_config():
@@ -441,6 +461,29 @@ def create_wizard_app(config_path=None, sample_path=None):
             return jsonify({"error": f"Cannot read {target.name}: {exc}"}), 422
         # Keep unknown settings in the browser so they survive subsequent saves.
         return jsonify({"config": {**raw, **clean}, "exists": path.is_file()})
+
+    @app.post("/api/catalog/model")
+    def resolve_model():
+        origin = request.headers.get("Origin")
+        if origin and origin != request.host_url.rstrip("/"):
+            return jsonify({"error": "Request origin not allowed"}), 403
+        if not hmac.compare_digest(request.headers.get("X-Setup-Token", ""), csrf_token):
+            return jsonify({"error": "Setup token missing or invalid"}), 403
+        selection = request.get_json(silent=True)
+        if not isinstance(selection, dict):
+            return jsonify({"error": "Invalid model selection"}), 422
+        try:
+            model_id = selection.get("model_id")
+            market = selection.get("market")
+            family = family_for(model_id)
+            fetched = fetch_catalog(
+                market, family, experimental=selection.get("experimental") is True,
+            )
+            result = model_catalog_result(model_id, market, fetched["items"])
+            result["cached"] = fetched.get("cached", False)
+            return jsonify(result)
+        except (CatalogError, ModelSelectionError, ValueError) as exc:
+            return jsonify({"error": str(exc)}), 422
 
     @app.post("/api/catalog/discover")
     def discover_catalog():
