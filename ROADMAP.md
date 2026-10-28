@@ -20,13 +20,15 @@ This roadmap is directional, not a promise that a feature already exists.
 ### Implementation milestones
 
 - [ ] Introduce a region adapter per verified country (endpoint, country code, postal format, local SKU, currency, store metadata, tax policy)
-- [ ] Replace US ZIP/one Canadian location inputs with a reusable **list of country + postal/city monitoring areas**
-- [ ] Keep backward compatibility or supply a documented migration from `search_zips` / `ca_location`
-- [ ] Make the local setup wizard add, edit, and remove multiple monitoring areas across supported countries
+- [x] Introduce a reusable **list of market + postal/city monitoring areas** for US and Canada (other countries planned)
+- [x] Read legacy `search_zips` / `ca_location` and migrate automatically when no `monitoring_areas` list exists
+- [x] Let the local setup wizard add, edit and remove up to 8 areas across supported US/CA markets
 - [ ] Discover nearby Apple Retail Stores for each area and let the user select individual stores or all returned stores
-- [ ] Deduplicate overlapping store/product combinations and batch requests where supported
+- [x] Deduplicate overlapping store/product combinations and avoid reporting conflicting observations as confirmed stock-out
+- [ ] Add market-specific SKU batching when verified and needed
 - [ ] Add a scheduler with per-market rate budgets, pacing, retry backoff, cache and status/freshness metadata
-- [ ] Show a multiple-area warning and conservative defaults, not an unconditional "unlimited" scan
+- [x] Display an explicit multiple-area warning and conservative 8-area cap
+- [x] Stop remaining area requests when Apple rate-limits a scan
 - [ ] Validate regions gradually: US/Canada → France/UK → further European markets → Asia-Pacific and other regions with verifiable responses
 - [ ] Add optional coverage reports and store index **only if** useful for finding gaps; a global authoritative store registry is not required for the basic UX
 
