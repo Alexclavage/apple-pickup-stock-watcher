@@ -182,13 +182,31 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 .actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:20px 0}#message{min-height:22px;color:var(--muted)}.toggle{display:flex;align-items:center;gap:8px;color:var(--text);margin:7px 0 12px}.toggle input{width:auto}
 @media(max-width:750px){.grid,.fields{grid-template-columns:1fr}.full{grid-column:1}section{padding:16px}body{padding:20px 12px}}
 .area-warning{border:1px solid #b18533;background:#30230f;color:#ffd997;padding:14px 16px;border-radius:14px;margin-top:12px}.area-warning p{color:#f0d3a6;margin:4px 0 0}.area-warning[hidden]{display:none}
+.model-watch{border:1px solid #315580;background:#142337;border-radius:14px;padding:13px 15px;margin:9px 0;display:flex;gap:12px;align-items:center;justify-content:space-between}.model-watch strong{display:block}.model-watch small{display:block}.model-watch button{flex-shrink:0}.advanced{margin-top:18px}.advanced summary{cursor:pointer;color:#9dbef0;font-weight:600;padding:10px 0}
 .catalog-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-top:1px solid var(--border)}.catalog-entry strong{display:block;font-size:13px}.catalog-entry small{display:block}.catalog-entry button{flex-shrink:0}.catalog-list{max-height:330px;overflow:auto;margin:12px 0}.catalog-status{font-size:13px;color:var(--muted);margin:12px 0}
 </style>
 </head><body><main>
 <header><small>APPLE STOCK WATCHER / LOCAL SETUP</small><h1>Make it yours.</h1><p>Configure products, stores, prices and alerts without editing JSON.</p></header>
 <div class="info">🔒 This wizard runs only on your computer (127.0.0.1). No webhook secrets are displayed or saved here.</div>
-<section><label class="toggle"><input id="experimentalRegions" type="checkbox"> Enable France/UK preview (experimental)</label><p>Regional pickup requests have not yet been verified by this project's maintainers. Use only real local Apple SKUs and verify results on Apple's website. Other countries remain unavailable.</p><div class="toolbar"><div><h2>1. Products</h2><p>Use Apple's region-specific SKU. The example values are illustrative, not an automatically updated product catalogue.</p></div><button id="addProduct" type="button">+ Add product</button></div><div id="products"></div></section>
 <section>
+<label class="toggle"><input id="experimentalRegions" type="checkbox"> Enable France/UK preview (experimental)</label>
+<p>France/UK pickup responses still need live verification. Other countries are not supported yet.</p>
+<h2>1. Choose a product model</h2>
+<p>Just choose the model name. The watcher will add every SKU variant discovered for the chosen country (all colours and capacities), within a conservative request budget.</p>
+<div class="fields">
+<div><label for="modelPicker">Apple model</label><select id="modelPicker">{% for model in model_choices %}<option value="{{model.id}}">{{model.name}}</option>{% endfor %}</select></div>
+<div><label for="modelMarket">Country</label><select id="modelMarket"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
+</div>
+<div class="actions"><button id="watchModel" type="button" class="primary">+ Monitor this model</button><span id="modelStatus" class="catalog-status" role="status" aria-live="polite"></span></div>
+<div id="monitoredModels"></div>
+<small>Models are resolved from Apple's public product page when added, not continuously refreshed. Some variants (especially build-to-order Macs and Apple Watch bundles) may not support pickup. Unknown prices remain unknown.</small>
+<details class="advanced" id="advancedProducts"><summary>Advanced: individual SKUs and manual product editing</summary>
+<div class="toolbar"><p>Review exact part numbers, edit a variant, or add your own SKU.</p><button id="addProduct" type="button">+ Add SKU manually</button></div>
+<div id="products"></div>
+</details>
+</section>
+<details class="advanced"><summary>Advanced: browse individual Apple SKUs</summary>
+<div>
 <h2>Discover Apple products — preview</h2>
 <p>Search the live official Apple buying pages on demand. SKU discovery is experimental: model variations and prices can be incomplete or change without notice. You always review the selected entry before saving.</p>
 <div class="fields">
@@ -204,7 +222,8 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 <label for="catalogFilter">Filter discovered variants</label><input id="catalogFilter" type="search" placeholder="Search model, capacity, colour or SKU" disabled>
 <div id="catalogResults" class="catalog-list"></div>
 <small>One official Apple page request at a time, cached for six hours. Missing prices must be entered manually. Apple's store pickup API does not guarantee availability for all products (especially customised Macs and Watch bundles).</small>
-</section>
+</div>
+</details>
 <section>
 <div class="toolbar"><div><h2>2. Monitoring areas</h2><p>Select a country and postal code or city for each area. US currently requires a five-digit ZIP; Canada also accepts a city, but postal codes are recommended. Countries beyond US/Canada will be added as validated.</p></div>
 <button id="addRegion" type="button">+ Add area</button></div>
@@ -270,6 +289,7 @@ function renderCatalog(){
       let finalId=id,n=2;
       while(existing.has(finalId)){finalId=(id.slice(0,36)+"_"+n++).slice(0,40);}
       productRow(finalId,item);status("Added "+item.part+". Review its price before saving.");
+      el("advancedProducts").open=true;
       el("products").lastElementChild.scrollIntoView({behavior:"smooth",block:"center"});
     });
     row.append(info,add);container.append(row);
@@ -298,6 +318,92 @@ async function discoverCatalog(){
     el("catalogStatus").textContent=String(e.message||e);
   }finally{button.disabled=false;}
 }
+function renderMonitoredModels(){
+  const container=el("monitoredModels");container.replaceChildren();
+  const groups=new Map();
+  document.querySelectorAll(".product-entry").forEach(root=>{
+    const model=root.dataset.watchModel;
+    if(!model)return;
+    const market=root.querySelector(".market").value;
+    const key=market+"|"+model;
+    groups.set(key,(groups.get(key)||0)+1);
+  });
+  groups.forEach((count,key)=>{
+    const [market,model]=key.split("|");
+    const row=document.createElement("div");row.className="model-watch";
+    const text=document.createElement("div");
+    const name=document.createElement("strong");
+    name.textContent=(el("modelPicker").querySelector('option[value="'+model+'"]')?.textContent||model)+" · "+market;
+    const sub=document.createElement("small");sub.textContent=count+" SKU variants selected";
+    text.append(name,sub);
+    const remove=document.createElement("button");remove.className="remove";remove.type="button";remove.textContent="Stop monitoring";
+    remove.addEventListener("click",()=>{
+      document.querySelectorAll(".product-entry").forEach(root=>{
+        if(root.dataset.watchModel===model&&root.querySelector(".market").value===market)root.remove();
+      });
+      renderMonitoredModels();updateAreaWarning();status("Model removed from the local editor. Save to apply.");
+    });
+    row.append(text,remove);container.append(row);
+  });
+  if(groups.size===0){const p=document.createElement("p");p.textContent="No model-level subscriptions yet. Existing individual SKUs are available under Advanced.";container.append(p);}
+}
+async function watchSelectedModel(){
+  const btn=el("watchModel"),modelId=el("modelPicker").value,market=el("modelMarket").value;
+  const availableMarkets=new Set([...document.querySelectorAll(".region-entry .country")].map(i=>i.value));
+  if(!availableMarkets.has(market)){el("modelStatus").textContent="Add a monitoring area for "+market+" first.";return;}
+  if(["FR","GB"].includes(market)&&!el("experimentalRegions").checked){
+    el("modelStatus").textContent="Enable experimental France/UK first.";return;
+  }
+  btn.disabled=true;el("modelStatus").textContent="Finding regional variants from Apple…";
+  try{
+    const r=await fetch("/api/catalog/model",{method:"POST",
+      headers:{"Content-Type":"application/json","X-Setup-Token":TOKEN},
+      body:JSON.stringify({market,model_id:modelId,experimental:el("experimentalRegions").checked})});
+    const result=await r.json();
+    if(!r.ok)throw Error(result.error||"Unable to resolve model");
+    const current=[...document.querySelectorAll(".product-entry")];
+    const other=current.filter(root=>root.dataset.watchModel!==modelId||root.querySelector(".market").value!==market);
+    const wanted=result.products||[];
+    if(other.length+wanted.length>96)throw Error("Too many SKU variants (96 maximum). Remove another model.");
+    // Before changing the editor, validate the projected request count.
+    const byMarket=new Map();
+    for(const root of other){
+      const m=root.querySelector(".market").value;byMarket.set(m,(byMarket.get(m)||new Set()).add(root.querySelector(".sku").value));
+    }
+    const projected=new Map();
+    for(const [m,set] of byMarket)projected.set(m,new Set(set));
+    for(const item of wanted){
+      if(!projected.has(item.market))projected.set(item.market,new Set());
+      projected.get(item.market).add(item.part);
+    }
+    let estimated=0;
+    document.querySelectorAll(".region-entry").forEach(root=>{
+      const m=root.querySelector(".country").value;
+      estimated+=Math.ceil((projected.get(m)?.size||0)/12);
+    });
+    if(estimated>24)throw Error("This combination would need "+estimated+" Apple requests per scan (safe limit: 24). Reduce regions or models.");
+    for(const root of current){
+      if(root.dataset.watchModel===modelId&&root.querySelector(".market").value===market)root.remove();
+    }
+    const taken=new Set([...document.querySelectorAll(".pid")].map(x=>x.value));
+    let added=0,overlaps=0;
+    for(const item of wanted){
+      const duplicate=[...document.querySelectorAll(".product-entry")].some(root=>
+        root.querySelector(".market").value===item.market&&root.querySelector(".sku").value.toUpperCase()===item.part.toUpperCase());
+      if(duplicate){overlaps++;continue;}
+      const id=(item.market.toLowerCase()+"_"+item.part.replace(/[^a-zA-Z0-9]/g,"_")).slice(0,40);
+      let unique=id, n=2;
+      while(taken.has(unique))unique=(id.slice(0,35)+"_"+n++).slice(0,40);
+      taken.add(unique);
+      productRow(unique,{...item,watch_model:modelId});added++;
+    }
+    renderMonitoredModels();updateAreaWarning();
+    el("modelStatus").textContent=added+" variants added for "+result.model_name+
+      (overlaps?" ("+overlaps+" already present)":"")+
+      ". "+result.missing_prices+" prices unconfirmed. Click Save to keep this selection.";
+  }catch(error){el("modelStatus").textContent=String(error.message||error);}
+  finally{btn.disabled=false;}
+}
 function productRow(id, p) {
   const root=el("productTemplate").content.firstElementChild.cloneNode(true);
   root.querySelector(".pid").value=id||"";
@@ -305,9 +411,10 @@ function productRow(id, p) {
   root.querySelector(".pname").value=p.name||"";
   root.querySelector(".sku").value=p.part||"";
   root.querySelector(".price").value=p.price??"";
+  root.dataset.watchModel=p.watch_model||"";
   root.querySelector(".market").addEventListener("change",()=>{if(["FR","GB"].includes(root.querySelector(".market").value)&&!el("experimentalRegions").checked)status("France/UK requires checking the experimental preview box explicitly.",true);});
-  root.querySelector(".remove").addEventListener("click",()=>root.remove());
-  el("products").appendChild(root);
+  root.querySelector(".remove").addEventListener("click",()=>{root.remove();renderMonitoredModels();updateAreaWarning();});
+  el("products").appendChild(root);renderMonitoredModels();
 }
 function regionRow(area){
   const root=el("regionTemplate").content.firstElementChild.cloneNode(true);
@@ -333,6 +440,8 @@ function loadForm(cfg){
     ...(Object.values(cfg.products||{}).some(p=>p.market==="CA")&&cfg.ca_location?[{id:"ca_1",market:"CA",location:cfg.ca_location,store_ids:cfg.ca_target_store?[cfg.ca_target_store]:[]}]:[])
   ];
   areas.forEach(area=>regionRow(area));
+  const markets=[...new Set(areas.map(area=>area.market))];
+  if(markets.length===1)el("modelMarket").value=markets[0];
   el("states").value=(cfg.allowed_states||[]).join(", ");
   el("priority").value=cfg.us_priority_store||"";
   el("caTax").value=Number(cfg.ca_tax_rate??0.13)*100;
@@ -340,7 +449,7 @@ function loadForm(cfg){
   el("allProducts").checked=!Object.hasOwn(cfg,"alert_product_ids");
   el("alertStores").value=(cfg.alert_store_ids||[]).join(", ");
   el("alertProducts").value=(cfg.alert_product_ids||[]).join(", ");
-  toggleAlertFields();updateAreaWarning();
+  toggleAlertFields();updateAreaWarning();renderMonitoredModels();
 }
 function toggleAlertFields(){
   el("alertStores").disabled=el("allStores").checked;
@@ -355,14 +464,15 @@ function collect(){
     if(Object.hasOwn(data.products,id))throw Error("Duplicate product ID: "+id);
     const market=root.querySelector(".market").value;
     const priceInput=root.querySelector(".price").value;
-    if(priceInput==="")throw Error("Enter a price for "+id);
+    // Unknown prices from Apple are allowed: availability can still be monitored.
     data.products[id]={
       market,
       name:root.querySelector(".pname").value.trim(),
       part:root.querySelector(".sku").value.trim(),
-      price:Number(priceInput),
+      price:priceInput===""?null:Number(priceInput),
       currency:({US:"USD",CA:"CAD",FR:"EUR",GB:"GBP"})[market]
     };
+    if(root.dataset.watchModel)data.products[id].watch_model=root.dataset.watchModel;
   });
   data.monitoring_areas=[];
   document.querySelectorAll(".region-entry").forEach(root=>{
@@ -392,6 +502,7 @@ async function start(){
   }catch(error){status(String(error),true);}
 }
 el("addProduct").addEventListener("click",()=>productRow("",{market:"US"}));
+el("watchModel").addEventListener("click",watchSelectedModel);
 el("findCatalog").addEventListener("click",discoverCatalog);
 el("catalogFilter").addEventListener("input",renderCatalog);
 el("addRegion").addEventListener("click",()=>{
