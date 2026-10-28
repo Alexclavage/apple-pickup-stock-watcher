@@ -429,7 +429,18 @@ function regionRow(area){
 function updateAreaWarning(){
   const count=document.querySelectorAll(".region-entry").length;
   el("areaWarning").hidden=count<2;
-  el("areaEstimate").textContent="Approximately "+count+" pickup request"+(count===1?"":"s")+" per complete scan (before retries). The app checks areas sequentially. Maximum "+8+" areas.";
+  const skuCounts=new Map();
+  document.querySelectorAll(".product-entry").forEach(root=>{
+    const market=root.querySelector(".market").value,sku=root.querySelector(".sku").value.toUpperCase();
+    if(!skuCounts.has(market))skuCounts.set(market,new Set());
+    if(sku)skuCounts.get(market).add(sku);
+  });
+  let budget=0;
+  document.querySelectorAll(".region-entry").forEach(root=>{
+    budget+=Math.ceil((skuCounts.get(root.querySelector(".country").value)?.size||0)/12);
+  });
+  el("areaEstimate").textContent=count+" areas • approximately "+budget+
+    " pickup requests per scan (limit 24; up to 12 SKUs per request). Estimates exclude retries. Maximum 8 areas.";
 }
 function loadForm(cfg){
   original=cfg; el("products").replaceChildren();el("regions").replaceChildren();
