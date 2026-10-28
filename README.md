@@ -52,6 +52,27 @@ The supplied example contains illustrative SKU / price configuration from Octobe
 
 Without `config.json`, defaults from the original V4.5 are used. Minimum check interval is 120 seconds, but slower monitoring is recommended.
 
+## Multiple monitoring areas (US and Canada)
+
+Use the **local setup wizard** to add up to **8** monitored regions, each with its own country and location. For US locations, enter a five-digit ZIP; for Canadian locations, use a postal code (recommended) or city. These are the **only two countries verified and supported by the current watcher**. Future market adapters are planned, but the wizard deliberately rejects unsupported countries.
+
+You can optionally enter specific Apple Retail Store IDs for each area. Leaving the area store filter blank monitors **all stores returned by Apple's nearby-pickup response**, not every Apple Store in the city or country. Overlapping regions are deduplicated by product and Apple Store ID.
+
+The new `monitoring_areas` field in `config.json` looks like:
+
+```json
+{
+  "monitoring_areas": [
+    {"id": "new_york", "market": "US", "location": "10001", "store_ids": []},
+    {"id": "toronto", "market": "CA", "location": "M5B 2H1", "store_ids": ["R121"]}
+  ]
+}
+```
+
+The watcher still accepts **legacy** `search_zips`, `ca_location`, and `ca_target_store` settings whenever `monitoring_areas` is absent. As soon as `monitoring_areas` is present, its area list takes precedence. The wizard retains legacy fields in private configurations for rollback purposes, but old and new fields need not describe the same selected locations. Keep a backup before switching back to an older watcher version.
+
+**Multiple-area warning:** each configured area generally means one additional regional Apple pickup request per scan, and adding locations can lead to slower updates, missed checks and temporary Apple HTTP 429/541 rate limits. The watcher limits the number of areas to 8, staggers requests, slows the polling interval with 2+ areas, and stops the remaining requests in a cycle if Apple throttles the service. It does **not** guarantee continuous per-store monitoring or complete city coverage. If some areas fail, the overall status is `partial`, even when another store appears available. **Partial/unknown is not out of stock.**
+
 ## Targeted notifications
 
 In `config.json`, optional fields `alert_store_ids` and `alert_product_ids` control which confirmed stock transitions generate **Discord** notifications. For example:
