@@ -318,6 +318,7 @@ def fetch_all():
         if not product_ids:
             continue
         desired = set(area["store_ids"])
+        baseline_stores = None
         for offset in range(0, len(product_ids), PRODUCT_BATCH_SIZE):
             batch_ids = product_ids[offset:offset + PRODUCT_BATCH_SIZE]
             matched_stores_in_batch = set()
@@ -351,6 +352,16 @@ def fetch_all():
                 errors.append(
                     f'{area["id"]} batch {offset // PRODUCT_BATCH_SIZE + 1}: '
                     'some selected Apple Stores were not returned; selected variants not fully verified'
+                )
+            # Without an explicit store filter, multiple SKU batches may
+            # return different nearby stores. Treat the missing SKU/store
+            # combinations as unknown coverage rather than a full negative.
+            if baseline_stores is None:
+                baseline_stores = matched_stores_in_batch
+            elif not desired and matched_stores_in_batch != baseline_stores:
+                errors.append(
+                    f'{area["id"]} batch {offset // PRODUCT_BATCH_SIZE + 1}: '
+                    'Apple Store coverage differs between SKU batches; availability partial'
                 )
             if offset + PRODUCT_BATCH_SIZE < len(product_ids):
                 time.sleep(random.uniform(2.0, 4.0))
