@@ -343,11 +343,12 @@ function renderCatalog(){
       const already=[...document.querySelectorAll(".product-entry")].some(root=>
         root.querySelector(".market").value===item.market&&root.querySelector(".sku").value.toUpperCase()===item.part.toUpperCase());
       if(already){status("This SKU is already in your product list.",true);return;}
-      const id=(item.market.toLowerCase()+"_"+item.part.replace(/[^a-zA-Z0-9]/g,"_")).slice(0,40);
+      const id=productIdForVariant(item,item.family||item.name);
       const existing=new Set([...document.querySelectorAll(".pid")].map(node=>node.value));
-      let finalId=id,n=2;
-      while(existing.has(finalId)){finalId=(id.slice(0,36)+"_"+n++).slice(0,40);}
-      productRow(finalId,item);status("Added "+item.part+". Review its price before saving.");
+      const finalId=uniqueId(id,existing,40);
+      productRow(finalId,item);
+      status("Added "+item.part+". Review details before saving.");
+      showToast("Added "+item.name+" to your selection. Save to apply.");
       el("advancedProducts").open=true;
       el("products").lastElementChild.scrollIntoView({behavior:"smooth",block:"center"});
     });
@@ -400,7 +401,9 @@ function renderMonitoredModels(){
       document.querySelectorAll(".product-entry").forEach(root=>{
         if(root.dataset.watchModel===model&&root.querySelector(".market").value===market)root.remove();
       });
-      renderMonitoredModels();updateAreaWarning();status("Model removed from the local editor. Save to apply.");
+      renderMonitoredModels();updateAreaWarning();
+      status("Model removed from the local editor. Save to apply.");
+      showToast("Removed "+count+" variant"+(count===1?"":"s")+" of "+model+". Save to apply.");
     });
     row.append(text,remove);container.append(row);
   });
@@ -535,10 +538,8 @@ function applyModelSelection(){
     const duplicate=[...document.querySelectorAll(".product-entry")].some(root=>
       root.querySelector(".market").value===item.market&&root.querySelector(".sku").value.toUpperCase()===item.part.toUpperCase());
     if(duplicate){overlaps++;continue;}
-    const id=(item.market.toLowerCase()+"_"+item.part.replace(/[^a-zA-Z0-9]/g,"_")).slice(0,40);
-    let unique=id,n=2;
-    while(taken.has(unique))unique=(id.slice(0,35)+"_"+n++).slice(0,40);
-    taken.add(unique);
+    const id=productIdForVariant(item,modelId);
+    const unique=uniqueId(id,taken,40);
     productRow(unique,{...item,watch_model:modelId});added++;
   }
   renderMonitoredModels();updateAreaWarning();
@@ -546,6 +547,7 @@ function applyModelSelection(){
   el("modelStatus").textContent=added+" variants prepared for monitoring"+
     (overlaps?" ("+overlaps+" already present)":"")+
     ". "+missing+" prices unconfirmed. Click Save to apply.";
+  if(added>0)showToast("Added "+added+" variant"+(added===1?"":"s")+" to your selection. Save to apply.");
 }
 function productRow(id, p) {
   const root=el("productTemplate").content.firstElementChild.cloneNode(true);
@@ -559,7 +561,11 @@ function productRow(id, p) {
   root.dataset.storage=p.storage||"";
   root.dataset.carrier=p.carrier||"";
   root.querySelector(".market").addEventListener("change",()=>{if(["FR","GB"].includes(root.querySelector(".market").value)&&!el("experimentalRegions").checked)status("France/UK requires checking the experimental preview box explicitly.",true);});
-  root.querySelector(".remove").addEventListener("click",()=>{root.remove();renderMonitoredModels();updateAreaWarning();});
+  root.querySelector(".remove").addEventListener("click",()=>{
+    const name=root.querySelector(".pname").value||root.querySelector(".pid").value||"product";
+    root.remove();renderMonitoredModels();updateAreaWarning();
+    showToast("Removed "+name+". Save to apply.");
+  });
   el("products").appendChild(root);renderMonitoredModels();
 }
 function regionRow(area){
