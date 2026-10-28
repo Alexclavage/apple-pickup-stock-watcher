@@ -96,6 +96,46 @@ class PartialStockTransitionTests(unittest.TestCase):
                     {"iphone:R102", "ipad:R121"},
                 )
 
+    def test_dashboard_does_not_show_unconfirmed_negative_as_sold_out(self):
+        from dashboard_groups import build_model_groups
+        products = {
+            "iphone": {
+                "market": "US", "watch_model": "iphone-18-pro",
+                "name": "iPhone", "part": "ABC01LL/A",
+                "currency": "USD", "price": None,
+            },
+            "ipad": {
+                "market": "US", "name": "iPad", "part": "ABC02LL/A",
+                "currency": "USD", "price": None,
+            },
+        }
+        negative = dict(
+            stock("iphone:R102", "unavailable"),
+            storeName="Christiana Mall",
+        )
+        positive = dict(
+            stock("ipad:R102", "available"),
+            storeName="Christiana Mall",
+        )
+        groups = build_model_groups(
+            products, [negative, positive],
+            scan_status="partial", checked_at="2026-10-28T04:00:00+00:00",
+        )
+        iphone = next(group for group in groups if group["model_id"] == "iphone-18-pro")
+        ipad = next(group for group in groups if group["title"] == "iPad")
+        self.assertEqual(iphone["status"], "partial")
+        self.assertEqual(iphone["stores"][0]["status"], "unknown")
+        self.assertEqual(iphone["stores"][0]["variants"][0]["status"], "unknown")
+        self.assertIn("awaiting a complete recheck", iphone["stores"][0]["variants"][0]["quote"])
+        self.assertEqual(ipad["stores"][0]["status"], "available")
+        self.assertEqual(ipad["available_stores"], 1)
+        completed = build_model_groups(
+            products, [negative, positive],
+            scan_status="available", checked_at="checked",
+        )
+        confirmed = next(group for group in completed if group["model_id"] == "iphone-18-pro")
+        self.assertEqual(confirmed["stores"][0]["status"], "unavailable")
+
     def test_discord_errors_do_not_print_private_webhook_link(self):
         secret = "https://discord.com/api/webhooks/privateid/secret-token"
         def broken_post(*args, **kwargs):
