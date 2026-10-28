@@ -18,7 +18,7 @@ from flask import Flask, abort, jsonify, render_template_string, request
 from monitoring_areas import MAX_MONITORING_AREAS, legacy_areas, validate_monitoring_areas
 from regions import region_for
 from catalog_discovery import CatalogError, FAMILIES, fetch_catalog
-from model_watch import MODELS, MAX_PRODUCTS, family_for, model_catalog_result, ModelSelectionError, validate_request_budget
+from model_watch import MODELS, MAX_PRODUCTS, family_for, model_catalog_result, ModelSelectionError, validate_request_budget, MAX_SKUS_PER_MODEL
 
 
 ROOT = Path(__file__).resolve().parent
@@ -97,6 +97,10 @@ def validate_config(cfg):
         }
         if watch_model is not None:
             result[product_id]["watch_model"] = watch_model
+        for attribute in ("color", "storage", "carrier"):
+            value = item.get(attribute)
+            if value is not None:
+                result[product_id][attribute] = _string(value, attribute, limit=64)
 
     zips = cfg.get("search_zips", {})
     if not isinstance(zips, dict) or len(zips) > 20:
@@ -182,7 +186,7 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 .actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:20px 0}#message{min-height:22px;color:var(--muted)}.toggle{display:flex;align-items:center;gap:8px;color:var(--text);margin:7px 0 12px}.toggle input{width:auto}
 @media(max-width:750px){.grid,.fields{grid-template-columns:1fr}.full{grid-column:1}section{padding:16px}body{padding:20px 12px}}
 .area-warning{border:1px solid #b18533;background:#30230f;color:#ffd997;padding:14px 16px;border-radius:14px;margin-top:12px}.area-warning p{color:#f0d3a6;margin:4px 0 0}.area-warning[hidden]{display:none}
-.model-watch{border:1px solid #315580;background:#142337;border-radius:14px;padding:13px 15px;margin:9px 0;display:flex;gap:12px;align-items:center;justify-content:space-between}.model-watch strong{display:block}.model-watch small{display:block}.model-watch button{flex-shrink:0}.advanced{margin-top:18px}.advanced summary{cursor:pointer;color:#9dbef0;font-weight:600;padding:10px 0}
+.model-filters{border:1px solid var(--border);padding:15px;border-radius:15px;background:#191c25;margin:15px 0}.model-filters[hidden]{display:none}.filter-help{font-size:12px;color:var(--muted);padding:4px 0}.model-watch{border:1px solid #315580;background:#142337;border-radius:14px;padding:13px 15px;margin:9px 0;display:flex;gap:12px;align-items:center;justify-content:space-between}.model-watch strong{display:block}.model-watch small{display:block}.model-watch button{flex-shrink:0}.advanced{margin-top:18px}.advanced summary{cursor:pointer;color:#9dbef0;font-weight:600;padding:10px 0}
 .catalog-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-top:1px solid var(--border)}.catalog-entry strong{display:block;font-size:13px}.catalog-entry small{display:block}.catalog-entry button{flex-shrink:0}.catalog-list{max-height:330px;overflow:auto;margin:12px 0}.catalog-status{font-size:13px;color:var(--muted);margin:12px 0}
 </style>
 </head><body><main>
@@ -192,12 +196,24 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 <label class="toggle"><input id="experimentalRegions" type="checkbox"> Enable France/UK preview (experimental)</label>
 <p>France/UK pickup responses still need live verification. Other countries are not supported yet.</p>
 <h2>1. Choose a product model</h2>
-<p>Just choose the model name. The watcher will add every SKU variant discovered for the chosen country (all colours and capacities), within a conservative request budget.</p>
+<p>Just choose the model name. Choose a model, then optionally narrow down by colour, storage and carrier connection. By default, all discovered variants are included.</p>
 <div class="fields">
 <div><label for="modelPicker">Apple model</label><select id="modelPicker">{% for model in model_choices %}<option value="{{model.id}}">{{model.name}}</option>{% endfor %}</select></div>
 <div><label for="modelMarket">Country</label><select id="modelMarket"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
 </div>
-<div class="actions"><button id="watchModel" type="button" class="primary">+ Monitor this model</button><span id="modelStatus" class="catalog-status" role="status" aria-live="polite"></span></div>
+<div class="actions"><button id="watchModel" type="button" class="primary">Monitor this model — choose options</button><span id="modelStatus" class="catalog-status" role="status" aria-live="polite"></span></div>
+<div id="modelOptions" class="model-filters" hidden>
+<h2>Choose variants (optional)</h2>
+<p>All values are selected by default. Narrow the selection or leave everything as-is.</p>
+<div class="fields">
+<div><label for="modelColor">Colour</label><select id="modelColor"><option value="">All discovered colours</option></select></div>
+<div><label for="modelStorage">Storage</label><select id="modelStorage"><option value="">All discovered capacities</option></select></div>
+<div class="full"><label for="modelCarrier">Carrier connection</label><select id="modelCarrier"><option value="">Any / not specified</option></select></div>
+</div>
+<div id="carrierNote" class="filter-help">Carrier connection is not always encoded in Apple product SKUs.</div>
+<div class="actions"><button id="applyModelFilters" type="button" class="primary">+ Add selected variants</button><span id="modelCount" class="catalog-status" role="status" aria-live="polite"></span></div>
+<small>Choosing “without carrier” is only possible when Apple's data explicitly identifies the corresponding item. Carrier activation at checkout is not proof of a separate stock SKU.</small>
+</div>
 <div id="monitoredModels"></div>
 <small>Models are resolved from Apple's public product page when added, not continuously refreshed. Some variants (especially build-to-order Macs and Apple Watch bundles) may not support pickup. Unknown prices remain unknown.</small>
 <details class="advanced" id="advancedProducts"><summary>Advanced: individual SKUs and manual product editing</summary>
@@ -412,6 +428,9 @@ function productRow(id, p) {
   root.querySelector(".sku").value=p.part||"";
   root.querySelector(".price").value=p.price??"";
   root.dataset.watchModel=p.watch_model||"";
+  root.dataset.color=p.color||"";
+  root.dataset.storage=p.storage||"";
+  root.dataset.carrier=p.carrier||"";
   root.querySelector(".market").addEventListener("change",()=>{if(["FR","GB"].includes(root.querySelector(".market").value)&&!el("experimentalRegions").checked)status("France/UK requires checking the experimental preview box explicitly.",true);});
   root.querySelector(".remove").addEventListener("click",()=>{root.remove();renderMonitoredModels();updateAreaWarning();});
   el("products").appendChild(root);renderMonitoredModels();
@@ -484,6 +503,9 @@ function collect(){
       currency:({US:"USD",CA:"CAD",FR:"EUR",GB:"GBP"})[market]
     };
     if(root.dataset.watchModel)data.products[id].watch_model=root.dataset.watchModel;
+    for(const attribute of ["color","storage","carrier"]){
+      if(root.dataset[attribute])data.products[id][attribute]=root.dataset[attribute];
+    }
   });
   data.monitoring_areas=[];
   document.querySelectorAll(".region-entry").forEach(root=>{
@@ -500,7 +522,7 @@ function collect(){
   if(el("allStores").checked)delete data.alert_store_ids;
   else data.alert_store_ids=splitIds(el("alertStores").value);
   if(el("allProducts").checked)delete data.alert_product_ids;
-  else data.alert_product_ids=splitIds(el("alertProducts").value);
+  else data.alert_product_ids=splitIds(el("alertProducts").value).filter(id=>Object.hasOwn(data.products,id));
   return data;
 }
 function status(message,error=false){el("message").textContent=message;el("message").style.color=error?"#ff7c8b":"#55e29d";}
@@ -514,6 +536,9 @@ async function start(){
 }
 el("addProduct").addEventListener("click",()=>productRow("",{market:"US"}));
 el("watchModel").addEventListener("click",watchSelectedModel);
+el("applyModelFilters").addEventListener("click",applyModelSelection);
+["modelColor","modelStorage","modelCarrier"].forEach(id=>el(id).addEventListener("change",updateModelPreview));
+["modelPicker","modelMarket","experimentalRegions"].forEach(id=>el(id).addEventListener("change",clearModelPreview));
 el("findCatalog").addEventListener("click",discoverCatalog);
 el("catalogFilter").addEventListener("input",renderCatalog);
 el("addRegion").addEventListener("click",()=>{
