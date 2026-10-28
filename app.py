@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template_string
 from history import append_history, read_history, transition_event
 from monitoring_areas import legacy_areas, validate_monitoring_areas, MAX_MONITORING_AREAS
+from regions import REGIONS, region_for
 
 load_dotenv()
 
@@ -43,17 +44,27 @@ CA_LOCATION = "M5B 2H1"
 CONFIG_PATH = Path(os.getenv("WATCHER_CONFIG", "config.json"))
 ALERT_STORE_IDS = None
 ALERT_PRODUCT_IDS = None
+ENABLE_EXPERIMENTAL_REGIONS = False
 if CONFIG_PATH.exists():
     cfg = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     if not isinstance(cfg, dict):
         raise ValueError("Watcher config must be a JSON object")
+    ENABLE_EXPERIMENTAL_REGIONS = cfg.get("enable_experimental_regions", False)
+    if not isinstance(ENABLE_EXPERIMENTAL_REGIONS, bool):
+        raise ValueError("enable_experimental_regions must be a boolean")
     if "products" in cfg:
         products = cfg["products"]
         if not isinstance(products, dict) or not products:
             raise ValueError("products must be a nonempty JSON object")
         for pid, product in products.items():
-            if not isinstance(product, dict) or product.get("market") not in {"US", "CA"}:
-                raise ValueError(f"Invalid market for product {pid}")
+            if not isinstance(product, dict):
+                raise ValueError(f"Invalid product configuration: {pid}")
+            try:
+                region = region_for(product.get("market"), ENABLE_EXPERIMENTAL_REGIONS)
+            except ValueError as exc:
+                raise ValueError(f"Invalid market for product {pid}: {exc}") from exc
+            if product.get("currency") != region.currency:
+                raise ValueError(f"Product {pid} requires currency {region.currency}")
             if not all(product.get(field) for field in ("name", "part", "currency")):
                 raise ValueError(f"Product {pid} must have name, part and currency")
             price = product.get("price")
@@ -87,17 +98,22 @@ if CONFIG_PATH.exists():
             ALERT_PRODUCT_IDS = set(value)
 else:
     CA_TAX_RATE = 0.13
-US_PRODUCT_IDS = [pid for pid, p in PRODUCTS.items() if p["market"] == "US"]
-CA_PRODUCT_IDS = [pid for pid, p in PRODUCTS.items() if p["market"] == "CA"]
+MARKET_PRODUCT_IDS = {market: [pid for pid, p in PRODUCTS.items() if p["market"] == market] for market in REGIONS}
+US_PRODUCT_IDS = MARKET_PRODUCT_IDS["US"]
+CA_PRODUCT_IDS = MARKET_PRODUCT_IDS["CA"]
+if any(p["market"] in {"FR", "GB"} for p in PRODUCTS.values()) and (
+    not CONFIG_PATH.exists() or "monitoring_areas" not in cfg
+):
+    raise ValueError("France/UK products require explicit monitoring_areas in config.json")
 MONITORING_AREAS = (
-    validate_monitoring_areas(cfg["monitoring_areas"], PRODUCTS)
+    validate_monitoring_areas(cfg["monitoring_areas"], PRODUCTS, enable_experimental=ENABLE_EXPERIMENTAL_REGIONS)
     if CONFIG_PATH.exists() and "monitoring_areas" in cfg
     else legacy_areas(SEARCH_ZIPS, CA_LOCATION, CA_TARGET_STORE, PRODUCTS)
 )
 # With several locations, avoid polling as aggressively as a single-location watcher.
 INTERVAL = max(INTERVAL, 300 if len(MONITORING_AREAS) > 1 else 120, 600 if len(MONITORING_AREAS) > 4 else 120)
-if not US_PRODUCT_IDS and not CA_PRODUCT_IDS:
-    raise ValueError("Configure at least one US or CA product")
+if not any(MARKET_PRODUCT_IDS.values()):
+    raise ValueError("Configure at least one product")
 if not 0 <= CA_TAX_RATE <= 1:
     raise ValueError("ca_tax_rate must be a fraction between 0 and 1")
 
@@ -273,8 +289,8 @@ def fetch_all():
     rate_limited = False
     for index, area in enumerate(MONITORING_AREAS):
         market = area["market"]
-        product_ids = US_PRODUCT_IDS if market == "US" else CA_PRODUCT_IDS
-        url = US_URL if market == "US" else CA_URL
+        product_ids = MARKET_PRODUCT_IDS.get(market, [])
+        url = REGIONS[market].pickup_url
         if not product_ids:
             continue
         try:
