@@ -49,6 +49,16 @@ This roadmap is directional, not a promise that a feature already exists.
 - [ ] Protected dashboard/API for internet-facing deployments
 - [ ] Document persistent storage setup on Railway
 
+## Variant choice: colour / storage / carrier
+
+- [x] Preview actual regional Apple SKU variants before adding a model
+- [x] Optional colour and capacity filters populated from Apple product dimensions
+- [x] Conditional carrier or carrier-free filter only for variants with explicit Apple metadata; never infer "unlocked" from an absent field
+- [x] Handle carrier-ambiguous duplicate SKU records as unknown
+- [x] Permit filtering a model with more than 48 discovered SKUs down to a safe selection
+- [ ] Validate carrier selection behavior against real Apple checkout pages; carrier account activation may be separate from stock SKUs
+- [ ] Provide multiple value selection per dimension (several colours/capacities in one group) when needed
+
 ## Model-first configuration
 
 - [x] Select an Apple model name in the local wizard and resolve all *currently discoverable* country-specific SKU variants in one operation
