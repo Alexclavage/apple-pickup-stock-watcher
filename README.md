@@ -44,6 +44,18 @@ On macOS/Linux run `python setup_wizard.py` inside the activated environment. Op
 
 **Security:** the wizard is not part of the public dashboard. It binds to `127.0.0.1` only, checks origin and request tokens for saves, and never displays or saves your Discord webhook. Do not forward this port to the public Internet. An Apple SKU still needs to be obtained and verified manually; this UI does not scrape a SKU catalogue or validate actual inventory.
 
+## Discover Apple SKUs from the official Apple Store
+
+The **local setup wizard** includes a **Find Apple SKUs** feature. Select a country and supported product family, then press the button to read an official Apple purchase page **once on demand**. Browse the extracted model, storage, color and SKU combinations, filter the results, and click **Add** to include a variant in your private configuration.
+
+The initial allowlist covers selected iPhone, iPad, Mac and Apple Watch families for US/Canada; France/UK require the existing explicit experimental-region opt-in. Not every product Apple sells is indexed yet (AirPods, accessories, build-to-order Macs and certain Watch pairings need additional work).
+
+**No invented data:** only SKU identifiers explicitly present in Apple's current buy-page data are offered. A product price is prefilled only if that exact item has a clear numeric price; otherwise the price field remains **blank** and must be filled before saving. Imported products are not automatically verified as eligible for store pickup. Always confirm the product and final price on Apple's site.
+
+**Polite fetch policy:** discovery uses an Apple-domain-only URL allowlist, no user-supplied fetch URLs, a seven-megabyte page cap, a six-hour in-memory cache, and a global minimum two-minute delay between uncached catalog requests. Apple HTTP 429/541 responses trigger a 15-minute catalog request cooldown. This is **not a background scraper**; searching stock remains separate.
+
+The Apple catalog page structure is undocumented. If no recognizable live selection data is present, the wizard reports an error rather than returning a potentially stale third-party catalog. No external app credentials are necessary.
+
 ## Customize products and stores
 
 Edit `config.json`. Each item in `products` requires `market` (`US`, `CA`, or explicitly enabled experimental `FR` / `GB`), `name`, Apple's region-specific `part` / SKU, `price` (number), and `currency`. Set `search_zips` for US searches, with `allowed_states` as a whitelist of results. For Canada, set `ca_location` to a postal code. Set `ca_target_store` to an Apple Store ID, or `""` to include all returned Canadian stores. `us_priority_store` highlights a US store and sends individual notifications.
