@@ -187,6 +187,8 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 @media(max-width:750px){.grid,.fields{grid-template-columns:1fr}.full{grid-column:1}section{padding:16px}body{padding:20px 12px}}
 .area-warning{border:1px solid #b18533;background:#30230f;color:#ffd997;padding:14px 16px;border-radius:14px;margin-top:12px}.area-warning p{color:#f0d3a6;margin:4px 0 0}.area-warning[hidden]{display:none}
 .model-filters{border:1px solid var(--border);padding:15px;border-radius:15px;background:#191c25;margin:15px 0}.model-filters[hidden]{display:none}.filter-help{font-size:12px;color:var(--muted);padding:4px 0}.model-watch{border:1px solid #315580;background:#142337;border-radius:14px;padding:13px 15px;margin:9px 0;display:flex;gap:12px;align-items:center;justify-content:space-between}.model-watch strong{display:block}.model-watch small{display:block}.model-watch button{flex-shrink:0}.advanced{margin-top:18px}.advanced summary{cursor:pointer;color:#9dbef0;font-weight:600;padding:10px 0}
+.has-pending .toast-zone{bottom:85px}
+@media(max-width:620px){.has-pending .toast-zone{bottom:145px}}
 .toast-zone{position:fixed;right:20px;bottom:20px;z-index:1000;width:min(390px,calc(100vw - 32px));pointer-events:none}
 .toast-success{background:#123926;border:1px solid #2e9566;color:#e1ffeb;border-radius:14px;padding:13px 17px;box-shadow:0 14px 45px #000a;display:flex;gap:12px;align-items:center;animation:toast-in .2s ease-out}
 .toast-success strong{color:#81e8ae;font-size:19px}.toast-success span{font-size:13px;line-height:1.4}
@@ -203,7 +205,7 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 .watch-group strong{font-size:14px;display:block;color:var(--text)}.watch-group small{line-height:1.5}
 .watch-empty{color:#aab4c2;font-size:13px;padding:12px 2px}
 .setup-state{padding:13px 16px;background:#17232d;border:1px solid #436279;border-radius:13px;margin:12px 0 22px;display:flex;align-items:flex-start;gap:11px}
-.setup-state strong{display:block;font-size:14px}.setup-state p{margin:2px 0 0;font-size:12px}.setup-state[data-state="dirty"]{background:#302414;border-color:#8d6635}.setup-state[data-state="saved"]{background:#162b22;border-color:#33785b}
+.setup-state strong{display:block;font-size:14px}.setup-state p{margin:2px 0 0;font-size:12px}.setup-state[data-state="dirty"]{background:#302414;border-color:#8d6635}.setup-state[data-state="saved"]{background:#162b22;border-color:#33785b}.setup-state[data-state="preview"]{background:#302414;border-color:#8d6635}
 .preview-warning{font-size:13px;color:#f7d39f;background:#332618;border:1px solid #775d36;border-radius:10px;padding:10px 13px;margin:10px 0}
 .preview-warning[hidden]{display:none}
 .save-dock{position:fixed;bottom:0;left:0;right:0;z-index:900;background:rgba(14,17,23,.98);border-top:1px solid #454e5e;box-shadow:0 -10px 30px #0008;padding:11px max(18px,calc((100vw - 1050px)/2));display:flex;justify-content:space-between;align-items:center;gap:16px}
@@ -241,7 +243,10 @@ body.has-pending{padding-bottom:95px}
 <div class="full"><label for="modelCarrier">Carrier connection</label><select id="modelCarrier"><option value="">Any / not specified</option></select></div>
 </div>
 <div id="carrierNote" class="filter-help">Carrier connection is not always encoded in Apple product SKUs.</div>
-<div class="actions"><button id="applyModelFilters" type="button" class="primary">2. Add selected variants to watchlist</button><span id="modelCount" class="catalog-status" role="status" aria-live="polite"></span></div>
+<div class="actions">
+<button id="applyModelFilters" type="button" class="primary">2. Add selected variants to watchlist</button>
+<button id="discardPreview" type="button">Discard preview</button>
+<span id="modelCount" class="catalog-status" role="status" aria-live="polite"></span></div>
 <div id="previewWarning" class="preview-warning" hidden>These are only search results. Click “Add selected variants to watchlist” to include them in your configuration.</div>
 <small>Choosing “without carrier” is only possible when Apple's data explicitly identifies the corresponding item. Carrier activation at checkout is not proof of a separate stock SKU.</small>
 </div>
@@ -330,18 +335,22 @@ const el = id => document.getElementById(id);
 function refreshSetupState(){
   const products=document.querySelectorAll(".product-entry").length;
   const areas=document.querySelectorAll(".region-entry").length;
-  const state=hasUnsavedChanges?"dirty":hasSavedFile?"saved":"example";
+  const inPreview=!!modelPreview&&!el("modelOptions").hidden;
+  const state=hasUnsavedChanges?"dirty":inPreview?"preview":hasSavedFile?"saved":"example";
   el("setupState").dataset.state=state;
   el("setupStateIcon").textContent=hasUnsavedChanges?"●":hasSavedFile?"✓":"○";
   el("setupStateTitle").textContent=hasUnsavedChanges
     ?"Changes not saved"
+    :inPreview?"Variants found — not added yet"
     :hasSavedFile?"Configuration saved on this computer":"Example configuration — not yet saved";
   el("setupStateDetail").textContent=hasUnsavedChanges
-    ?products+" selected variants in "+areas+" areas. Save changes, then restart the watcher."
+    ?products+" selected variants in "+areas+" areas."+
+      (inPreview?" You also have a preview that has NOT been added.":" Save changes, then restart the watcher.")
+    :inPreview?modelPreview.count+" variants found. Select the options and click Add selected variants before saving."
     :hasSavedFile?"Saved in config.json. Restart the watcher to apply; this page does not check whether monitoring is running."
     :"This example is not your active setup. Add a model, save a private configuration and restart the watcher.";
   el("stepFind").classList.toggle("current",!modelPreview&&!hasUnsavedChanges&&!hasSavedFile);
-  el("stepChoose").classList.toggle("current",!!modelPreview);
+  el("stepChoose").classList.toggle("current",inPreview);
   el("stepSave").classList.toggle("current",hasUnsavedChanges);
   el("stepRestart").classList.toggle("current",!hasUnsavedChanges&&hasSavedFile);
   const showDock=hasUnsavedChanges;
@@ -819,6 +828,10 @@ el("addProduct").addEventListener("click",()=>{
 });
 el("watchModel").addEventListener("click",watchSelectedModel);
 el("applyModelFilters").addEventListener("click",applyModelSelection);
+el("discardPreview").addEventListener("click",()=>{
+  clearModelPreview();
+  status("Preview discarded. Your saved and selected products were not changed.");
+});
 ["modelColor","modelStorage","modelCarrier"].forEach(id=>el(id).addEventListener("change",updateModelPreview));
 ["modelPicker","modelMarket","experimentalRegions"].forEach(id=>el(id).addEventListener("change",clearModelPreview));
 el("findCatalog").addEventListener("click",discoverCatalog);
@@ -854,7 +867,13 @@ document.addEventListener("change",onConfigurationEdit);
 el("saveSticky").addEventListener("click",()=>el("save").click());
 el("allProducts").addEventListener("change",toggleAlertFields);
 el("save").addEventListener("click",async()=>{
+  if(modelPreview&&!el("modelOptions").hidden){
+    status("You found variants but have not added them. Click Add selected variants or Discard preview before saving.",true);
+    el("modelOptions").scrollIntoView({behavior:"smooth",block:"center"});
+    return;
+  }
   const button=el("save");button.disabled=true;
+  el("saveSticky").disabled=true;
   try{
     const data=collect();
     const r=await fetch("/api/config",{
@@ -868,7 +887,7 @@ el("save").addEventListener("click",async()=>{
     status("Saved locally. Restart your watcher to use the new settings.");
     showToast("Configuration saved. Restart the watcher to apply.");
   }catch(error){status(error.message||String(error),true);}
-  finally{button.disabled=false;}
+  finally{button.disabled=false;el("saveSticky").disabled=false;}
 });
 start();
 </script></body></html>"""
