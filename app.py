@@ -440,7 +440,7 @@ def poll_once():
         with lock:
             latest = {"status":overall,"checked_at":checked,"items":items,"error":" | ".join(partial_errors) if partial_errors else None,"consecutive_errors":0}
         print(checked, f"{len(items)} product/store rows", f"{len(available)} available", ("PARTIAL" if partial_errors else "OK"), flush=True)
-        if any(("APPLE_429" in err or "APPLE_541" in err or "Apple 429/541" in err) for err in partial_errors):
+        if any(("APPLE_429" in err or "APPLE_541" in err or "Apple 429" in err or "Apple 541" in err) for err in partial_errors):
             return max(INTERVAL, 900)
         return INTERVAL
     except Exception as e:
