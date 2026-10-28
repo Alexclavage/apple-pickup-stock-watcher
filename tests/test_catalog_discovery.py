@@ -22,7 +22,7 @@ def example_page():
             {"partNumber": "bad SKU", "dimensionCapacity": "256gb"},
             {"partNumber": "FOO4LL/A", "price": {"fullPrice": "unknown"}},
         ],
-        "sample": {"complex": "quote \\" braces { and } and backslash \\""},
+        "sample": {"complex": 'quoted "text" and braces { inside } an escaped JSON string'},
     }
     return (b"<html><script>let PRODUCT_SELECTION_BOOTSTRAP = "
             + json.dumps({"productSelectionData": selection}).encode("utf-8")
