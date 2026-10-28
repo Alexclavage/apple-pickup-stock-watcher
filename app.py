@@ -608,7 +608,7 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
       </details>
     </article>
   {% else %}
-    <div class="card unknown">
+    <div class="card unknown" data-search="{{ (group.title ~ ' ' ~ group.market ~ ' unknown missing location')|lower|e }}">
       <div class="name">No confirmed store observations</div>
       <div class="badge">UNKNOWN — not a stock-out</div>
       <p class="store-meta">No verified results for this model in the chosen monitoring areas.</p>
@@ -650,9 +650,9 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
        const show=matchesText&&matchesFilter;card.style.display=show?'':'none';
        if(show){shown++;sectionVisible++}
      });
-     section.style.display=sectionVisible||(!q&&filter==='all'&&!section.querySelector('.card[data-search]'))?'':'none';
+     section.style.display=sectionVisible?'':'none';
    });
-   if(count)count.textContent=shown+' magasin(s) affiché(s) sur '+total;
+   if(count)count.textContent=shown+' carte(s) affichée(s) sur '+total+' (magasins vérifiés et zones inconnues)';
    if(empty)empty.classList.toggle('visible',shown===0);
  }
  if(input){try{input.value=sessionStorage.getItem('watcher-search')||''}catch(e){}input.addEventListener('input',()=>{try{sessionStorage.setItem('watcher-search',input.value)}catch(e){}update()})}
