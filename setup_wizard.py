@@ -314,7 +314,9 @@ function uniqueId(base,used,maxLength){
 }
 function areaIdFromLocation(market,location){
   const code=slugPart(market||"us");
-  const place=slugPart(location||"new");
+  const raw=String(location||"new").trim();
+  const postal=/^[A-Za-z][0-9][A-Za-z]\s?[0-9][A-Za-z][0-9]$/.test(raw);
+  const place=slugPart(postal?raw.replace(/\s/g,""):raw);
   return (code+"_"+place).slice(0,32).replace(/_+$/g,"");
 }
 function showToast(message){
