@@ -89,9 +89,8 @@ def _selection_data(page):
 
     # Prefer the live bootstrap over similarly named historical state elsewhere.
     marker = page.find(b"PRODUCT_SELECTION_BOOTSTRAP")
-    candidates = [page[marker:]] if marker >= 0 else []
-    candidates.append(page if marker >= 0 else page)
-    for search in candidates:
+    search = page[marker:] if marker >= 0 else page
+    for search in (search,):
         for match in DATA_KEY.finditer(search):
             opening = match.end() - 1
             blob = _extract_json_object(search, opening)
@@ -145,7 +144,12 @@ def parse_catalog_html(page, market, family):
             val = _humanize(raw.get(dimension))
             if val:
                 details.append(val)
-        label = " ".join([title, *details]).strip()
+        model_title = (
+            "iPhone 18 Pro Max"
+            if family == "iphone-18-pro" and raw.get("familyType") == "iphone18promax"
+            else title
+        )
+        label = " ".join([model_title, *details]).strip()
         # A genuine per-product plain numeric fullPrice may be missing; never infer it.
         price = None
         candidate_price = raw.get("price")
