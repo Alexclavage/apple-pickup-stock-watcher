@@ -59,6 +59,16 @@ This roadmap is directional, not a promise that a feature already exists.
 - [ ] Validate carrier selection behavior against real Apple checkout pages; carrier account activation may be separate from stock SKUs
 - [ ] Provide multiple value selection per dimension (several colours/capacities in one group) when needed
 
+## Hardening for a stable public release
+
+- [x] Report globally partial coverage when a configured market has no monitoring areas
+- [x] Treat an Apple area returning zero matching stores as unknown instead of confirmed sold-out
+- [x] Show a clear missing-market explanation in the watcher dashboard and local setup wizard
+- [x] Bind the unauthenticated dashboard to localhost by default; opt in explicitly for network hosting
+- [x] Display the last completed check in the viewer's local timezone without rewriting the canonical timestamp
+- [ ] Confirm a real CA pickup response and any missing-market fallback before merging
+- [ ] Audit public hosting / Railway access controls and verify the required WATCHER_HOST environment variable before deployment
+
 ## Model-centric dashboard
 
 - [x] Group all configured SKU variants per monitored model and market
