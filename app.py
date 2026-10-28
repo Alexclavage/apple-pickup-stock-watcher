@@ -309,32 +309,40 @@ def fetch_all():
         url = REGIONS[market].pickup_url
         if not product_ids:
             continue
-        try:
-            stores = fetch_market(url, area["location"], product_ids)
-            desired = set(area["store_ids"])
-            found_stores = set()
-            for raw in stores:
-                store_id = raw.get("storeNumber")
-                if not store_id or (desired and store_id not in desired):
-                    continue
-                if market == "US" and ALLOWED_STATES and (raw.get("state") or "").upper() not in ALLOWED_STATES:
-                    continue
-                found_stores.add(store_id)
-                for product_id in product_ids:
-                    item = parse_item(raw, product_id)
-                    dedup[item["key"]] = merge_area_results(dedup.get(item["key"]), item)
+        desired = set(area["store_ids"])
+        found_stores = set()
+        batch_failed = False
+        for offset in range(0, len(product_ids), PRODUCT_BATCH_SIZE):
+            batch_ids = product_ids[offset:offset + PRODUCT_BATCH_SIZE]
+            try:
+                stores = fetch_market(url, area["location"], batch_ids)
+                for raw in stores:
+                    store_id = raw.get("storeNumber")
+                    if not store_id or (desired and store_id not in desired):
+                        continue
+                    if market == "US" and ALLOWED_STATES and (raw.get("state") or "").upper() not in ALLOWED_STATES:
+                        continue
+                    found_stores.add(store_id)
+                    for product_id in batch_ids:
+                        item = parse_item(raw, product_id)
+                        dedup[item["key"]] = merge_area_results(dedup.get(item["key"]), item)
+            except Exception as exc:
+                message = str(exc)
+                errors.append(f'{area["id"]} batch {offset // PRODUCT_BATCH_SIZE + 1}: {message}')
+                print(f'{area["id"]}: {message}', flush=True)
+                batch_failed = True
+                if message in {"APPLE_429", "APPLE_541"}:
+                    rate_limited = True
+                break
+            if offset + PRODUCT_BATCH_SIZE < len(product_ids):
+                time.sleep(random.uniform(2.0, 4.0))
+        if rate_limited:
+            break
+        if not batch_failed:
             if desired and not found_stores.intersection(desired):
                 errors.append(f'{area["id"]}: none of the selected stores was returned by Apple; status unknown')
             elif desired - found_stores:
                 errors.append(f'{area["id"]}: some selected stores were not returned; status unknown')
-        except Exception as exc:
-            message = str(exc)
-            errors.append(f'{area["id"]}: {message}')
-            print(f'{area["id"]}: {message}', flush=True)
-            if message in {"APPLE_429", "APPLE_541"}:
-                rate_limited = True
-                # Stop this cycle rather than continuing to request more areas after a throttle.
-                break
         if index < len(MONITORING_AREAS) - 1:
             time.sleep(random.uniform(2.0, 4.0))
 
