@@ -169,6 +169,14 @@ Set `HISTORY_FILE` in `.env` to change the path and `HISTORY_MAX_EVENTS` to adju
 
 For Railway or Docker deployments, use a persistent volume for **both** state and history if you want them to survive instance restarts or redeploys. This implementation is intended for a **single polling worker**, not multiple web workers sharing the same state files.
 
+## Coverage correctness and dashboard network safety
+
+**No geographic coverage is inferred:** configuring an Apple SKU for Canada does **not** mean Canada is monitored. You must also add a Canadian monitoring area; the same holds for any supported country. The local setup wizard now warns if a configured product market lacks a region. The dashboard labels that model **unknown (no monitoring area)** rather than **sold out**, and an otherwise successful US scan is marked **partial** when Canadian products were skipped. An empty regional Apple Store response is also treated as a coverage gap rather than confirmed sold-out. These warnings do not automatically add or change your private locations.
+
+**Dashboard binds to localhost by default.** Running `python app.py` exposes the unauthenticated status dashboard only at `http://127.0.0.1:8080` on that computer. To serve it from Docker, a reverse proxy, or a hosted environment such as Railway, explicitly set `WATCHER_HOST=0.0.0.0` **and protect the endpoint with appropriate network access controls**. The included Docker Compose configuration enables binding inside the container but keeps the published port restricted to the host's localhost. Changing host binding does not add user authentication. Do not open a public dashboard containing your monitoring selections without access controls.
+
+The dashboard renders its most recent UTC timestamp in the viewer's local browser timezone when JavaScript is available; the original canonical timestamp remains attached for reference.
+
 ## Operation and limitations
 
 - `/` dashboard; `/api/status` latest state; `/api/history` recent stock changes; `/health` reports Flask process liveness (not proof of Apple connectivity).
