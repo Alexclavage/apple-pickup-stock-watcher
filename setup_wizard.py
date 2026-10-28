@@ -253,7 +253,7 @@ function toggleAlertFields(){
   el("alertProducts").disabled=el("allProducts").checked;
 }
 function collect(){
-  const data={...original,products:{},search_zips:{}};
+  const data={...original,products:{}};
   document.querySelectorAll(".product-entry").forEach(root=>{
     const id=root.querySelector(".pid").value.trim();
     if(!id)throw Error("Every product needs an ID.");
