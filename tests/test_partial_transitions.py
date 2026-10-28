@@ -136,6 +136,44 @@ class PartialStockTransitionTests(unittest.TestCase):
         confirmed = next(group for group in completed if group["model_id"] == "iphone-18-pro")
         self.assertEqual(confirmed["stores"][0]["status"], "unavailable")
 
+    def test_different_nearby_store_sets_across_batches_mark_partial(self):
+        products = {
+            f"p{i}": {
+                "market": "US", "part": f"SKU{i:03d}LL/A",
+                "name": f"Model {i}", "currency": "USD", "price": None,
+            }
+            for i in range(13)
+        }
+        calls = []
+        def fetch(_url, _location, ids):
+            calls.append(len(ids))
+            store = "R102" if len(calls) == 1 else "R103"
+            return [{"storeNumber": store, "storeName": store, "state": "DE"}]
+        def parse(store, pid):
+            return {
+                "key": f"{pid}:{store['storeNumber']}",
+                "product_id": pid, "market": "US",
+                "storeNumber": store["storeNumber"],
+                "storeName": store["storeName"], "status": "unavailable",
+                "total": None,
+            }
+        with (
+            patch.object(watcher, "PRODUCTS", products),
+            patch.object(watcher, "US_PRODUCT_IDS", list(products)),
+            patch.object(watcher, "MONITORING_AREAS", [{
+                "id": "de", "market": "US", "location": "19702",
+                "store_ids": [],
+            }]),
+            patch.object(watcher, "ALLOWED_STATES", {"DE"}),
+            patch.object(watcher, "fetch_market", side_effect=fetch),
+            patch.object(watcher, "parse_item", side_effect=parse),
+            patch.object(watcher.time, "sleep"),
+        ):
+            items, errors = watcher.fetch_all()
+        self.assertEqual(calls, [12, 1])
+        self.assertEqual(len(items), 13)
+        self.assertTrue(any("coverage differs" in error for error in errors))
+
     def test_discord_errors_do_not_print_private_webhook_link(self):
         secret = "https://discord.com/api/webhooks/privateid/secret-token"
         def broken_post(*args, **kwargs):
