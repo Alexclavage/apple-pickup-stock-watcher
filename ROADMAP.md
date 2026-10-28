@@ -52,7 +52,9 @@ This roadmap is directional, not a promise that a feature already exists.
 ## P1 — Easier first-time experience
 
 - [x] Local browser wizard for products, stores, prices and alert preferences (SKUs still provided manually)
-- [ ] Optional discovery/validation of regional product SKUs using verifiable public sources
+- [x] Add optional manual-request live SKU discovery from allowlisted official Apple buy pages, with cache, per-country SKU routing and error transparency
+- [ ] Extend automatic SKU discovery to all product families and accessories and independently verify live pages
+- [ ] Validate stock pickup eligibility for catalog-discovered SKUs, including Watch case/band bundles and configured Macs
 - [ ] Clearer dashboard freshness indicators and per-store last successful check
 - [ ] Browser filtering that persists across auto-refresh
 - [ ] Optional first-run notification suppression and quiet hours
