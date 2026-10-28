@@ -14,7 +14,7 @@ class ReadableIdentifiersAndToastTests(unittest.TestCase):
         for expected in (
             'id="toastZone"', 'class="toast-zone"', 'id="renameAreas"',
             'class="areaTitle"', 'areaIdFromLocation(', 'productIdForVariant(',
-            'showToast("Added "+added', 'showToast("Removed "+count',
+            'showToast("Added "+added', 'showToast("Removed "+variants.length',
             'showToast("Removed "+name', 'showToast("Removed area "+label',
         ):
             self.assertIn(expected, WIZARD_HTML)
