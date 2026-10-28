@@ -474,9 +474,18 @@ def poll_once():
 
         send_stock_changes(new_available, newly_unavailable)
 
-        if previous.get("watcher_error") is True:
+        # A partial batch/region response is not a complete recovery from an
+        # earlier outage. Do not send a misleading "restored" notification
+        # until every configured area and selected SKU has been checked.
+        fully_verified = not partial_errors and all(x["status"] != "unknown" for x in items)
+        was_in_error = previous.get("watcher_error") is True
+        if was_in_error and fully_verified:
             safe_discord("✅ **Apple Stock Watcher V4.5 rétabli**\nLa surveillance fonctionne de nouveau.")
-        save_state({"available_keys":sorted(current_available),"watcher_error":False,"checked_at":checked})
+        save_state({
+            "available_keys": sorted(current_available),
+            "watcher_error": was_in_error and not fully_verified,
+            "checked_at": checked,
+        })
         changes = (
             [transition_event(item, "available", checked) for item in new_available]
             + [transition_event(item, "unavailable", checked) for item in newly_unavailable]
