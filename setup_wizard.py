@@ -935,8 +935,9 @@ def create_wizard_app(config_path=None, sample_path=None):
             clean = validate_config(raw)
         except (OSError, ValueError) as exc:
             return jsonify({"error": f"Cannot read {target.name}: {exc}"}), 422
-        # Keep unknown settings in the browser so they survive subsequent saves.
-        return jsonify({"config": {**raw, **clean}, "exists": path.is_file()})
+        # Send only validated, UI-owned fields to the browser. Private
+        # custom settings remain on disk and are merged during saving.
+        return jsonify({"config": clean, "exists": path.is_file()})
 
     @app.post("/api/catalog/model")
     def resolve_model():
@@ -991,7 +992,14 @@ def create_wizard_app(config_path=None, sample_path=None):
         try:
             incoming = request.get_json(silent=True)
             clean = validate_config(incoming)
-            data = {**incoming, **clean}
+            # Preserve unknown local settings without revealing them through
+            # GET /api/config. Old installations may include private keys.
+            existing = {}
+            if path.is_file():
+                existing = json.loads(path.read_text(encoding="utf-8"))
+                if not isinstance(existing, dict):
+                    raise InvalidConfig("Existing configuration must be a JSON object")
+            data = {**existing, **incoming, **clean}
             path.parent.mkdir(parents=True, exist_ok=True)
             # Preserve the most recent working configuration before replacing it.
             if path.is_file():
@@ -1010,9 +1018,12 @@ def create_wizard_app(config_path=None, sample_path=None):
                 temp_path.unlink(missing_ok=True)
         except InvalidConfig as exc:
             return jsonify({"error": str(exc)}), 422
+        except ValueError as exc:
+            return jsonify({"error": f"Cannot read existing configuration: {exc}"}), 422
         except OSError as exc:
             return jsonify({"error": f"Could not save local configuration: {exc}"}), 500
-        return jsonify({"saved": True, "config": data})
+        # Never echo potentially sensitive unknown JSON fields to the browser.
+        return jsonify({"saved": True, "config": clean})
 
     return app
 
