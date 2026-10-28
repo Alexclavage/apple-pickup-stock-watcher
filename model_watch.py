@@ -34,7 +34,7 @@ def family_for(model_id):
     return MODELS[model_id][1]
 
 
-def expand_model(model_id, market, catalog_rows):
+def expand_model(model_id, market, catalog_rows, max_variants=MAX_SKUS_PER_MODEL):
     """Return all *observed* SKU variants of the exact model, never guessed ones."""
     family_for(model_id)
     family_type = MODELS[model_id][2]
@@ -56,28 +56,39 @@ def expand_model(model_id, market, catalog_rows):
             "price": item.get("price"),
             "currency": item["currency"],
             "watch_model": model_id,
+            "color": item.get("color"),
+            "storage": item.get("storage"),
+            "carrier": item.get("carrier"),
         })
     if not results:
         raise ModelSelectionError(
             "No matching Apple SKUs found for this model. Try the manual SKU option; "
             "the current Apple catalogue may be incomplete."
         )
-    if len(results) > MAX_SKUS_PER_MODEL:
+    if max_variants is not None and len(results) > max_variants:
         raise ModelSelectionError(
-            f"Apple returned {len(results)} variants, above the {MAX_SKUS_PER_MODEL}-SKU "
+            f"Apple returned {len(results)} variants, above the {max_variants}-SKU "
             "automatic model limit. Narrow the model or use advanced selection."
         )
     return sorted(results, key=lambda item: (item["name"], item["part"]))
 
 
 def model_catalog_result(model_id, market, catalog_rows):
-    variants = expand_model(model_id, market, catalog_rows)
+    # Preview all observed variants so users can narrow a large model to a
+    # specific color/storage before the 48-SKU monitoring cap is enforced.
+    variants = expand_model(model_id, market, catalog_rows, max_variants=None)
     return {
         "model_id": model_id,
         "model_name": MODELS[model_id][0],
         "market": market,
         "products": variants,
         "count": len(variants),
+        "options": {
+            "colors": sorted({p["color"] for p in variants if p.get("color")}),
+            "storages": sorted({p["storage"] for p in variants if p.get("storage")}),
+            "carriers": sorted({p["carrier"] for p in variants if p.get("carrier")}),
+            "carrier_unknown": sum(p.get("carrier") is None for p in variants),
+        },
         "missing_prices": sum(item["price"] is None for item in variants),
     }
 
@@ -101,6 +112,18 @@ def validate_request_budget(products, areas):
         raise ModelSelectionError(
             f"Up to {MAX_PRODUCTS} variant SKUs can be monitored per configuration"
         )
+    grouped = {}
+    for item in products.values():
+        model_id = item.get("watch_model")
+        if model_id:
+            key = (item.get("market"), model_id)
+            grouped.setdefault(key, set()).add(item.get("part"))
+    for (market, model_id), skus in grouped.items():
+        if len(skus) > MAX_SKUS_PER_MODEL:
+            raise ModelSelectionError(
+                f"Too many {model_id} variants for {market}: {len(skus)} "
+                f"(limit {MAX_SKUS_PER_MODEL}). Narrow color or storage."
+            )
     cost = expected_requests(products, areas)
     if cost > MAX_REQUESTS_PER_SCAN:
         raise ModelSelectionError(
