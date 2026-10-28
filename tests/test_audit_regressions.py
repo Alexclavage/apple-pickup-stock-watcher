@@ -140,6 +140,36 @@ class PollBatchAndConfigPrivacyTests(unittest.TestCase):
             backup = json.loads((root / "config.json.bak").read_text(encoding="utf-8"))
             self.assertEqual(backup["ca_tax_rate"], 0.13)
 
+    def test_alert_for_all_removes_saved_filters_but_keeps_private_fields(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            sample = root / "config.example.json"
+            target = root / "config.json"
+            cfg = {
+                "products": {"us": product(1)},
+                "monitoring_areas": [area()],
+                "search_zips": {},
+                "allowed_states": [],
+                "alert_store_ids": ["R102"],
+                "alert_product_ids": ["us"],
+                "secret_extension": "PRESERVE_ME",
+            }
+            sample.write_text(json.dumps(cfg), encoding="utf-8")
+            target.write_text(json.dumps(cfg), encoding="utf-8")
+            client = create_wizard_app(target, sample).test_client()
+            token = re.search(
+                r'const TOKEN = "([^"]+)"', client.get("/").get_data(as_text=True)
+            ).group(1)
+            clean = client.get("/api/config").get_json()["config"]
+            clean.pop("alert_store_ids")
+            clean.pop("alert_product_ids")
+            result = client.post("/api/config", json=clean, headers={"X-Setup-Token": token})
+            self.assertEqual(result.status_code, 200, result.get_json())
+            saved = json.loads(target.read_text(encoding="utf-8"))
+            self.assertNotIn("alert_store_ids", saved)
+            self.assertNotIn("alert_product_ids", saved)
+            self.assertEqual(saved["secret_extension"], "PRESERVE_ME")
+
     def test_invalid_existing_config_is_not_overwritten_on_save(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
