@@ -216,7 +216,7 @@ body.has-pending{padding-bottom:95px}
 <header><small>APPLE STOCK WATCHER / LOCAL SETUP</small><h1>Make it yours.</h1><p>Configure products, stores, prices and alerts without editing JSON.</p></header>
 <div class="info">🔒 This wizard runs only on your computer (127.0.0.1). No webhook secrets are displayed or saved here.</div>
 <div class="setup-progress" aria-label="Setup steps">
-<span id="stepFind" class="current">1. Find a model</span><span id="stepChoose">2. Add variants</span><span id="stepSave">3. Save</span><span>4. Restart watcher</span>
+<span id="stepFind" class="current">1. Find a model</span><span id="stepChoose">2. Add variants</span><span id="stepSave">3. Save</span><span id="stepRestart">4. Restart watcher</span>
 </div>
 <div class="setup-state" id="setupState" data-state="loading" role="status" aria-live="polite">
 <span id="setupStateIcon" aria-hidden="true">◌</span>
@@ -340,9 +340,10 @@ function refreshSetupState(){
     ?products+" selected variants in "+areas+" areas. Save changes, then restart the watcher."
     :hasSavedFile?"Saved in config.json. Restart the watcher to apply; this page does not check whether monitoring is running."
     :"This example is not your active setup. Add a model, save a private configuration and restart the watcher.";
-  el("stepFind").classList.toggle("current",!!modelPreview&&!hasUnsavedChanges);
+  el("stepFind").classList.toggle("current",!modelPreview&&!hasUnsavedChanges&&!hasSavedFile);
   el("stepChoose").classList.toggle("current",!!modelPreview);
   el("stepSave").classList.toggle("current",hasUnsavedChanges);
+  el("stepRestart").classList.toggle("current",!hasUnsavedChanges&&hasSavedFile);
   const showDock=hasUnsavedChanges;
   el("saveDock").hidden=!showDock;
   document.body.classList.toggle("has-pending",showDock);
@@ -416,6 +417,7 @@ function renderCatalog(){
       const existing=new Set([...document.querySelectorAll(".pid")].map(node=>node.value));
       const finalId=uniqueId(id,existing,40);
       productRow(finalId,item);
+      markDirty();
       status("Added "+item.part+". Review details before saving.");
       showToast("Added "+item.name+" to your selection. Save to apply.");
       el("advancedProducts").open=true;
@@ -810,7 +812,11 @@ async function start(){
     status(payload.exists?"Existing private configuration loaded.":"Example configuration loaded; save to create your own.");
   }catch(error){status(String(error),true);}
 }
-el("addProduct").addEventListener("click",()=>productRow("",{market:"US"}));
+el("addProduct").addEventListener("click",()=>{
+  productRow("",{market:"US"});
+  markDirty();
+  status("New manual product added to the editor. Fill in its details, then Save.");
+});
 el("watchModel").addEventListener("click",watchSelectedModel);
 el("applyModelFilters").addEventListener("click",applyModelSelection);
 ["modelColor","modelStorage","modelCarrier"].forEach(id=>el(id).addEventListener("change",updateModelPreview));
