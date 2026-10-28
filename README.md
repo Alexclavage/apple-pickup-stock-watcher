@@ -44,6 +44,16 @@ On macOS/Linux run `python setup_wizard.py` inside the activated environment. Op
 
 **Security:** the wizard is not part of the public dashboard. It binds to `127.0.0.1` only, checks origin and request tokens for saves, and never displays or saves your Discord webhook. Do not forward this port to the public Internet. An Apple SKU still needs to be obtained and verified manually; this UI does not scrape a SKU catalogue or validate actual inventory.
 
+## Optional variant filters: colour, storage and carrier
+
+After choosing a model name and country in the local setup wizard, click **Monitor this model — choose options**. The watcher obtains all currently discoverable regional SKU variants and displays **Colour**, **Storage**, and **Carrier connection** filters before saving. By default, all discovered variants are selected; narrow to one colour, capacity or carrier where verifiable.
+
+The UI shows how many actual SKUs match each combination and enforces the existing maximum of 48 SKUs per selected model. Choosing a variant does not trigger live monitoring until the private config is saved and the watcher restarts. Individual SKU editing remains in Advanced.
+
+**Important caveat about carrier selection:** A carrier plan/eSIM activation choice at Apple's checkout is not necessarily a unique product part number. The app **never interprets a missing carrier field as 'unlocked'**. Options such as *Without a carrier*, *With a carrier*, or a specific carrier are offered only when Apple's **explicit product-variant metadata** identifies that choice. If Apple lists the same SKU with contradictory carrier annotations, the carrier is marked **unknown**, and users are told that a carrier-specific stock distinction cannot be verified.
+
+If colour/storage/carrier data is missing or the selected combination yields no verifiable SKU, the wizard reports this instead of guessing. Selection is currently one value per attribute (or **All**) and may be repeated to change an existing model subscription. Carrier selection cannot guarantee a prepaid eSIM or a specific activation plan at pickup.
+
 ## One-click monitoring by Apple model
 
 **Default experience:** in the local setup wizard, first choose your monitoring country/location, then select a model name such as **iPhone 18 Pro** or **iPhone 18 Pro Max** and click **Monitor this model**. The app requests the official regional Apple buy-page catalog, matches the requested model, and adds **every discovered color/storage SKU variant** automatically. It does not ask for a part number or an individual price. The selected model appears as one removable group in the wizard; raw SKUs remain accessible under Advanced.
