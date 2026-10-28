@@ -59,6 +59,15 @@ This roadmap is directional, not a promise that a feature already exists.
 - [ ] Validate carrier selection behavior against real Apple checkout pages; carrier account activation may be separate from stock SKUs
 - [ ] Provide multiple value selection per dimension (several colours/capacities in one group) when needed
 
+## Audit regressions: product batching and config privacy
+
+- [x] Detect an empty Apple Store result for an individual 12-SKU request batch even if another batch succeeds
+- [x] Match the Apple polling request budget to actual product-ID batches (including duplicate part numbers)
+- [x] Keep custom/private legacy config keys server-side without exposing them in the wizard's `/api/config` response
+- [x] Preserve and back up existing unknown configuration fields on each save, rejecting corrupt prior JSON without overwriting it
+- [ ] Independently validate batch-specific Apple Store coverage with regional live results
+- [ ] Consider authenticated dashboard access before any internet-facing deployment
+
 ## Hardening for a stable public release
 
 - [x] Report globally partial coverage when a configured market has no monitoring areas
