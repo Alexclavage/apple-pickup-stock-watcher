@@ -17,6 +17,7 @@ import tempfile
 from flask import Flask, abort, jsonify, render_template_string, request
 from monitoring_areas import MAX_MONITORING_AREAS, legacy_areas, validate_monitoring_areas
 from regions import region_for
+from catalog_discovery import CatalogError, FAMILIES, fetch_catalog
 
 
 ROOT = Path(__file__).resolve().parent
@@ -164,11 +165,29 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 .actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:20px 0}#message{min-height:22px;color:var(--muted)}.toggle{display:flex;align-items:center;gap:8px;color:var(--text);margin:7px 0 12px}.toggle input{width:auto}
 @media(max-width:750px){.grid,.fields{grid-template-columns:1fr}.full{grid-column:1}section{padding:16px}body{padding:20px 12px}}
 .area-warning{border:1px solid #b18533;background:#30230f;color:#ffd997;padding:14px 16px;border-radius:14px;margin-top:12px}.area-warning p{color:#f0d3a6;margin:4px 0 0}.area-warning[hidden]{display:none}
+.catalog-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-top:1px solid var(--border)}.catalog-entry strong{display:block;font-size:13px}.catalog-entry small{display:block}.catalog-entry button{flex-shrink:0}.catalog-list{max-height:330px;overflow:auto;margin:12px 0}.catalog-status{font-size:13px;color:var(--muted);margin:12px 0}
 </style>
 </head><body><main>
 <header><small>APPLE STOCK WATCHER / LOCAL SETUP</small><h1>Make it yours.</h1><p>Configure products, stores, prices and alerts without editing JSON.</p></header>
 <div class="info">🔒 This wizard runs only on your computer (127.0.0.1). No webhook secrets are displayed or saved here.</div>
 <section><label class="toggle"><input id="experimentalRegions" type="checkbox"> Enable France/UK preview (experimental)</label><p>Regional pickup requests have not yet been verified by this project's maintainers. Use only real local Apple SKUs and verify results on Apple's website. Other countries remain unavailable.</p><div class="toolbar"><div><h2>1. Products</h2><p>Use Apple's region-specific SKU. The example values are illustrative, not an automatically updated product catalogue.</p></div><button id="addProduct" type="button">+ Add product</button></div><div id="products"></div></section>
+<section>
+<h2>Discover Apple products — preview</h2>
+<p>Search the live official Apple buying pages on demand. SKU discovery is experimental: model variations and prices can be incomplete or change without notice. You always review the selected entry before saving.</p>
+<div class="fields">
+<div><label for="catalogMarket">Country</label><select id="catalogMarket"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
+<div><label for="catalogFamily">Product family</label><select id="catalogFamily">
+<option value="iphone-18-pro">iPhone 18 Pro / Pro Max</option><option value="iphone-17">iPhone 17</option><option value="iphone-air">iPhone Air</option>
+<option value="ipad-pro">iPad Pro</option><option value="ipad-air">iPad Air</option>
+<option value="macbook-air">MacBook Air</option><option value="macbook-pro">MacBook Pro</option><option value="mac-mini">Mac mini</option>
+<option value="apple-watch">Apple Watch (limited)</option><option value="apple-watch-ultra">Apple Watch Ultra (limited)</option>
+</select></div>
+</div>
+<div class="actions"><button id="findCatalog" type="button" class="primary">Find Apple SKUs</button><span id="catalogStatus" class="catalog-status" role="status" aria-live="polite"></span></div>
+<label for="catalogFilter">Filter discovered variants</label><input id="catalogFilter" type="search" placeholder="Search model, capacity, colour or SKU" disabled>
+<div id="catalogResults" class="catalog-list"></div>
+<small>One official Apple page request at a time, cached for six hours. Missing prices must be entered manually. Apple's store pickup API does not guarantee availability for all products (especially customised Macs and Watch bundles).</small>
+</section>
 <section>
 <div class="toolbar"><div><h2>2. Monitoring areas</h2><p>Select a country and postal code or city for each area. US currently requires a five-digit ZIP; Canada also accepts a city, but postal codes are recommended. Countries beyond US/Canada will be added as validated.</p></div>
 <button id="addRegion" type="button">+ Add area</button></div>
@@ -213,6 +232,55 @@ const TOKEN = {{ token | tojson }};
 let original = {};
 const el = id => document.getElementById(id);
 const splitIds = value => value.split(",").map(s=>s.trim()).filter(Boolean);
+let catalogRows = [];
+function renderCatalog(){
+  const container=el("catalogResults");container.replaceChildren();
+  const phrase=el("catalogFilter").value.toLowerCase().trim();
+  let matches=catalogRows.filter(p=>(p.name+" "+p.part).toLowerCase().includes(phrase));
+  for(const item of matches.slice(0,80)){
+    const row=document.createElement("div");row.className="catalog-entry";
+    const info=document.createElement("div");
+    const title=document.createElement("strong");title.textContent=item.name;
+    const meta=document.createElement("small");meta.textContent=item.part+" • "+item.currency+" • "+(item.price===null?"Price not supplied by Apple; enter manually":item.price.toFixed(2));
+    info.append(title,meta);
+    const add=document.createElement("button");add.type="button";add.textContent="Add";
+    add.addEventListener("click",()=>{
+      const already=[...document.querySelectorAll(".product-entry")].some(root=>
+        root.querySelector(".market").value===item.market&&root.querySelector(".sku").value.toUpperCase()===item.part.toUpperCase());
+      if(already){status("This SKU is already in your product list.",true);return;}
+      const id=(item.market.toLowerCase()+"_"+item.part.replace(/[^a-zA-Z0-9]/g,"_")).slice(0,40);
+      const existing=new Set([...document.querySelectorAll(".pid")].map(node=>node.value));
+      let finalId=id,n=2;
+      while(existing.has(finalId)){finalId=(id.slice(0,36)+"_"+n++).slice(0,40);}
+      productRow(finalId,item);status("Added "+item.part+". Review its price before saving.");
+      el("products").lastElementChild.scrollIntoView({behavior:"smooth",block:"center"});
+    });
+    row.append(info,add);container.append(row);
+  }
+  if(matches.length>80){const note=document.createElement("small");note.textContent=(matches.length-80)+" more variants: type in the filter to narrow down.";container.append(note);}
+}
+async function discoverCatalog(){
+  const button=el("findCatalog");
+  const market=el("catalogMarket").value;
+  if(["FR","GB"].includes(market)&&!el("experimentalRegions").checked){
+    el("catalogStatus").textContent="Check the experimental France/UK checkbox above first.";
+    return;
+  }
+  button.disabled=true;el("catalogStatus").textContent="Reading Apple's product page…";
+  try{
+    const r=await fetch("/api/catalog/discover",{method:"POST",
+      headers:{"Content-Type":"application/json","X-Setup-Token":TOKEN},
+      body:JSON.stringify({market,family:el("catalogFamily").value,experimental:el("experimentalRegions").checked})});
+    const data=await r.json();
+    if(!r.ok)throw Error(data.error||"Apple catalog unavailable");
+    catalogRows=data.items||[];
+    el("catalogFilter").disabled=false;el("catalogFilter").value="";
+    renderCatalog();
+    el("catalogStatus").textContent=catalogRows.length+" variants • "+(data.cached?"cached":"fresh")+". Check the SKU and current price on Apple's website.";
+  }catch(e){catalogRows=[];el("catalogResults").replaceChildren();el("catalogFilter").disabled=true;
+    el("catalogStatus").textContent=String(e.message||e);
+  }finally{button.disabled=false;}
+}
 function productRow(id, p) {
   const root=el("productTemplate").content.firstElementChild.cloneNode(true);
   root.querySelector(".pid").value=id||"";
@@ -307,6 +375,8 @@ async function start(){
   }catch(error){status(String(error),true);}
 }
 el("addProduct").addEventListener("click",()=>productRow("",{market:"US"}));
+el("findCatalog").addEventListener("click",discoverCatalog);
+el("catalogFilter").addEventListener("input",renderCatalog);
 el("addRegion").addEventListener("click",()=>{
   const count=document.querySelectorAll(".region-entry").length;
   if(count>=8){status("Maximum 8 areas to protect Apple endpoints; remove an area first.",true);return}
@@ -371,6 +441,25 @@ def create_wizard_app(config_path=None, sample_path=None):
             return jsonify({"error": f"Cannot read {target.name}: {exc}"}), 422
         # Keep unknown settings in the browser so they survive subsequent saves.
         return jsonify({"config": {**raw, **clean}, "exists": path.is_file()})
+
+    @app.post("/api/catalog/discover")
+    def discover_catalog():
+        origin = request.headers.get("Origin")
+        if origin and origin != request.host_url.rstrip("/"):
+            return jsonify({"error": "Request origin not allowed"}), 403
+        if not hmac.compare_digest(request.headers.get("X-Setup-Token", ""), csrf_token):
+            return jsonify({"error": "Setup token missing or invalid"}), 403
+        selection = request.get_json(silent=True)
+        if not isinstance(selection, dict):
+            return jsonify({"error": "Invalid catalog selection"}), 422
+        try:
+            market = selection.get("market")
+            family = selection.get("family")
+            experimental = selection.get("experimental") is True
+            result = fetch_catalog(market, family, experimental=experimental)
+            return jsonify(result)
+        except CatalogError as exc:
+            return jsonify({"error": str(exc)}), 422
 
     @app.post("/api/config")
     def write_config():
