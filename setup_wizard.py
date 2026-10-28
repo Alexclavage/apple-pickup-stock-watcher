@@ -192,11 +192,36 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 .toast-success strong{color:#81e8ae;font-size:19px}.toast-success span{font-size:13px;line-height:1.4}
 @keyframes toast-in{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
 .area-subtitle{font-size:12px;color:var(--muted)}.area-entry-title{display:flex;flex-direction:column;gap:2px}
+.setup-progress{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:17px;color:var(--muted);font-size:12px}
+.setup-progress span{padding:7px 10px;background:#1a1c22;border:1px solid var(--border);border-radius:999px}
+.setup-progress span.current{border-color:#407bb9;color:#d5eaff;background:#172638}
+.watch-summary{margin:18px 0;padding:17px;background:#171b22;border:1px solid #394351;border-radius:16px}
+.watch-summary h2{font-size:18px;margin:0 0 5px}.watch-summary p{font-size:13px;margin:0 0 10px}
+.watch-summary-title{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.watch-summary-list{display:flex;flex-direction:column;gap:8px}
+.watch-group{border:1px solid #344252;background:#202832;border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.watch-group strong{font-size:14px;display:block;color:var(--text)}.watch-group small{line-height:1.5}
+.watch-empty{color:#aab4c2;font-size:13px;padding:12px 2px}
+.setup-state{padding:13px 16px;background:#17232d;border:1px solid #436279;border-radius:13px;margin:12px 0 22px;display:flex;align-items:flex-start;gap:11px}
+.setup-state strong{display:block;font-size:14px}.setup-state p{margin:2px 0 0;font-size:12px}.setup-state[data-state="dirty"]{background:#302414;border-color:#8d6635}.setup-state[data-state="saved"]{background:#162b22;border-color:#33785b}
+.preview-warning{font-size:13px;color:#f7d39f;background:#332618;border:1px solid #775d36;border-radius:10px;padding:10px 13px;margin:10px 0}
+.preview-warning[hidden]{display:none}
+.save-dock{position:fixed;bottom:0;left:0;right:0;z-index:900;background:rgba(14,17,23,.98);border-top:1px solid #454e5e;box-shadow:0 -10px 30px #0008;padding:11px max(18px,calc((100vw - 1050px)/2));display:flex;justify-content:space-between;align-items:center;gap:16px}
+.save-dock[hidden]{display:none}.save-dock strong{font-size:13px}.save-dock small{display:block}.save-dock button{flex-shrink:0}
+body.has-pending{padding-bottom:95px}
+@media(max-width:620px){.save-dock{flex-wrap:wrap;gap:8px}.save-dock button{width:100%}body.has-pending{padding-bottom:160px}}
 .catalog-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-top:1px solid var(--border)}.catalog-entry strong{display:block;font-size:13px}.catalog-entry small{display:block}.catalog-entry button{flex-shrink:0}.catalog-list{max-height:330px;overflow:auto;margin:12px 0}.catalog-status{font-size:13px;color:var(--muted);margin:12px 0}
 </style>
 </head><body><main>
 <header><small>APPLE STOCK WATCHER / LOCAL SETUP</small><h1>Make it yours.</h1><p>Configure products, stores, prices and alerts without editing JSON.</p></header>
 <div class="info">🔒 This wizard runs only on your computer (127.0.0.1). No webhook secrets are displayed or saved here.</div>
+<div class="setup-progress" aria-label="Setup steps">
+<span id="stepFind" class="current">1. Find a model</span><span id="stepChoose">2. Add variants</span><span id="stepSave">3. Save</span><span>4. Restart watcher</span>
+</div>
+<div class="setup-state" id="setupState" data-state="loading" role="status" aria-live="polite">
+<span id="setupStateIcon" aria-hidden="true">◌</span>
+<div><strong id="setupStateTitle">Reading local configuration…</strong><p id="setupStateDetail">Products are only monitored after they are saved and the watcher is restarted.</p></div>
+</div>
 <section>
 <label class="toggle"><input id="experimentalRegions" type="checkbox"> Enable France/UK preview (experimental)</label>
 <p>France/UK pickup responses still need live verification. Other countries are not supported yet.</p>
@@ -206,9 +231,9 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 <div><label for="modelPicker">Apple model</label><select id="modelPicker">{% for model in model_choices %}<option value="{{model.id}}">{{model.name}}</option>{% endfor %}</select></div>
 <div><label for="modelMarket">Country</label><select id="modelMarket"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
 </div>
-<div class="actions"><button id="watchModel" type="button" class="primary">Monitor this model — choose options</button><span id="modelStatus" class="catalog-status" role="status" aria-live="polite"></span></div>
+<div class="actions"><button id="watchModel" type="button" class="primary">1. Find variants</button><span id="modelStatus" class="catalog-status" role="status" aria-live="polite"></span></div>
 <div id="modelOptions" class="model-filters" hidden>
-<h2>Choose variants (optional)</h2>
+<h2>2. Choose variants (optional)</h2>
 <p>All values are selected by default. Narrow the selection or leave everything as-is.</p>
 <div class="fields">
 <div><label for="modelColor">Colour</label><select id="modelColor"><option value="">All discovered colours</option></select></div>
@@ -216,10 +241,16 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 <div class="full"><label for="modelCarrier">Carrier connection</label><select id="modelCarrier"><option value="">Any / not specified</option></select></div>
 </div>
 <div id="carrierNote" class="filter-help">Carrier connection is not always encoded in Apple product SKUs.</div>
-<div class="actions"><button id="applyModelFilters" type="button" class="primary">+ Add selected variants</button><span id="modelCount" class="catalog-status" role="status" aria-live="polite"></span></div>
+<div class="actions"><button id="applyModelFilters" type="button" class="primary">2. Add selected variants to watchlist</button><span id="modelCount" class="catalog-status" role="status" aria-live="polite"></span></div>
+<div id="previewWarning" class="preview-warning" hidden>These are only search results. Click “Add selected variants to watchlist” to include them in your configuration.</div>
 <small>Choosing “without carrier” is only possible when Apple's data explicitly identifies the corresponding item. Carrier activation at checkout is not proof of a separate stock SKU.</small>
 </div>
-<div id="monitoredModels"></div>
+<div class="watch-summary" id="watchSummary">
+<div class="watch-summary-title"><h2>Your watchlist</h2><strong id="watchSummaryCount">0 variants</strong></div>
+<p id="watchSummaryHelp">Only products listed below are included when you save. Finding variants does not add them automatically.</p>
+<div class="watch-summary-list" id="monitoredModels"></div>
+<div id="watchAreaSummary" class="area-subtitle"></div>
+</div>
 <small>Models are resolved from Apple's public product page when added, not continuously refreshed. Some variants (especially build-to-order Macs and Apple Watch bundles) may not support pickup. Unknown prices remain unknown.</small>
 <details class="advanced" id="advancedProducts"><summary>Advanced: individual SKUs and manual product editing</summary>
 <div class="toolbar"><p>Review exact part numbers, edit a variant, or add your own SKU.</p><button id="addProduct" type="button">+ Add SKU manually</button></div>
@@ -268,9 +299,13 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 <label for="alertProducts">Product IDs when filtering (comma separated)</label><input id="alertProducts" placeholder="us_pro_512" disabled>
 </div></div><small>Uncheck and leave a field empty to disable notifications for that dimension.</small>
 </section>
-<div class="actions"><button class="primary" type="button" id="save">Save private configuration</button><span id="message" role="status" aria-live="polite"></span></div>
+<div class="actions"><button class="primary" type="button" id="save">3. Save private configuration</button><span id="message" role="status" aria-live="polite"></span></div>
 <p>Saved to <code>config.json</code> next to the watcher. Restart the watcher to apply changes. This wizard does not start monitoring or send notifications.</p>
 </main>
+<div class="save-dock" id="saveDock" hidden>
+<div><strong id="saveDockText">Unsaved configuration changes</strong><small>Not applied to the watcher until saved and restarted</small></div>
+<button id="saveSticky" type="button" class="primary">Save changes</button>
+</div>
 <div id="toastZone" class="toast-zone" role="status" aria-live="polite" aria-atomic="true"></div>
 <template id="productTemplate"><article class="entry product-entry"><div class="entry-top"><strong>Product</strong><button type="button" class="remove">Remove</button></div><div class="fields">
 <div><label>Product ID (auto-generated for selected variants)</label><input class="pid" placeholder="iphone_18_pro_max_512gb_silver_ca" maxlength="40"></div>
