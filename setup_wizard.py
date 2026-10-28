@@ -296,7 +296,8 @@ function slugPart(value){
 }
 function productIdForVariant(item,modelId){
   const model=slugPart(modelId||item.name||"apple").slice(0,23);
-  const details=[model,slugPart(item.storage),slugPart(item.color)];
+  const storage=slugPart(item.storage).replace(/^([0-9]+)_?(gb|tb)$/,"$1$2");
+  const details=[model,storage,slugPart(item.color)];
   if(item.carrier)details.push(item.carrier==="unlocked"?"simfree":slugPart(item.carrier));
   const market=slugPart(item.market||"us");
   const suffix="_"+market;
