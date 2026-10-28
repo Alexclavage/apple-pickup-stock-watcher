@@ -6,6 +6,7 @@ import requests
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template_string
 from history import append_history, read_history, transition_event
+from monitoring_areas import legacy_areas, validate_monitoring_areas, MAX_MONITORING_AREAS
 
 load_dotenv()
 
@@ -88,6 +89,13 @@ else:
     CA_TAX_RATE = 0.13
 US_PRODUCT_IDS = [pid for pid, p in PRODUCTS.items() if p["market"] == "US"]
 CA_PRODUCT_IDS = [pid for pid, p in PRODUCTS.items() if p["market"] == "CA"]
+MONITORING_AREAS = (
+    validate_monitoring_areas(cfg["monitoring_areas"], PRODUCTS)
+    if CONFIG_PATH.exists() and "monitoring_areas" in cfg
+    else legacy_areas(SEARCH_ZIPS, CA_LOCATION, CA_TARGET_STORE, PRODUCTS)
+)
+# With several locations, avoid polling as aggressively as a single-location watcher.
+INTERVAL = max(INTERVAL, 300 if len(MONITORING_AREAS) > 1 else 120, 600 if len(MONITORING_AREAS) > 4 else 120)
 if not US_PRODUCT_IDS and not CA_PRODUCT_IDS:
     raise ValueError("Configure at least one US or CA product")
 if not 0 <= CA_TAX_RATE <= 1:
@@ -238,43 +246,74 @@ def parse_item(raw, pid):
     }
     item.update(money_info(product, item)); return item
 
-def fetch_all():
-    dedup = {}; errors = []; rate_limited = []
-    # US: 4 requests, 3 SKUs in each request
-    for area, zip_code in (SEARCH_ZIPS.items() if US_PRODUCT_IDS else []):
-        try:
-            stores = fetch_market(US_URL, zip_code, US_PRODUCT_IDS)
-            for raw in stores:
-                if (raw.get("state") or "").upper() not in ALLOWED_STATES: continue
-                for pid in US_PRODUCT_IDS:
-                    item = parse_item(raw, pid)
-                    if item["storeNumber"]: dedup[item["key"]] = item
-        except Exception as e:
-            err = str(e)
-            if err in {"APPLE_541", "APPLE_429"}: rate_limited.append(area); errors.append(f"{area}: Apple {err[-3:]}"); print(f"{area}: {err} - zone skipped", flush=True)
-            else: errors.append(f"{area}: {err}"); print(f"{area}: {err}", flush=True)
-        time.sleep(random.uniform(2.0,4.0))
+def merge_area_results(existing, current):
+    """Conflicting nearby-area observations must not cause a false notification."""
+    if existing is None:
+        return current
+    if existing.get("quote") == "Conflicting results across monitoring areas":
+        return existing
+    old_status = existing["status"]
+    new_status = current["status"]
+    if old_status == new_status:
+        return current
+    if old_status == "unknown":
+        return current
+    if new_status == "unknown":
+        return existing
+    combined = dict(current)
+    combined["status"] = "unknown"
+    combined["pickupDisplay"] = "unknown"
+    combined["quote"] = "Conflicting results across monitoring areas"
+    return combined
 
-    # Canada: 1 request, 2 SKUs; only Eaton Centre is kept
-    if CA_PRODUCT_IDS:
+
+def fetch_all():
+    dedup = {}
+    errors = []
+    rate_limited = False
+    for index, area in enumerate(MONITORING_AREAS):
+        market = area["market"]
+        product_ids = US_PRODUCT_IDS if market == "US" else CA_PRODUCT_IDS
+        url = US_URL if market == "US" else CA_URL
+        if not product_ids:
+            continue
         try:
-            stores = fetch_market(CA_URL, CA_LOCATION, CA_PRODUCT_IDS)
-            targets = [st for st in stores if not CA_TARGET_STORE or st.get("storeNumber") == CA_TARGET_STORE]
-            if not targets:
-                errors.append(f"CANADA: target store {CA_TARGET_STORE} not returned")
-            else:
-                for target in targets:
-                    for pid in CA_PRODUCT_IDS:
-                        item = parse_item(target, pid); dedup[item["key"]] = item
-        except Exception as e:
-            err = str(e)
-            if err in {"APPLE_541", "APPLE_429"}: rate_limited.append("CANADA"); errors.append(f"CANADA: Apple {err[-3:]}"); print(f"CANADA: {err} - zone skipped", flush=True)
-            else: errors.append(f"TORONTO: {err}"); print(f"TORONTO: {err}", flush=True)
+            stores = fetch_market(url, area["location"], product_ids)
+            desired = set(area["store_ids"])
+            found_stores = set()
+            for raw in stores:
+                store_id = raw.get("storeNumber")
+                if not store_id or (desired and store_id not in desired):
+                    continue
+                if market == "US" and ALLOWED_STATES and (raw.get("state") or "").upper() not in ALLOWED_STATES:
+                    continue
+                found_stores.add(store_id)
+                for product_id in product_ids:
+                    item = parse_item(raw, product_id)
+                    dedup[item["key"]] = merge_area_results(dedup.get(item["key"]), item)
+            if desired and not found_stores.intersection(desired):
+                errors.append(f'{area["id"]}: none of the selected stores was returned by Apple; status unknown')
+            elif desired - found_stores:
+                errors.append(f'{area["id"]}: some selected stores were not returned; status unknown')
+        except Exception as exc:
+            message = str(exc)
+            errors.append(f'{area["id"]}: {message}')
+            print(f'{area["id"]}: {message}', flush=True)
+            if message in {"APPLE_429", "APPLE_541"}:
+                rate_limited = True
+                # Stop this cycle rather than continuing to request more areas after a throttle.
+                break
+        if index < len(MONITORING_AREAS) - 1:
+            time.sleep(random.uniform(2.0, 4.0))
 
     if not dedup:
-        if rate_limited: raise RuntimeError("APPLE_RATE_LIMIT_ALL")
-        if errors: raise RuntimeError(" | ".join(errors))
+        if rate_limited:
+            raise RuntimeError("APPLE_RATE_LIMIT_ALL")
+        if errors:
+            raise RuntimeError(" | ".join(errors))
         raise RuntimeError("No Apple stores returned")
+    if rate_limited:
+        errors.append("Apple 429/541 rate limit: remaining areas skipped, monitoring will slow down")
 
     status_order = {"available":0,"unavailable":1,"unknown":2}
     product_order = {pid: n for n, pid in enumerate(PRODUCTS)}
@@ -392,14 +431,16 @@ def poll_once():
             + [transition_event(item, "unavailable", checked) for item in newly_unavailable]
         )
         append_history(HISTORY_FILE, changes, max_entries=HISTORY_MAX_EVENTS)
-        if available: overall = "available"
-        elif partial_errors: overall = "partial"
-        elif any(x["status"]=="unknown" for x in items): overall = "partial"
-        else: overall = "unavailable"
+        if partial_errors or any(x["status"] == "unknown" for x in items):
+            overall = "partial"
+        elif available:
+            overall = "available"
+        else:
+            overall = "unavailable"
         with lock:
             latest = {"status":overall,"checked_at":checked,"items":items,"error":" | ".join(partial_errors) if partial_errors else None,"consecutive_errors":0}
         print(checked, f"{len(items)} product/store rows", f"{len(available)} available", ("PARTIAL" if partial_errors else "OK"), flush=True)
-        if any(("Apple 429" in err or "Apple 541" in err) for err in partial_errors):
+        if any(("APPLE_429" in err or "APPLE_541" in err or "Apple 429" in err or "Apple 541" in err) for err in partial_errors):
             return max(INTERVAL, 900)
         return INTERVAL
     except Exception as e:
