@@ -112,6 +112,40 @@ def _humanize(text):
     return re.sub(r"\s+", " ", text).title()
 
 
+def _normalized_storage(value):
+    if not isinstance(value, str) or not value.strip():
+        return None
+    compact = value.strip().lower().replace("_", "").replace(" ", "")
+    match = re.fullmatch(r"(\d+)(gb|tb)", compact)
+    if match:
+        return f"{match.group(1)} {match.group(2).upper()}"
+    return _humanize(value)[:50] or None
+
+
+def _normalized_carrier(raw):
+    """Return carrier information *only* if an Apple item explicitly says so.
+
+    Carrier activation can be a checkout option independent of SKU; absence
+    of carrier metadata never means an unlocked/SIM-free item.
+    """
+    for key in ("dimensionCarrier", "carrier", "carrierName", "activationCarrier"):
+        value = raw.get(key)
+        if not isinstance(value, str) or not value.strip():
+            continue
+        label = value.strip()
+        normalized = re.sub(r"[\s_-]+", "", label).lower()
+        if normalized in {
+            "unlocked", "simfree", "nocarrier", "nocellularplan",
+            "connectlater", "connecttoanycarrierlater", "carrierfree",
+        }:
+            return "unlocked"
+        # Avoid declaring a vague status like "any" to be a specific carrier.
+        if normalized in {"none", "unknown", "other", "any", "open"}:
+            return None
+        return label[:64]
+    return None
+
+
 def parse_catalog_html(page, market, family):
     """Parse current Apple selection data and return only explicitly listed SKUs.
 
@@ -132,8 +166,17 @@ def parse_catalog_html(page, market, family):
         sku = raw.get("partNumber")
         if not isinstance(sku, str) or not SKU_RE.fullmatch(sku):
             continue
-        # Many phone pages repeat the same part per carrier; deduplicate.
+        # The same SKU can appear in several activation flows. When carrier
+        # labels conflict, the part number is *not* provably carrier-specific.
+        carrier = _normalized_carrier(raw)
         if sku in result:
+            previous = result[sku]
+            if previous["carrier"] != carrier:
+                previous["carrier"] = None
+                previous["_carrier_ambiguous"] = True
+            return_label = previous.get("_carrier_ambiguous", False)
+            if return_label:
+                previous["carrier"] = None
             continue
         details = []
         for dimension in (
@@ -169,11 +212,16 @@ def parse_catalog_html(page, market, family):
             "category": category,
             "family": family,
             "family_type": raw.get("familyType") if isinstance(raw.get("familyType"), str) else None,
+            "color": _humanize(raw.get("dimensionColor"))[:50] or None,
+            "storage": _normalized_storage(raw.get("dimensionCapacity") or raw.get("dimensionStorage")),
+            "carrier": carrier,
         }
         if len(result) > MAX_RESULTS:
             raise CatalogError("Apple returned too many SKU variants to safely catalogue; refusing an incomplete list")
     if not result:
         raise CatalogError("No recognizable part numbers found; Apple may have changed the catalog format")
+    for item in result.values():
+        item.pop("_carrier_ambiguous", None)
     return sorted(result.values(), key=lambda item: (item["name"], item["part"]))
 
 
