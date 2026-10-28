@@ -137,6 +137,9 @@ def build_model_groups(products, observations, scan_status="starting", checked_a
                 "unknown": unknown_count,
                 "variants": entries,
             })
+        group["variant_count"] = len(group["variants"])
+        group["colors"] = sorted({v["color"] for v in group["variants"] if v["color"]})
+        group["storages"] = sorted({v["storage"] for v in group["variants"] if v["storage"]})
         group["checked_stores"] = len(group["stores"])
         group["available_stores"] = sum(store["available"] > 0 for store in group["stores"])
         group["reliable"] = fresh
