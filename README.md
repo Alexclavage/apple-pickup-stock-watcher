@@ -54,6 +54,17 @@ The UI shows how many actual SKUs match each combination and enforces the existi
 
 If colour/storage/carrier data is missing or the selected combination yields no verifiable SKU, the wizard reports this instead of guessing. Selection is currently one value per attribute (or **All**) and may be repeated to change an existing model subscription. Carrier selection cannot guarantee a prepaid eSIM or a specific activation plan at pickup.
 
+## Setup status: found, selected, saved, and active
+
+The visual wizard distinguishes four stages so it is always clear what happens after clicking:
+
+1. **Find variants** fetches Apple catalog data and displays options only. Variants found are **not** yet part of the watchlist.
+2. **Add selected variants to watchlist** adds exact SKUs to a persistent summary with model, colour, capacity and selected areas.
+3. **Save private configuration** writes the watchlist to `config.json`. A sticky Save button appears when there are unsaved changes. Saving while an uncommitted catalog preview is open is blocked until the preview is either added or discarded.
+4. **Restart the watcher** to apply the new configuration. The wizard never claims that monitoring is running; saved-on-disk is not the same as active surveillance.
+
+The watchlist includes **manual SKUs** as well as model-group subscriptions and displays the selected monitoring regions. A clear banner distinguishes **only previewed**, **unsaved edits**, **locally saved** and **example not saved** states. These are configuration statuses, not live Apple pickup availability.
+
 ## Clear product IDs, monitoring area names and local confirmation toasts
 
 The wizard creates descriptive **product IDs** when a model variant is selected, using **model → storage → color → optional verified carrier → country**. Example: `iphone_18_pro_max_512gb_silver_ca`. If two Apple SKUs map to the same descriptive name, a short numeric suffix keeps the 40-character ID unique. Existing product IDs are preserved unless you manually edit them.

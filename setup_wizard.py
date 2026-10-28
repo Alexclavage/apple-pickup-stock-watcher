@@ -187,16 +187,43 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 @media(max-width:750px){.grid,.fields{grid-template-columns:1fr}.full{grid-column:1}section{padding:16px}body{padding:20px 12px}}
 .area-warning{border:1px solid #b18533;background:#30230f;color:#ffd997;padding:14px 16px;border-radius:14px;margin-top:12px}.area-warning p{color:#f0d3a6;margin:4px 0 0}.area-warning[hidden]{display:none}
 .model-filters{border:1px solid var(--border);padding:15px;border-radius:15px;background:#191c25;margin:15px 0}.model-filters[hidden]{display:none}.filter-help{font-size:12px;color:var(--muted);padding:4px 0}.model-watch{border:1px solid #315580;background:#142337;border-radius:14px;padding:13px 15px;margin:9px 0;display:flex;gap:12px;align-items:center;justify-content:space-between}.model-watch strong{display:block}.model-watch small{display:block}.model-watch button{flex-shrink:0}.advanced{margin-top:18px}.advanced summary{cursor:pointer;color:#9dbef0;font-weight:600;padding:10px 0}
+.has-pending .toast-zone{bottom:85px}
+@media(max-width:620px){.has-pending .toast-zone{bottom:145px}}
 .toast-zone{position:fixed;right:20px;bottom:20px;z-index:1000;width:min(390px,calc(100vw - 32px));pointer-events:none}
 .toast-success{background:#123926;border:1px solid #2e9566;color:#e1ffeb;border-radius:14px;padding:13px 17px;box-shadow:0 14px 45px #000a;display:flex;gap:12px;align-items:center;animation:toast-in .2s ease-out}
 .toast-success strong{color:#81e8ae;font-size:19px}.toast-success span{font-size:13px;line-height:1.4}
 @keyframes toast-in{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
 .area-subtitle{font-size:12px;color:var(--muted)}.area-entry-title{display:flex;flex-direction:column;gap:2px}
+.setup-progress{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:17px;color:var(--muted);font-size:12px}
+.setup-progress span{padding:7px 10px;background:#1a1c22;border:1px solid var(--border);border-radius:999px}
+.setup-progress span.current{border-color:#407bb9;color:#d5eaff;background:#172638}
+.watch-summary{margin:18px 0;padding:17px;background:#171b22;border:1px solid #394351;border-radius:16px}
+.watch-summary h2{font-size:18px;margin:0 0 5px}.watch-summary p{font-size:13px;margin:0 0 10px}
+.watch-summary-title{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.watch-summary-list{display:flex;flex-direction:column;gap:8px}
+.watch-group{border:1px solid #344252;background:#202832;border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.watch-group strong{font-size:14px;display:block;color:var(--text)}.watch-group small{line-height:1.5}
+.watch-empty{color:#aab4c2;font-size:13px;padding:12px 2px}
+.setup-state{padding:13px 16px;background:#17232d;border:1px solid #436279;border-radius:13px;margin:12px 0 22px;display:flex;align-items:flex-start;gap:11px}
+.setup-state strong{display:block;font-size:14px}.setup-state p{margin:2px 0 0;font-size:12px}.setup-state[data-state="dirty"]{background:#302414;border-color:#8d6635}.setup-state[data-state="saved"]{background:#162b22;border-color:#33785b}.setup-state[data-state="preview"]{background:#302414;border-color:#8d6635}
+.preview-warning{font-size:13px;color:#f7d39f;background:#332618;border:1px solid #775d36;border-radius:10px;padding:10px 13px;margin:10px 0}
+.preview-warning[hidden]{display:none}
+.save-dock{position:fixed;bottom:0;left:0;right:0;z-index:900;background:rgba(14,17,23,.98);border-top:1px solid #454e5e;box-shadow:0 -10px 30px #0008;padding:11px max(18px,calc((100vw - 1050px)/2));display:flex;justify-content:space-between;align-items:center;gap:16px}
+.save-dock[hidden]{display:none}.save-dock strong{font-size:13px}.save-dock small{display:block}.save-dock button{flex-shrink:0}
+body.has-pending{padding-bottom:95px}
+@media(max-width:620px){.save-dock{flex-wrap:wrap;gap:8px}.save-dock button{width:100%}body.has-pending{padding-bottom:160px}}
 .catalog-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-top:1px solid var(--border)}.catalog-entry strong{display:block;font-size:13px}.catalog-entry small{display:block}.catalog-entry button{flex-shrink:0}.catalog-list{max-height:330px;overflow:auto;margin:12px 0}.catalog-status{font-size:13px;color:var(--muted);margin:12px 0}
 </style>
 </head><body><main>
 <header><small>APPLE STOCK WATCHER / LOCAL SETUP</small><h1>Make it yours.</h1><p>Configure products, stores, prices and alerts without editing JSON.</p></header>
 <div class="info">🔒 This wizard runs only on your computer (127.0.0.1). No webhook secrets are displayed or saved here.</div>
+<div class="setup-progress" aria-label="Setup steps">
+<span id="stepFind" class="current">1. Find a model</span><span id="stepChoose">2. Add variants</span><span id="stepSave">3. Save</span><span id="stepRestart">4. Restart watcher</span>
+</div>
+<div class="setup-state" id="setupState" data-state="loading" role="status" aria-live="polite">
+<span id="setupStateIcon" aria-hidden="true">◌</span>
+<div><strong id="setupStateTitle">Reading local configuration…</strong><p id="setupStateDetail">Products are only monitored after they are saved and the watcher is restarted.</p></div>
+</div>
 <section>
 <label class="toggle"><input id="experimentalRegions" type="checkbox"> Enable France/UK preview (experimental)</label>
 <p>France/UK pickup responses still need live verification. Other countries are not supported yet.</p>
@@ -206,9 +233,9 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 <div><label for="modelPicker">Apple model</label><select id="modelPicker">{% for model in model_choices %}<option value="{{model.id}}">{{model.name}}</option>{% endfor %}</select></div>
 <div><label for="modelMarket">Country</label><select id="modelMarket"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
 </div>
-<div class="actions"><button id="watchModel" type="button" class="primary">Monitor this model — choose options</button><span id="modelStatus" class="catalog-status" role="status" aria-live="polite"></span></div>
+<div class="actions"><button id="watchModel" type="button" class="primary">1. Find variants</button><span id="modelStatus" class="catalog-status" role="status" aria-live="polite"></span></div>
 <div id="modelOptions" class="model-filters" hidden>
-<h2>Choose variants (optional)</h2>
+<h2>2. Choose variants (optional)</h2>
 <p>All values are selected by default. Narrow the selection or leave everything as-is.</p>
 <div class="fields">
 <div><label for="modelColor">Colour</label><select id="modelColor"><option value="">All discovered colours</option></select></div>
@@ -216,10 +243,19 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 <div class="full"><label for="modelCarrier">Carrier connection</label><select id="modelCarrier"><option value="">Any / not specified</option></select></div>
 </div>
 <div id="carrierNote" class="filter-help">Carrier connection is not always encoded in Apple product SKUs.</div>
-<div class="actions"><button id="applyModelFilters" type="button" class="primary">+ Add selected variants</button><span id="modelCount" class="catalog-status" role="status" aria-live="polite"></span></div>
+<div class="actions">
+<button id="applyModelFilters" type="button" class="primary">2. Add selected variants to watchlist</button>
+<button id="discardPreview" type="button">Discard preview</button>
+<span id="modelCount" class="catalog-status" role="status" aria-live="polite"></span></div>
+<div id="previewWarning" class="preview-warning" hidden>These are only search results. Click “Add selected variants to watchlist” to include them in your configuration.</div>
 <small>Choosing “without carrier” is only possible when Apple's data explicitly identifies the corresponding item. Carrier activation at checkout is not proof of a separate stock SKU.</small>
 </div>
-<div id="monitoredModels"></div>
+<div class="watch-summary" id="watchSummary">
+<div class="watch-summary-title"><h2>Your watchlist</h2><strong id="watchSummaryCount">0 variants</strong></div>
+<p id="watchSummaryHelp">Only products listed below are included when you save. Finding variants does not add them automatically.</p>
+<div class="watch-summary-list" id="monitoredModels"></div>
+<div id="watchAreaSummary" class="area-subtitle"></div>
+</div>
 <small>Models are resolved from Apple's public product page when added, not continuously refreshed. Some variants (especially build-to-order Macs and Apple Watch bundles) may not support pickup. Unknown prices remain unknown.</small>
 <details class="advanced" id="advancedProducts"><summary>Advanced: individual SKUs and manual product editing</summary>
 <div class="toolbar"><p>Review exact part numbers, edit a variant, or add your own SKU.</p><button id="addProduct" type="button">+ Add SKU manually</button></div>
@@ -268,9 +304,13 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 <label for="alertProducts">Product IDs when filtering (comma separated)</label><input id="alertProducts" placeholder="us_pro_512" disabled>
 </div></div><small>Uncheck and leave a field empty to disable notifications for that dimension.</small>
 </section>
-<div class="actions"><button class="primary" type="button" id="save">Save private configuration</button><span id="message" role="status" aria-live="polite"></span></div>
+<div class="actions"><button class="primary" type="button" id="save">3. Save private configuration</button><span id="message" role="status" aria-live="polite"></span></div>
 <p>Saved to <code>config.json</code> next to the watcher. Restart the watcher to apply changes. This wizard does not start monitoring or send notifications.</p>
 </main>
+<div class="save-dock" id="saveDock" hidden>
+<div><strong id="saveDockText">Unsaved configuration changes</strong><small>Not applied to the watcher until saved and restarted</small></div>
+<button id="saveSticky" type="button" class="primary">Save changes</button>
+</div>
 <div id="toastZone" class="toast-zone" role="status" aria-live="polite" aria-atomic="true"></div>
 <template id="productTemplate"><article class="entry product-entry"><div class="entry-top"><strong>Product</strong><button type="button" class="remove">Remove</button></div><div class="fields">
 <div><label>Product ID (auto-generated for selected variants)</label><input class="pid" placeholder="iphone_18_pro_max_512gb_silver_ca" maxlength="40"></div>
@@ -288,7 +328,43 @@ button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-w
 <script>
 const TOKEN = {{ token | tojson }};
 let original = {};
+let isLoadingConfig=true;
+let hasSavedFile=false;
+let hasUnsavedChanges=false;
 const el = id => document.getElementById(id);
+function refreshSetupState(){
+  const products=document.querySelectorAll(".product-entry").length;
+  const areas=document.querySelectorAll(".region-entry").length;
+  const inPreview=!!modelPreview&&!el("modelOptions").hidden;
+  const state=hasUnsavedChanges?"dirty":inPreview?"preview":hasSavedFile?"saved":"example";
+  el("setupState").dataset.state=state;
+  el("setupStateIcon").textContent=hasUnsavedChanges?"●":hasSavedFile?"✓":"○";
+  el("setupStateTitle").textContent=hasUnsavedChanges
+    ?"Changes not saved"
+    :inPreview?"Variants found — not added yet"
+    :hasSavedFile?"Configuration saved on this computer":"Example configuration — not yet saved";
+  el("setupStateDetail").textContent=hasUnsavedChanges
+    ?products+" selected variants in "+areas+" areas."+
+      (inPreview?" You also have a preview that has NOT been added.":" Save changes, then restart the watcher.")
+    :inPreview?modelPreview.count+" variants found. Select the options and click Add selected variants before saving."
+    :hasSavedFile?"Saved in config.json. Restart the watcher to apply; this page does not check whether monitoring is running."
+    :"This example is not your active setup. Add a model, save a private configuration and restart the watcher.";
+  el("stepFind").classList.toggle("current",!modelPreview&&!hasUnsavedChanges&&!hasSavedFile);
+  el("stepChoose").classList.toggle("current",inPreview);
+  el("stepSave").classList.toggle("current",hasUnsavedChanges);
+  el("stepRestart").classList.toggle("current",!hasUnsavedChanges&&hasSavedFile);
+  const showDock=hasUnsavedChanges;
+  el("saveDock").hidden=!showDock;
+  document.body.classList.toggle("has-pending",showDock);
+  el("saveDockText").textContent=products+" selected variants · "+areas+" areas · unsaved changes";
+}
+function markDirty(){
+  if(isLoadingConfig)return;
+  hasUnsavedChanges=true;
+  renderMonitoredModels();
+  updateAreaWarning();
+  refreshSetupState();
+}
 const splitIds = value => value.split(",").map(s=>s.trim()).filter(Boolean);
 function slugPart(value){
   return String(value||"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase()
@@ -350,6 +426,7 @@ function renderCatalog(){
       const existing=new Set([...document.querySelectorAll(".pid")].map(node=>node.value));
       const finalId=uniqueId(id,existing,40);
       productRow(finalId,item);
+      markDirty();
       status("Added "+item.part+". Review details before saving.");
       showToast("Added "+item.name+" to your selection. Save to apply.");
       el("advancedProducts").open=true;
@@ -383,42 +460,77 @@ async function discoverCatalog(){
 }
 function renderMonitoredModels(){
   const container=el("monitoredModels");container.replaceChildren();
+  const roots=[...document.querySelectorAll(".product-entry")];
   const groups=new Map();
-  document.querySelectorAll(".product-entry").forEach(root=>{
+  const manual=[];
+  for(const root of roots){
     const model=root.dataset.watchModel;
-    if(!model)return;
+    if(!model){manual.push(root);continue;}
     const market=root.querySelector(".market").value;
     const key=market+"|"+model;
-    groups.set(key,(groups.get(key)||0)+1);
-  });
-  groups.forEach((count,key)=>{
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(root);
+  }
+  el("watchSummaryCount").textContent=roots.length+" variant"+(roots.length===1?"":"s")+" selected";
+  el("watchSummaryHelp").textContent=roots.length
+    ? "This is your actual selection. Any change requires Save, then a watcher restart."
+    : "Nothing selected yet. Finding variants is only a preview: click Add selected variants before Save.";
+  for(const [key,variants] of groups){
     const [market,model]=key.split("|");
-    const row=document.createElement("div");row.className="model-watch";
-    const text=document.createElement("div");
+    const row=document.createElement("div");row.className="watch-group";
+    const details=document.createElement("div");
     const name=document.createElement("strong");
     name.textContent=(el("modelPicker").querySelector('option[value="'+model+'"]')?.textContent||model)+" · "+market;
-    const sub=document.createElement("small");sub.textContent=count+" SKU variants selected";
-    text.append(name,sub);
-    const remove=document.createElement("button");remove.className="remove";remove.type="button";remove.textContent="Stop monitoring";
+    const colors=[...new Set(variants.map(root=>root.dataset.color).filter(Boolean))];
+    const capacities=[...new Set(variants.map(root=>root.dataset.storage).filter(Boolean))];
+    const descriptions=[
+      variants.length+" SKU variant"+(variants.length===1?"":"s"),
+      colors.length?colors.slice(0,3).join(", ")+(colors.length>3?" +"+(colors.length-3):""):"colour unspecified",
+      capacities.length?capacities.join(", "):"storage unspecified",
+    ];
+    const info=document.createElement("small");info.textContent=descriptions.join(" · ");
+    details.append(name,info);
+    const remove=document.createElement("button");remove.className="remove";remove.type="button";remove.textContent="Remove";
     remove.addEventListener("click",()=>{
-      document.querySelectorAll(".product-entry").forEach(root=>{
-        if(root.dataset.watchModel===model&&root.querySelector(".market").value===market)root.remove();
-      });
-      renderMonitoredModels();updateAreaWarning();
-      status("Model removed from the local editor. Save to apply.");
-      showToast("Removed "+count+" variant"+(count===1?"":"s")+" of "+model+". Save to apply.");
+      for(const root of variants)root.remove();
+      markDirty();
+      status("Model removed from the editor. Save changes to apply.");
+      showToast("Removed "+variants.length+" variant"+(variants.length===1?"":"s")+" of "+model+". Save to apply.");
     });
-    row.append(text,remove);container.append(row);
+    row.append(details,remove);container.append(row);
+  }
+  if(manual.length){
+    const row=document.createElement("div");row.className="watch-group";
+    const info=document.createElement("div");
+    const title=document.createElement("strong");title.textContent="Other manually configured products";
+    const detail=document.createElement("small");
+    detail.textContent=manual.length+" SKU variant"+(manual.length===1?"":"s")+
+      " · Edit or remove individually in Advanced";
+    info.append(title,detail);row.append(info);container.append(row);
+  }
+  if(!roots.length){
+    const empty=document.createElement("div");empty.className="watch-empty";
+    empty.textContent="No products in your watchlist yet. Select a model, find variants, then click Add selected variants.";
+    container.append(empty);
+  }
+  const areaRows=[...document.querySelectorAll(".region-entry")];
+  const areas=areaRows.map(root=>{
+    const market=root.querySelector(".country").value;
+    const location=root.querySelector(".location").value.trim()||"location not entered";
+    const stores=root.querySelector(".areaStores").value.trim();
+    return market+" "+location+(stores?" · stores "+stores:" · all nearby returned stores");
   });
-  if(groups.size===0){const p=document.createElement("p");p.textContent="No model-level subscriptions yet. Existing individual SKUs are available under Advanced.";container.append(p);}
+  el("watchAreaSummary").textContent="Monitoring areas ("+areas.length+"): "+(areas.join(" | ")||"none configured");
 }
 let modelPreview=null;
 
 function clearModelPreview(){
   modelPreview=null;
   el("modelOptions").hidden=true;
+  el("previewWarning").hidden=true;
   el("modelStatus").textContent="";
   el("modelCount").textContent="";
+  refreshSetupState();
 }
 function fillFacetSelect(id,values,allLabel){
   const select=el(id);select.replaceChildren();
@@ -479,6 +591,7 @@ function updateModelPreview(){
     (missing?" · "+missing+" prices unknown":"")+
     (count>48?" · exceeds 48-SKU model limit":"");
   el("applyModelFilters").disabled=count===0||count>48;
+  el("applyModelFilters").textContent="2. Add "+count+" selected variant"+(count===1?"":"s")+" to watchlist";
 }
 async function watchSelectedModel(){
   const btn=el("watchModel"),modelId=el("modelPicker").value,market=el("modelMarket").value;
@@ -501,7 +614,9 @@ async function watchSelectedModel(){
     fillFacetSelect("modelStorage",options.storages||[],"All discovered capacities");
     populateCarrierFilter(options);
     el("modelOptions").hidden=false;
+    el("previewWarning").hidden=false;
     updateModelPreview();
+    refreshSetupState();
     el("modelStatus").textContent=result.count+" variants found ("+
       (result.cached?"cached":"fresh")+"). Select filters, then click Add selected variants.";
   }catch(error){el("modelStatus").textContent=String(error.message||error);}
@@ -545,12 +660,19 @@ function applyModelSelection(){
     const unique=uniqueId(id,taken,40);
     productRow(unique,{...item,watch_model:modelId});added++;
   }
-  renderMonitoredModels();updateAreaWarning();
+  markDirty();
   const missing=wanted.filter(x=>x.price===null).length;
   el("modelStatus").textContent=added+" variants prepared for monitoring"+
     (overlaps?" ("+overlaps+" already present)":"")+
     ". "+missing+" prices unconfirmed. Click Save to apply.";
-  if(added>0)showToast("Added "+added+" variant"+(added===1?"":"s")+" to your selection. Save to apply.");
+  if(added>0){
+    showToast("Added "+added+" variant"+(added===1?"":"s")+" to your watchlist. Save to apply.");
+    // A completed selection is no longer an uncommitted preview.
+    modelPreview=null;
+    el("modelOptions").hidden=true;
+    el("previewWarning").hidden=true;
+    el("watchSummary").scrollIntoView({behavior:"smooth",block:"center"});
+  }
 }
 function productRow(id, p) {
   const root=el("productTemplate").content.firstElementChild.cloneNode(true);
@@ -566,7 +688,7 @@ function productRow(id, p) {
   root.querySelector(".market").addEventListener("change",()=>{if(["FR","GB"].includes(root.querySelector(".market").value)&&!el("experimentalRegions").checked)status("France/UK requires checking the experimental preview box explicitly.",true);});
   root.querySelector(".remove").addEventListener("click",()=>{
     const name=root.querySelector(".pname").value||root.querySelector(".pid").value||"product";
-    root.remove();renderMonitoredModels();updateAreaWarning();
+    root.remove();markDirty();
     showToast("Removed "+name+". Save to apply.");
   });
   el("products").appendChild(root);renderMonitoredModels();
@@ -597,12 +719,13 @@ function regionRow(area){
   location.addEventListener("input",()=>refreshAreaRow(root));
   root.querySelector(".remove").addEventListener("click",()=>{
     const label=root.querySelector(".areaTitle").textContent;
-    root.remove();updateAreaWarning();
+    root.remove();markDirty();
     showToast("Removed area "+label+". Save to apply.");
   });
   root.querySelector(".areaStores").addEventListener("input",updateAreaWarning);
   el("regions").appendChild(root);
   refreshAreaRow(root);
+  markDirty();
 }
 function updateAreaWarning(){
   const count=document.querySelectorAll(".region-entry").length;
@@ -621,6 +744,7 @@ function updateAreaWarning(){
     " pickup requests per scan (limit 24; up to 12 SKUs per request). Estimates exclude retries. Maximum 8 areas.";
 }
 function loadForm(cfg){
+  isLoadingConfig=true;
   original=cfg; el("products").replaceChildren();el("regions").replaceChildren();
   el("experimentalRegions").checked=cfg.enable_experimental_regions===true;
   Object.entries(cfg.products||{}).forEach(([id,p])=>productRow(id,p));
@@ -639,6 +763,9 @@ function loadForm(cfg){
   el("alertStores").value=(cfg.alert_store_ids||[]).join(", ");
   el("alertProducts").value=(cfg.alert_product_ids||[]).join(", ");
   toggleAlertFields();updateAreaWarning();renderMonitoredModels();
+  isLoadingConfig=false;
+  hasUnsavedChanges=false;
+  refreshSetupState();
 }
 function toggleAlertFields(){
   el("alertStores").disabled=el("allStores").checked;
@@ -689,13 +816,22 @@ async function start(){
   try{
     const r=await fetch("/api/config",{cache:"no-store"});
     const payload=await r.json();if(!r.ok)throw Error(payload.error||"Cannot read configuration");
+    hasSavedFile=payload.exists===true;
     loadForm(payload.config);
     status(payload.exists?"Existing private configuration loaded.":"Example configuration loaded; save to create your own.");
   }catch(error){status(String(error),true);}
 }
-el("addProduct").addEventListener("click",()=>productRow("",{market:"US"}));
+el("addProduct").addEventListener("click",()=>{
+  productRow("",{market:"US"});
+  markDirty();
+  status("New manual product added to the editor. Fill in its details, then Save.");
+});
 el("watchModel").addEventListener("click",watchSelectedModel);
 el("applyModelFilters").addEventListener("click",applyModelSelection);
+el("discardPreview").addEventListener("click",()=>{
+  clearModelPreview();
+  status("Preview discarded. Your saved and selected products were not changed.");
+});
 ["modelColor","modelStorage","modelCarrier"].forEach(id=>el(id).addEventListener("change",updateModelPreview));
 ["modelPicker","modelMarket","experimentalRegions"].forEach(id=>el(id).addEventListener("change",clearModelPreview));
 el("findCatalog").addEventListener("click",discoverCatalog);
@@ -704,6 +840,7 @@ el("addRegion").addEventListener("click",()=>{
   const count=document.querySelectorAll(".region-entry").length;
   if(count>=8){status("Maximum 8 areas to protect Apple endpoints; remove an area first.",true);return}
   regionRow({market:"US",location:"",store_ids:[],autoId:true});
+  markDirty();
 });
 el("renameAreas").addEventListener("click",()=>{
   const roots=[...document.querySelectorAll(".region-entry")];
@@ -712,12 +849,31 @@ el("renameAreas").addEventListener("click",()=>{
     root.dataset.autoAreaId="true";
     refreshAreaRow(root);
   });
+  markDirty();
   showToast("Updated "+roots.length+" area IDs using country and location. Save to apply.");
 });
 el("allStores").addEventListener("change",toggleAlertFields);
+const previewInputs=new Set(["modelPicker","modelMarket","modelColor","modelStorage","modelCarrier","catalogMarket","catalogFamily","catalogFilter"]);
+function onConfigurationEdit(event){
+  if(isLoadingConfig || previewInputs.has(event.target.id))return;
+  if(event.target.closest(".product-entry") ||
+     event.target.closest(".region-entry") ||
+     ["experimentalRegions","states","priority","caTax","allStores","alertStores","allProducts","alertProducts"].includes(event.target.id)){
+    markDirty();
+  }
+}
+document.addEventListener("input",onConfigurationEdit);
+document.addEventListener("change",onConfigurationEdit);
+el("saveSticky").addEventListener("click",()=>el("save").click());
 el("allProducts").addEventListener("change",toggleAlertFields);
 el("save").addEventListener("click",async()=>{
+  if(modelPreview&&!el("modelOptions").hidden){
+    status("You found variants but have not added them. Click Add selected variants or Discard preview before saving.",true);
+    el("modelOptions").scrollIntoView({behavior:"smooth",block:"center"});
+    return;
+  }
   const button=el("save");button.disabled=true;
+  el("saveSticky").disabled=true;
   try{
     const data=collect();
     const r=await fetch("/api/config",{
@@ -726,11 +882,12 @@ el("save").addEventListener("click",async()=>{
     });
     const response=await r.json();
     if(!r.ok)throw Error(response.error||"Save failed");
+    hasSavedFile=true;
     loadForm(response.config);
     status("Saved locally. Restart your watcher to use the new settings.");
     showToast("Configuration saved. Restart the watcher to apply.");
   }catch(error){status(error.message||String(error),true);}
-  finally{button.disabled=false;}
+  finally{button.disabled=false;el("saveSticky").disabled=false;}
 });
 start();
 </script></body></html>"""

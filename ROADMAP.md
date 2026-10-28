@@ -59,6 +59,14 @@ This roadmap is directional, not a promise that a feature already exists.
 - [ ] Validate carrier selection behavior against real Apple checkout pages; carrier account activation may be separate from stock SKUs
 - [ ] Provide multiple value selection per dimension (several colours/capacities in one group) when needed
 
+## Clear setup status and watchlist
+
+- [x] Distinguish Apple catalog preview from actually selected variants
+- [x] Show all selected products (including manual SKUs), and monitored geographic areas in a persistent summary
+- [x] Show preview / unsaved edits / saved-on-disk states with clear language and a restart requirement
+- [x] Show sticky Save for draft changes; prevent silent save of uncommitted model preview
+- [ ] Add authenticated watcher-process/last-check status to dashboard when a safe status interface exists
+
 ## Human-friendly identifiers and selection feedback
 
 - [x] Generate descriptive product IDs from model, capacity, colour, verified carrier when available and country; preserve existing IDs
