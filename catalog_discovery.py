@@ -170,8 +170,8 @@ def parse_catalog_html(page, market, family):
             "family": family,
             "family_type": raw.get("familyType") if isinstance(raw.get("familyType"), str) else None,
         }
-        if len(result) >= MAX_RESULTS:
-            break
+        if len(result) > MAX_RESULTS:
+            raise CatalogError("Apple returned too many SKU variants to safely catalogue; refusing an incomplete list")
     if not result:
         raise CatalogError("No recognizable part numbers found; Apple may have changed the catalog format")
     return sorted(result.values(), key=lambda item: (item["name"], item["part"]))
