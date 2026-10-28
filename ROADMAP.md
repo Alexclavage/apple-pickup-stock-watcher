@@ -49,6 +49,17 @@ This roadmap is directional, not a promise that a feature already exists.
 - [ ] Protected dashboard/API for internet-facing deployments
 - [ ] Document persistent storage setup on Railway
 
+## Model-first configuration
+
+- [x] Select an Apple model name in the local wizard and resolve all *currently discoverable* country-specific SKU variants in one operation
+- [x] Keep model subscriptions grouped with one remove action, while leaving manual SKU editing available
+- [x] Monitor variants even when their current price is not independently known
+- [x] Split large product selections into twelve-SKU pickup request batches and enforce a conservative request budget
+- [ ] Independently verify actual live buy-page parsing for every supported family
+- [ ] Persist/refresh model subscriptions automatically and safely when Apple adds or removes variants
+- [ ] Group the main monitoring dashboard by model rather than one section per SKU
+- [ ] Check configured-to-order Mac and Watch bundle pickup behavior before declaring full family coverage
+
 ## P1 — Easier first-time experience
 
 - [x] Local browser wizard for products, stores, prices and alert preferences (SKUs still provided manually)
