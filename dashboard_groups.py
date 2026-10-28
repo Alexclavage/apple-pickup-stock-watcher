@@ -17,7 +17,7 @@ def _display_variant(product):
     return " · ".join(str(x) for x in parts if x)
 
 
-def build_model_groups(products, observations, scan_status="starting", checked_at=None):
+def build_model_groups(products, observations, scan_status="starting", checked_at=None, monitoring_areas=None):
     """Group a SKU list by market and model, with one availability row per store.
 
     Safety rules:
@@ -27,6 +27,7 @@ def build_model_groups(products, observations, scan_status="starting", checked_a
     - No store list claims exhaustive geographic coverage.
     """
     buckets = OrderedDict()
+    area_markets = None if monitoring_areas is None else {a["market"] for a in monitoring_areas}
     product_to_bucket = {}
     for product_id, product in products.items():
         market = product.get("market", "")
@@ -52,6 +53,7 @@ def build_model_groups(products, observations, scan_status="starting", checked_a
                 "checked_at": checked_at,
                 "partial": False,
                 "reliable": False,
+                "area_missing": area_markets is not None and market not in area_markets,
             }
         buckets[identity]["variants"].append({
             "product_id": product_id,
@@ -144,7 +146,15 @@ def build_model_groups(products, observations, scan_status="starting", checked_a
         group["available_stores"] = sum(store["available"] > 0 for store in group["stores"])
         group["reliable"] = fresh
         group["partial"] = scan_status == "partial" or has_unknown
-        if not fresh:
+        if group["area_missing"]:
+            group["status"] = "unknown"
+            group["status_label"] = "No monitoring area selected for this country"
+            group["reliable"] = False
+            group["stores"] = []
+            group["checked_stores"] = 0
+            group["available_stores"] = 0
+            group["partial"] = True
+        elif not fresh:
             group["status"] = "unknown"
             group["status_label"] = "No current confirmed check"
         elif group["partial"]:

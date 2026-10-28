@@ -6,7 +6,7 @@ import requests
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template_string
 from history import append_history, read_history, transition_event
-from monitoring_areas import legacy_areas, validate_monitoring_areas, MAX_MONITORING_AREAS
+from monitoring_areas import legacy_areas, validate_monitoring_areas, uncovered_product_markets, MAX_MONITORING_AREAS
 from regions import REGIONS, region_for
 from model_watch import PRODUCT_BATCH_SIZE, MAX_PRODUCTS, validate_request_budget
 from dashboard_groups import build_model_groups
@@ -302,7 +302,10 @@ def merge_area_results(existing, current):
 
 def fetch_all():
     dedup = {}
-    errors = []
+    errors = [
+        f"No monitoring area configured for {market}; its products were NOT checked"
+        for market in uncovered_product_markets(PRODUCTS, MONITORING_AREAS)
+    ]
     rate_limited = False
     for index, area in enumerate(MONITORING_AREAS):
         market = area["market"]
@@ -340,7 +343,9 @@ def fetch_all():
         if rate_limited:
             break
         if not batch_failed:
-            if desired and not found_stores.intersection(desired):
+            if not found_stores:
+                errors.append(f'{area["id"]}: no matching Apple Stores returned; availability unknown')
+            elif desired and not found_stores.intersection(desired):
                 errors.append(f'{area["id"]}: none of the selected stores was returned by Apple; status unknown')
             elif desired - found_stores:
                 errors.append(f'{area["id"]}: some selected stores were not returned; status unknown')
@@ -540,7 +545,13 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
            autocomplete="off">
     <div id="searchCount"></div>
 </div>
-<div class="summary"><b>Global:</b> {{latest.status|upper}} &nbsp; • &nbsp; <b>Dernier check:</b> {{latest.checked_at or '—'}} &nbsp; • &nbsp; <b>Intervalle:</b> ~{{interval}} s{% if latest.error %}<div class="error">⚠ {{latest.error}}</div>{% endif %}</div>
+<div class="summary"><b>Global:</b> <span class="overall-{{latest.status|e}}">{{latest.status|upper}}</span>
+&nbsp; • &nbsp; <b>Dernier check:</b>
+{% if latest.checked_at %}<time class="local-datetime" datetime="{{latest.checked_at|e}}">{{latest.checked_at}}</time>{% else %}—{% endif %}
+&nbsp; • &nbsp; <b>Intervalle:</b> ~{{interval}} s
+{% if latest.error %}<div class="error">⚠ {{latest.error}}</div>{% endif %}
+{% if uncovered_markets %}<div class="coverage-notice">Zones manquantes : {{uncovered_markets|join(', ')}}. Les produits de ces pays ne sont pas vérifiés et ne doivent pas être considérés comme indisponibles.</div>{% endif %}
+</div>
 <div class="activity-panel">
 <h2>Recent stock changes</h2>
 <p class="meta">Observed availability changes, including first-run availability. Latest events first.</p>
@@ -597,7 +608,7 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
       </details>
     </article>
   {% else %}
-    <div class="card unknown">
+    <div class="card unknown" data-search="{{ (group.title ~ ' ' ~ group.market ~ ' unknown missing location')|lower|e }}">
       <div class="name">No confirmed store observations</div>
       <div class="badge">UNKNOWN — not a stock-out</div>
       <p class="store-meta">No verified results for this model in the chosen monitoring areas.</p>
@@ -639,14 +650,22 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
        const show=matchesText&&matchesFilter;card.style.display=show?'':'none';
        if(show){shown++;sectionVisible++}
      });
-     section.style.display=sectionVisible||(!q&&filter==='all'&&!section.querySelector('.card[data-search]'))?'':'none';
+     section.style.display=sectionVisible?'':'none';
    });
-   if(count)count.textContent=shown+' magasin(s) affiché(s) sur '+total;
+   if(count)count.textContent=shown+' carte(s) affichée(s) sur '+total+' (magasins vérifiés et zones inconnues)';
    if(empty)empty.classList.toggle('visible',shown===0);
  }
  if(input){try{input.value=sessionStorage.getItem('watcher-search')||''}catch(e){}input.addEventListener('input',()=>{try{sessionStorage.setItem('watcher-search',input.value)}catch(e){}update()})}
  buttons.forEach(btn=>btn.addEventListener('click',()=>{filter=btn.dataset.filter;buttons.forEach(b=>{b.classList.toggle('active',b===btn);b.setAttribute('aria-pressed',String(b===btn))});update()}));
  update();
+ // Localize shown times without changing canonical UTC timestamps.
+ document.querySelectorAll('time.local-datetime').forEach(node=>{
+   const date=new Date(node.getAttribute('datetime'));
+   if(!Number.isNaN(date.getTime())){
+     node.textContent=date.toLocaleString(undefined,{dateStyle:'medium',timeStyle:'short'});
+     node.title=node.getAttribute('datetime');
+   }
+ });
  // Keep 30-second refresh without losing search or theme.
  setInterval(()=>window.location.reload(),30000);
 })();
@@ -656,8 +675,16 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 @app.route("/")
 def home():
     with lock: snap = dict(latest); snap["items"] = list(latest.get("items",[]))
-    groups = build_model_groups(PRODUCTS, snap["items"], scan_status=snap.get("status", "starting"), checked_at=snap.get("checked_at"))
-    return render_template_string(HTML, latest=snap, groups=groups, products=PRODUCTS, interval=INTERVAL, priority_us=US_PRIORITY_STORE, target_ca=CA_TARGET_STORE, history=read_history(HISTORY_FILE, limit=20), money_symbol=money_symbol)
+    groups = build_model_groups(
+        PRODUCTS, snap["items"], scan_status=snap.get("status", "starting"),
+        checked_at=snap.get("checked_at"), monitoring_areas=MONITORING_AREAS,
+    )
+    return render_template_string(
+        HTML, latest=snap, groups=groups, products=PRODUCTS, interval=INTERVAL,
+        priority_us=US_PRIORITY_STORE, target_ca=CA_TARGET_STORE,
+        history=read_history(HISTORY_FILE, limit=20), money_symbol=money_symbol,
+        uncovered_markets=uncovered_product_markets(PRODUCTS, MONITORING_AREAS),
+    )
 
 @app.route("/api/status")
 def api_status():
@@ -670,7 +697,13 @@ def api_history():
 @app.route("/health")
 def health(): return jsonify({"ok":True,"version":"4.5"})
 
+def dashboard_bind_host(environ=None):
+    """Default to localhost: this dashboard has no user authentication."""
+    config = os.environ if environ is None else environ
+    return config.get("WATCHER_HOST") or "127.0.0.1"
+
+
 if __name__ == "__main__":
     threading.Thread(target=worker, daemon=True).start()
     port = int(os.getenv("PORT","8080"))
-    app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False)
+    app.run(host=dashboard_bind_host(), port=port, debug=False, use_reloader=False)

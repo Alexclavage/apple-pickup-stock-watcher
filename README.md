@@ -42,7 +42,7 @@ On Windows CMD, after installing dependencies with the Quick start commands:
 
 On macOS/Linux run `python setup_wizard.py` inside the activated environment. Open **http://127.0.0.1:8091**, edit the fields and click **Save private configuration**. The wizard reads `config.json` or starts with `config.example.json`. If it overwrites an existing config, it keeps one private backup in `config.json.bak`; both are excluded from Git and Docker. Restart the watcher after saving.
 
-**Security:** the wizard is not part of the public dashboard. It binds to `127.0.0.1` only, checks origin and request tokens for saves, and never displays or saves your Discord webhook. Do not forward this port to the public Internet. An Apple SKU still needs to be obtained and verified manually; this UI does not scrape a SKU catalogue or validate actual inventory.
+**Security:** the wizard is not part of the public dashboard. It binds to `127.0.0.1` only, checks origin and request tokens for saves, and never displays or saves your Discord webhook. Do not forward this port to the public Internet. The wizard can look up variant SKUs on official Apple buy pages when you request it, but that discovery is experimental and does not prove pickup availability. Verify product details before relying on the stock results.
 
 ## Optional variant filters: colour, storage and carrier
 
@@ -168,6 +168,14 @@ Confirmed availability changes are retained locally in `history.json`, and recen
 Set `HISTORY_FILE` in `.env` to change the path and `HISTORY_MAX_EVENTS` to adjust the maximum number of retained entries (default 500; `0` disables history). `history.json` is excluded from Git and Docker builds. It contains product/store names and observation timestamps, so protect it alongside other monitoring data. The file is written on a best-effort basis; a history I/O failure does not interrupt polling.
 
 For Railway or Docker deployments, use a persistent volume for **both** state and history if you want them to survive instance restarts or redeploys. This implementation is intended for a **single polling worker**, not multiple web workers sharing the same state files.
+
+## Coverage correctness and dashboard network safety
+
+**No geographic coverage is inferred:** configuring an Apple SKU for Canada does **not** mean Canada is monitored. You must also add a Canadian monitoring area; the same holds for any supported country. The local setup wizard now warns if a configured product market lacks a region. The dashboard labels that model **unknown (no monitoring area)** rather than **sold out**, and an otherwise successful US scan is marked **partial** when Canadian products were skipped. An empty regional Apple Store response is also treated as a coverage gap rather than confirmed sold-out. These warnings do not automatically add or change your private locations.
+
+**Dashboard binds to localhost by default.** Running `python app.py` exposes the unauthenticated status dashboard only at `http://127.0.0.1:8080` on that computer. To serve it from Docker, a reverse proxy, or a hosted environment such as Railway, explicitly set `WATCHER_HOST=0.0.0.0` **and protect the endpoint with appropriate network access controls**. The included Docker Compose configuration enables binding inside the container but keeps the published port restricted to the host's localhost. Changing host binding does not add user authentication. Do not open a public dashboard containing your monitoring selections without access controls.
+
+The dashboard renders its most recent UTC timestamp in the viewer's local browser timezone when JavaScript is available; the original canonical timestamp remains attached for reference.
 
 ## Operation and limitations
 

@@ -10,6 +10,7 @@ services:
       WATCHER_CONFIG: /app/config.json
       STATE_FILE: /data/state.json
       HISTORY_FILE: /data/history.json
+      WATCHER_HOST: 0.0.0.0
     ports:
       - "127.0.0.1:8080:8080"
     volumes:

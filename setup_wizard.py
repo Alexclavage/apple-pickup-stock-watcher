@@ -520,7 +520,12 @@ function renderMonitoredModels(){
     const stores=root.querySelector(".areaStores").value.trim();
     return market+" "+location+(stores?" · stores "+stores:" · all nearby returned stores");
   });
-  el("watchAreaSummary").textContent="Monitoring areas ("+areas.length+"): "+(areas.join(" | ")||"none configured");
+  const configuredMarkets=new Set(roots.map(root=>root.querySelector(".market").value));
+  const areaMarkets=new Set(areaRows.map(root=>root.querySelector(".country").value));
+  const missing=[...configuredMarkets].filter(market=>!areaMarkets.has(market)).sort();
+  el("watchAreaSummary").textContent="Monitoring areas ("+areas.length+"): "+(areas.join(" | ")||"none configured")+
+    (missing.length?" ⚠ No area for "+missing.join(", ")+": these products will NOT be checked.":"");
+  el("watchAreaSummary").style.color=missing.length?"#f7c66f":"";
 }
 let modelPreview=null;
 
