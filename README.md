@@ -44,6 +44,17 @@ On macOS/Linux run `python setup_wizard.py` inside the activated environment. Op
 
 **Security:** the wizard is not part of the public dashboard. It binds to `127.0.0.1` only, checks origin and request tokens for saves, and never displays or saves your Discord webhook. Do not forward this port to the public Internet. An Apple SKU still needs to be obtained and verified manually; this UI does not scrape a SKU catalogue or validate actual inventory.
 
+## One-click monitoring by Apple model
+
+**Default experience:** in the local setup wizard, first choose your monitoring country/location, then select a model name such as **iPhone 18 Pro** or **iPhone 18 Pro Max** and click **Monitor this model**. The app requests the official regional Apple buy-page catalog, matches the requested model, and adds **every discovered color/storage SKU variant** automatically. It does not ask for a part number or an individual price. The selected model appears as one removable group in the wizard; raw SKUs remain accessible under Advanced.
+
+- The model selection is **region-specific**. If you monitor several countries, add the model once for each desired country because part numbers and currencies may differ.
+- **Unknown price is allowed**. When Apple's page does not provide a verifiable numeric price for a particular SKU, the watcher still tracks stock but displays **price not confirmed** instead of inventing a total or tax.
+- Monitoring uses SKU batches of at most **12**, to avoid silent result truncation in the regional pickup API. Requests are spread out, with a hard configuration budget of **24 pickup requests per scan**, up to **96 total SKU variants**, a maximum of **48 variants per model** and the existing **eight-area limit**. The wizard shows the approximate per-scan request cost. Reduce models/areas if a budget limit is exceeded.
+- **The resolved SKU list is saved at selection time**, not continuously refreshed with new model releases. Re-select a model to refresh its variants (subject to the catalog cache and cooldown). It is not an always-updated product database yet.
+- Availability for configured-to-order Mac variants and certain Apple Watch configurations may require additional item components. The software cannot guarantee that all discovered SKUs will be eligible for in-store pickup.
+- As before, Apple buy-page parsing is undocumented and must be validated with real responses. If the website changes, the app reports an error instead of making up SKUs.
+
 ## Discover Apple SKUs from the official Apple Store
 
 The **local setup wizard** includes a **Find Apple SKUs** feature. Select a country and supported product family, then press the button to read an official Apple purchase page **once on demand**. Browse the extracted model, storage, color and SKU combinations, filter the results, and click **Add** to include a variant in your private configuration.
