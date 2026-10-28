@@ -59,6 +59,14 @@ This roadmap is directional, not a promise that a feature already exists.
 - [ ] Validate carrier selection behavior against real Apple checkout pages; carrier account activation may be separate from stock SKUs
 - [ ] Provide multiple value selection per dimension (several colours/capacities in one group) when needed
 
+## Conservative transitions and privacy
+
+- [x] Defer stock-out alerts and retain prior available keys while ANY part of the scan is incomplete
+- [x] Continue to send genuinely observed new-availability alerts in otherwise partial cycles
+- [x] Confirm deferred stock-outs once on the next fully verified check
+- [x] Avoid logging Discord webhook URLs and private tokens when delivery fails
+- [ ] Add idempotent alert delivery/outbox handling for service restart and Discord outages
+
 ## Audit regressions: product batching and config privacy
 
 - [x] Detect an empty Apple Store result for an individual 12-SKU request batch even if another batch succeeds
