@@ -219,6 +219,16 @@ def us_tax_rate(store):
     return None
 
 def money_info(product, store):
+    if product["market"] in {"FR", "GB"}:
+        # Consumer list prices provided by the user are presumed VAT-inclusive.
+        # Itemized VAT is not calculated without verified product/invoice data.
+        price = product["price"]
+        rate, date = get_eur_rate(product["currency"])
+        converted = round(price * rate, 2) if rate is not None else None
+        return {"tax_rate": None, "tax_amount": None, "total": price,
+                "price_eur": converted, "tax_amount_eur": None,
+                "total_eur": converted, "fx_rate": rate, "fx_date": date,
+                "tax_included": True}
     tax = CA_TAX_RATE if product["market"] == "CA" else us_tax_rate(store)
     if tax is None:
         return {"tax_rate":None,"tax_amount":None,"total":None,"price_eur":None,"tax_amount_eur":None,"total_eur":None,"fx_rate":None,"fx_date":None}
@@ -340,7 +350,7 @@ def fetch_all():
     return items, errors
 
 # ========================= DISCORD =========================
-def money_symbol(currency): return "$" if currency in {"USD","CAD"} else currency+" "
+def money_symbol(currency): return {"USD":"$","CAD":"$","EUR":"€","GBP":"£"}.get(currency, currency + " ")
 
 def compact_product_name(item):
     return item["productName"]
@@ -488,7 +498,7 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 @media(max-width:950px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:650px){body{padding:14px}.header{align-items:flex-start}.header h1{font-size:25px}.theme-toggle{padding:9px 11px;font-size:12px}.grid{grid-template-columns:1fr}.section,.summary{padding:16px}.search-panel{padding:12px}}
 
 .activity-event{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 0;border-top:1px solid var(--line);font-size:13px}.activity-event small{color:var(--muted);margin-left:auto}.activity-status{display:inline-block;padding:5px 9px;border-radius:10px;font-size:11px;font-weight:700}.activity-status.available{background:rgba(50,213,131,.14);color:var(--green)}.activity-status.unavailable{background:rgba(255,100,117,.13);color:var(--red)}
-</style></head><body><header class="header"><div><h1> Apple Stock Watcher V4.5</h1><p class="sub">{{products|length}} configured products • US / CA pickup availability • dashboard refresh 30 s</p></div><button type="button" id="themeToggle" class="theme-toggle" aria-label="Changer le thème">☀ Mode clair</button></header>
+</style></head><body><header class="header"><div><h1> Apple Stock Watcher V4.5</h1><p class="sub">{{products|length}} configured products • selected regions pickup availability • dashboard refresh 30 s</p></div><button type="button" id="themeToggle" class="theme-toggle" aria-label="Changer le thème">☀ Mode clair</button></header>
 
 <div class="search-panel">
     <input id="shopSearch" type="search"
@@ -515,7 +525,7 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 </div>
 <div class="filters" aria-label="Filtrer les disponibilités"><button type="button" class="filter-btn active" data-filter="all" aria-pressed="true">Tous</button><button type="button" class="filter-btn" data-filter="available" aria-pressed="false">● Disponibles</button><button type="button" class="filter-btn" data-filter="unavailable" aria-pressed="false">● En rupture</button><button type="button" class="filter-btn" data-filter="unknown" aria-pressed="false">● Inconnus</button><button type="button" class="filter-btn" data-filter="priority" aria-pressed="false">★ Prioritaires</button></div>
 <div id="emptySearch" class="empty-search">Aucun magasin ne correspond à cette recherche.</div>
-{% for pid,p in products.items() %}<div class="section"><h2>{{'🇺🇸' if p.market=='US' else '🇨🇦'}} {{p.name}}</h2><div class="meta">SKU {{p.part}} • {{'$' if p.currency in ['USD','CAD'] else ''}}{{'%.2f'|format(p.price)}} {{p.currency}}{% if p.market=='US' %} • US priority store {{priority_us}}{% else %} • CA target store {{target_ca or "all"}}{% endif %}</div><div class="grid">
+{% for pid,p in products.items() %}<div class="section"><h2>{{ {'US':'🇺🇸','CA':'🇨🇦','FR':'🇫🇷','GB':'🇬🇧'}.get(p.market,'🌍') }} {{p.name}}</h2><div class="meta">SKU {{p.part}} • {{'$' if p.currency in ['USD','CAD'] else ''}}{{'%.2f'|format(p.price)}} {{p.currency}}{% if p.market=='US' %} • US priority store {{priority_us}}{% elif p.market=='CA' %} • CA target store {{target_ca or "all"}}{% endif %}</div><div class="grid">
 {% set rows = latest['items']|selectattr('product_id','equalto',pid)|list %}{% if not rows %}<div class="card unknown"><div class="name">Aucune donnée</div><div class="badge">UNKNOWN / zone non vérifiée</div></div>{% endif %}
 {% for x in rows %}<div class="card {{x.status}} {% if x.storeNumber in [priority_us, target_ca] %}target{% endif %}" data-search="{{ (x.storeName ~ ' ' ~ x.city ~ ' ' ~ x.state ~ ' ' ~ x.storeNumber)|lower|e }}"><div class="name">Apple {{x.storeName}}</div><div>{{x.city}}, {{x.state}} • {{x.distance or '—'}}</div><div class="badge">{{x.status|upper}} — {{x.quote}}</div><div class="sku">{{x.storeNumber}} • {{x.part}}</div><div class="money">Prix: <b>${{'%.2f'|format(x.price)}} {{x.currency}}</b>{% if x.price_eur is not none %} (€{{'%.2f'|format(x.price_eur)}}){% endif %}<br>{% if x.tax_rate is not none %}Taxe: {{'%.3f'|format(x.tax_rate*100)}}% = +${{'%.2f'|format(x.tax_amount)}}{% if x.tax_amount_eur is not none %} (€{{'%.2f'|format(x.tax_amount_eur)}}){% endif %}<br>Total: <b>${{'%.2f'|format(x.total)}} {{x.currency}}</b>{% if x.total_eur is not none %} (€{{'%.2f'|format(x.total_eur)}}){% endif %}{% else %}Taxe/total: inconnu{% endif %}</div></div>{% endfor %}</div></div>{% endfor %}
 
