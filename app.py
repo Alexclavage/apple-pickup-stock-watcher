@@ -341,7 +341,7 @@ def fetch_all():
             if not matched_stores_in_batch:
                 errors.append(
                     f'{area["id"]} batch {offset // PRODUCT_BATCH_SIZE + 1}: '
-                    'no matching Apple Stores returned; selected variants not verified'
+                    'no matching Apple Stores returned; availability unknown (selected variants not verified)'
                 )
             elif desired - matched_stores_in_batch:
                 errors.append(
