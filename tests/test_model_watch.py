@@ -156,7 +156,7 @@ class ModelWatchTests(unittest.TestCase):
             client = webapp.test_client()
             html = client.get("/").data
             token = re.search(rb'const TOKEN = "([^"]+)"', html).group(1).decode("ascii")
-            self.assertIn(b"Monitor this model", html)
+            self.assertIn(b"1. Find variants", html)
             selection = {"model_id": "iphone-18-pro", "market": "US"}
             self.assertEqual(client.post("/api/catalog/model", json=selection).status_code, 403)
             with patch("setup_wizard.fetch_catalog", return_value={"items": sample(count=2), "cached": True}) as lookup:
