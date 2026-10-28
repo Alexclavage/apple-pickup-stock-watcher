@@ -99,6 +99,7 @@ class MonitoringAreaTests(unittest.TestCase):
                 return [store("R121")]
             return [store("R999"), store("OTHER")]
         with (
+            patch.object(watcher, "PRODUCTS", PRODUCTS),
             patch.object(watcher, "MONITORING_AREAS", areas),
             patch.object(watcher, "US_PRODUCT_IDS", ["us_phone"]),
             patch.object(watcher, "CA_PRODUCT_IDS", ["ca_phone"]),
@@ -126,6 +127,7 @@ class MonitoringAreaTests(unittest.TestCase):
                 raise RuntimeError("APPLE_429")
             return [store("R102")]
         with (
+            patch.object(watcher, "PRODUCTS", PRODUCTS),
             patch.object(watcher, "MONITORING_AREAS", areas),
             patch.object(watcher, "US_PRODUCT_IDS", ["us_phone"]),
             patch.object(watcher, "CA_PRODUCT_IDS", []),
