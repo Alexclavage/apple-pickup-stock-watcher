@@ -59,6 +59,16 @@ This roadmap is directional, not a promise that a feature already exists.
 - [ ] Validate carrier selection behavior against real Apple checkout pages; carrier account activation may be separate from stock SKUs
 - [ ] Provide multiple value selection per dimension (several colours/capacities in one group) when needed
 
+## Model-centric dashboard
+
+- [x] Group all configured SKU variants per monitored model and market
+- [x] Show each checked Apple Store once for a model, with expandable per-SKU status and price
+- [x] Keep manually configured standalone SKUs accessible in their own sections
+- [x] Treat missing variants and failed scans as unknown, never as confirmed sold-out
+- [x] Mark incomplete/partial coverage explicitly while preserving actual available observations
+- [ ] Validate grouping against live Apple responses from several regions
+- [ ] Add a read-only watcher heartbeat and per-area last-success timestamps
+
 ## Clear setup status and watchlist
 
 - [x] Distinguish Apple catalog preview from actually selected variants
