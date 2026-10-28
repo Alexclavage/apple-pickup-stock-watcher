@@ -8,6 +8,7 @@ from flask import Flask, jsonify, render_template_string
 from history import append_history, read_history, transition_event
 from monitoring_areas import legacy_areas, validate_monitoring_areas, MAX_MONITORING_AREAS
 from regions import REGIONS, region_for
+from model_watch import PRODUCT_BATCH_SIZE, MAX_PRODUCTS, validate_request_budget
 
 load_dotenv()
 
@@ -54,7 +55,7 @@ if CONFIG_PATH.exists():
         raise ValueError("enable_experimental_regions must be a boolean")
     if "products" in cfg:
         products = cfg["products"]
-        if not isinstance(products, dict) or not products:
+        if not isinstance(products, dict) or not 1 <= len(products) <= MAX_PRODUCTS:
             raise ValueError("products must be a nonempty JSON object")
         for pid, product in products.items():
             if not isinstance(product, dict):
@@ -68,7 +69,7 @@ if CONFIG_PATH.exists():
             if not all(product.get(field) for field in ("name", "part", "currency")):
                 raise ValueError(f"Product {pid} must have name, part and currency")
             price = product.get("price")
-            if isinstance(price, bool) or not isinstance(price, (int, float)) or price < 0:
+            if price is not None and (isinstance(price, bool) or not isinstance(price, (int, float)) or not 0 <= price <= 100000):
                 raise ValueError(f"Product {pid} must have nonnegative numeric price")
         PRODUCTS = products
     if "search_zips" in cfg:
@@ -111,7 +112,8 @@ MONITORING_AREAS = (
     else legacy_areas(SEARCH_ZIPS, CA_LOCATION, CA_TARGET_STORE, PRODUCTS)
 )
 # With several locations, avoid polling as aggressively as a single-location watcher.
-INTERVAL = max(INTERVAL, 300 if len(MONITORING_AREAS) > 1 else 120, 600 if len(MONITORING_AREAS) > 4 else 120)
+REQUESTS_PER_SCAN = validate_request_budget(PRODUCTS, MONITORING_AREAS)
+INTERVAL = max(INTERVAL, 300 if len(MONITORING_AREAS) > 1 else 120, 600 if len(MONITORING_AREAS) > 4 or REQUESTS_PER_SCAN > 4 else 120, 900 if REQUESTS_PER_SCAN > 12 else 120)
 if not any(MARKET_PRODUCT_IDS.values()):
     raise ValueError("Configure at least one product")
 if not 0 <= CA_TAX_RATE <= 1:
@@ -219,6 +221,10 @@ def us_tax_rate(store):
     return None
 
 def money_info(product, store):
+    if product["price"] is None:
+        return {"tax_rate": None, "tax_amount": None, "total": None,
+                "price_eur": None, "tax_amount_eur": None, "total_eur": None,
+                "fx_rate": None, "fx_date": None, "tax_included": False}
     if product["market"] in {"FR", "GB"}:
         # Consumer list prices provided by the user are presumed VAT-inclusive.
         # Itemized VAT is not calculated without verified product/invoice data.
@@ -357,6 +363,8 @@ def compact_product_name(item):
 
 def price_total_text(item):
     sym = money_symbol(item["currency"]); cur = item["currency"]
+    if item.get("price") is None:
+        return "Price not confirmed by Apple — check the product page"
     if item.get("total") is None:
         return f"{sym}{item['price']:,.2f} {cur} • total inconnu"
     eur = f" • €{item['total_eur']:,.2f}" if item.get("total_eur") is not None else ""
@@ -377,7 +385,7 @@ def priority_store_embed(item, available=True):
         "title": title, "description": description, "color": color,
         "fields": [
             {"name":"📍 Magasin","value":f"Apple {item['storeName']} — {item.get('city') or ''}, {item.get('state') or ''}","inline":False},
-            {"name":"💵 Prix","value":f"{sym}{item['price']:,.2f} {cur}","inline":True},
+            {"name":"💵 Prix","value":f"{sym}{item['price']:,.2f} {cur}" if item.get("price") is not None else "Not confirmed", "inline":True},
             {"name":"🧾 Taxe","value":tax,"inline":True},
             {"name":"💳 Total","value":price_total_text(item),"inline":True},
             {"name":"📦 Retrait","value":item.get("quote") or item.get("pickupDisplay") or "—","inline":True},
@@ -525,9 +533,9 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 </div>
 <div class="filters" aria-label="Filtrer les disponibilités"><button type="button" class="filter-btn active" data-filter="all" aria-pressed="true">Tous</button><button type="button" class="filter-btn" data-filter="available" aria-pressed="false">● Disponibles</button><button type="button" class="filter-btn" data-filter="unavailable" aria-pressed="false">● En rupture</button><button type="button" class="filter-btn" data-filter="unknown" aria-pressed="false">● Inconnus</button><button type="button" class="filter-btn" data-filter="priority" aria-pressed="false">★ Prioritaires</button></div>
 <div id="emptySearch" class="empty-search">Aucun magasin ne correspond à cette recherche.</div>
-{% for pid,p in products.items() %}<div class="section"><h2>{{ {'US':'🇺🇸','CA':'🇨🇦','FR':'🇫🇷','GB':'🇬🇧'}.get(p.market,'🌍') }} {{p.name}}</h2><div class="meta">SKU {{p.part}} • {{'$' if p.currency in ['USD','CAD'] else ''}}{{'%.2f'|format(p.price)}} {{p.currency}}{% if p.market=='US' %} • US priority store {{priority_us}}{% elif p.market=='CA' %} • CA target store {{target_ca or "all"}}{% endif %}</div><div class="grid">
+{% for pid,p in products.items() %}<div class="section"><h2>{{ {'US':'🇺🇸','CA':'🇨🇦','FR':'🇫🇷','GB':'🇬🇧'}.get(p.market,'🌍') }} {{p.name}}</h2><div class="meta">SKU {{p.part}} • {{'$' if p.currency in ['USD','CAD'] else ''}}{{'%.2f'|format(p.price) if p.price is not none else 'prix à vérifier'}} {{p.currency}}{% if p.market=='US' %} • US priority store {{priority_us}}{% elif p.market=='CA' %} • CA target store {{target_ca or "all"}}{% endif %}</div><div class="grid">
 {% set rows = latest['items']|selectattr('product_id','equalto',pid)|list %}{% if not rows %}<div class="card unknown"><div class="name">Aucune donnée</div><div class="badge">UNKNOWN / zone non vérifiée</div></div>{% endif %}
-{% for x in rows %}<div class="card {{x.status}} {% if x.storeNumber in [priority_us, target_ca] %}target{% endif %}" data-search="{{ (x.storeName ~ ' ' ~ x.city ~ ' ' ~ x.state ~ ' ' ~ x.storeNumber)|lower|e }}"><div class="name">Apple {{x.storeName}}</div><div>{{x.city}}, {{x.state}} • {{x.distance or '—'}}</div><div class="badge">{{x.status|upper}} — {{x.quote}}</div><div class="sku">{{x.storeNumber}} • {{x.part}}</div><div class="money">Prix: <b>{{money_symbol(x.currency)}}{{'%.2f'|format(x.price)}} {{x.currency}}</b>{% if x.price_eur is not none %} (€{{'%.2f'|format(x.price_eur)}}){% endif %}<br>{% if x.tax_rate is not none %}Taxe: {{'%.3f'|format(x.tax_rate*100)}}% = +{{money_symbol(x.currency)}}{{'%.2f'|format(x.tax_amount)}}{% if x.tax_amount_eur is not none %} (€{{'%.2f'|format(x.tax_amount_eur)}}){% endif %}<br>Total: <b>{{money_symbol(x.currency)}}{{'%.2f'|format(x.total)}} {{x.currency}}</b>{% if x.total_eur is not none %} (€{{'%.2f'|format(x.total_eur)}}){% endif %}{% elif x.tax_included %}Prix catalogue TTC indicatif : <b>{{money_symbol(x.currency)}}{{'%.2f'|format(x.total)}} {{x.currency}}</b>{% else %}Taxe/total: inconnu{% endif %}</div></div>{% endfor %}</div></div>{% endfor %}
+{% for x in rows %}<div class="card {{x.status}} {% if x.storeNumber in [priority_us, target_ca] %}target{% endif %}" data-search="{{ (x.storeName ~ ' ' ~ x.city ~ ' ' ~ x.state ~ ' ' ~ x.storeNumber)|lower|e }}"><div class="name">Apple {{x.storeName}}</div><div>{{x.city}}, {{x.state}} • {{x.distance or '—'}}</div><div class="badge">{{x.status|upper}} — {{x.quote}}</div><div class="sku">{{x.storeNumber}} • {{x.part}}</div><div class="money">Prix: <b>{% if x.price is not none %}{{money_symbol(x.currency)}}{{'%.2f'|format(x.price)}} {{x.currency}}{% else %}Non confirmé{% endif %}</b>{% if x.price_eur is not none %} (€{{'%.2f'|format(x.price_eur)}}){% endif %}<br>{% if x.tax_rate is not none %}Taxe: {{'%.3f'|format(x.tax_rate*100)}}% = +{{money_symbol(x.currency)}}{{'%.2f'|format(x.tax_amount)}}{% if x.tax_amount_eur is not none %} (€{{'%.2f'|format(x.tax_amount_eur)}}){% endif %}<br>Total: <b>{{money_symbol(x.currency)}}{{'%.2f'|format(x.total)}} {{x.currency}}</b>{% if x.total_eur is not none %} (€{{'%.2f'|format(x.total_eur)}}){% endif %}{% elif x.tax_included %}Prix catalogue TTC indicatif : <b>{{money_symbol(x.currency)}}{{'%.2f'|format(x.total)}} {{x.currency}}</b>{% else %}Taxe/total: inconnu{% endif %}</div></div>{% endfor %}</div></div>{% endfor %}
 
 
 
