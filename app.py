@@ -16,6 +16,8 @@ load_dotenv()
 # ========================= CONFIG =========================
 INTERVAL = max(120, int(os.getenv("CHECK_INTERVAL", "300")))
 DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK", "")
+# Local testing override: do not send to Discord even if .env contains a webhook.
+WATCHER_DISABLE_DISCORD = os.getenv("WATCHER_DISABLE_DISCORD", "").strip().lower() in {"1", "true", "yes", "on"}
 STATE_FILE = Path(os.getenv("STATE_FILE", "state_v43.json"))
 HISTORY_FILE = Path(os.getenv("HISTORY_FILE", "history.json"))
 HISTORY_MAX_EVENTS = max(0, int(os.getenv("HISTORY_MAX_EVENTS", "500")))
@@ -144,7 +146,7 @@ def save_state(data):
         print("State save error:", e, flush=True)
 
 def safe_discord(message=None, embeds=None):
-    if not DISCORD_WEBHOOK: return
+    if WATCHER_DISABLE_DISCORD or not DISCORD_WEBHOOK: return
     payload = {}
     if message: payload["content"] = message
     if embeds: payload["embeds"] = embeds

@@ -189,6 +189,29 @@ A selection may contain more than one 12-product batch. The watcher now validate
 
 The local wizard now returns only **validated, known configuration fields** from `/api/config`. Unknown legacy/private fields already present in `config.json` are retained **server-side** when you Save, without being exposed in the browser's configuration response. An existing malformed `config.json` is never silently overwritten by a new save; fix its JSON manually or restore the backup first. As always, credentials belong in private environment variables rather than in `config.json`.
 
+## Local tests: offline preflight and safe live run
+
+Before launching a real monitoring session, use the **read-only offline preflight**. It imports the same runtime configuration as the watcher but starts **no background worker**, does **not contact Apple or Discord**, and **does not write any files**.
+
+```bat
+.venv\Scripts\python.exe -m unittest discover -s tests -v
+.venv\Scripts\python.exe preflight.py
+```
+
+A passing preflight shows the number of configured SKU variants and monitoring areas for each market, the estimated Apple requests per complete scan, any missing country/area combinations, and whether Discord is active. It does **not** print any SKU, postal code, webhook, or other user-defined private values. Use `python preflight.py --json` for a sanitized machine-readable report. If the private `config.json` is missing, the preflight exits nonzero instead of silently approving the built-in example defaults. Offline preflight **cannot** confirm whether an Apple SKU is live or a store has stock.
+
+To run **one controlled live test on Windows CMD** with Discord delivery safely disabled, without modifying your normal local state/history paths, use a separate terminal:
+
+```bat
+cd /d "%USERPROFILE%\apple-stock-watcher-release"
+set WATCHER_DISABLE_DISCORD=1
+set STATE_FILE=%TEMP%\apple-stock-watcher-test-state.json
+set HISTORY_FILE=%TEMP%\apple-stock-watcher-test-history.json
+.venv\Scripts\python.exe app.py
+```
+
+Open `http://127.0.0.1:8080` or `http://127.0.0.1:8080/api/status` in that browser. The **live run does make Apple stock requests** and may call an FX service for prices; stop it with `Ctrl+C` after one check. Because these environment variables are per-terminal, close this CMD window afterward to avoid accidentally reusing test settings. The `WATCHER_DISABLE_DISCORD=1` override disables outbound Discord notifications even when a webhook exists in the local `.env`. It does not disable Apple polling. Do not perform this live test simultaneously with your production watcher using the same credentials/markets if avoidable, and respect Apple's rate limits.
+
 ## Operation and limitations
 
 - `/` dashboard; `/api/status` latest state; `/api/history` recent stock changes; `/health` reports Flask process liveness (not proof of Apple connectivity).
