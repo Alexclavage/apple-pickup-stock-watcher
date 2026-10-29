@@ -257,7 +257,13 @@ def fetch_market(url, location, product_ids):
     for i, pid in enumerate(product_ids):
         params[f"mts.{i}"] = "regular"
         params[f"parts.{i}"] = PRODUCTS[pid]["part"]
-    r = requests.get(url, params=params, headers=HEADERS, timeout=30)
+    try:
+        r = requests.get(url, params=params, headers=HEADERS, timeout=30)
+    except requests.RequestException as exc:
+        # HTTP client exception strings often include the complete request URL:
+        # postal locations and monitored part numbers must not leak to logs,
+        # dashboard errors or Discord notifications.
+        raise RuntimeError(f"Apple connection failed ({type(exc).__name__})") from None
     if r.status_code in (429, 541): raise RuntimeError(f"APPLE_{r.status_code}")
     if r.status_code != 200: raise RuntimeError(f"Apple HTTP {r.status_code}")
     try: data = r.json()
