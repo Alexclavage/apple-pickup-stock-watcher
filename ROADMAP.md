@@ -59,6 +59,15 @@ This roadmap is directional, not a promise that a feature already exists.
 - [ ] Validate carrier selection behavior against real Apple checkout pages; carrier account activation may be separate from stock SKUs
 - [ ] Provide multiple value selection per dimension (several colours/capacities in one group) when needed
 
+## Reproducible local validation
+
+- [x] Provide an offline read-only preflight with sanitized country coverage and Apple request budget
+- [x] Refuse to certify built-in example defaults as a private production configuration
+- [x] Add explicit `WATCHER_DISABLE_DISCORD=1` for safe manual Apple endpoint tests
+- [x] Document isolated test state/history files to avoid overwriting local monitoring history
+- [ ] Verify a live Canadian pickup check and catalogue parsing on user hardware
+- [ ] Prepare a CI workflow for a fully mocked end-to-end first-run demo without using live Apple endpoints
+
 ## Conservative transitions and privacy
 
 - [x] Defer stock-out alerts and retain prior available keys while ANY part of the scan is incomplete
