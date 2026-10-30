@@ -76,6 +76,30 @@ set HISTORY_FILE=%TEMP%\apple-stock-watcher-test-history.json
 
 Inspect `http://127.0.0.1:8080/api/status`; stop the watcher with Ctrl+C after the first check. **This contacts Apple** (and potentially an FX service) but does **not** send Discord messages or write your normal state/history. Close that CMD session after testing. Avoid running a second poller alongside production on the same stores.
 
+### Explicit one-shot live integration checks (V1 validation only)
+
+These commands **never launch the polling worker** and never change `STATE_FILE`, `HISTORY_FILE` or `config.json`. They make **no network requests unless an explicit confirmation flag is provided**. Both commands are separate from the optional ongoing monitor.
+
+**1. Apple multi-variant pickup test.** Use the setup wizard to add **at least two distinct Apple SKU references in the same country**, based on real product data, and save the private config. The example config contains only one SKU per country and will be intentionally refused by this test. Close the wizard and ensure no other local watcher is polling simultaneously. Check `preflight.py` first, then:
+
+```bat
+set WATCHER_DISABLE_DISCORD=1
+.venv\Scripts\python.exe integration_smoke.py apple --confirm-live
+```
+
+This performs **one actual Apple scan** over your configured areas (potentially several individual Apple requests) and may use the FX provider for price estimates. It reports sanitized **country counts, observed distinct variants, number of stores, availability categories and coverage errors**. It does **not** send any Discord messages, write state/history, reveal SKUs/postal codes or assert that an unverified product is sold out. `PASS` means at least two distinct same-market variants were observed, with no known partial results or coverage issues in that checked scan; it is not proof of nationwide stock accuracy.
+
+**2. Single Discord delivery test.** Create a **dedicated private test channel** in your own Discord server and a webhook for that channel. Paste the webhook URL into your **local** `.env` only as `DISCORD_WEBHOOK=...`; never paste the URL into chat, screenshots, GitHub, or terminal output. In the test CMD:
+
+```bat
+set WATCHER_DISABLE_DISCORD=
+.venv\Scripts\python.exe integration_smoke.py discord --confirm-send
+```
+
+This sends **exactly one clearly labeled test message**, with mentions disabled, to that private webhook. It does not query Apple, start monitoring or write any state. A reported HTTP **200/204** means Discord accepted the request: check that the message actually appears in your test channel. HTTP 429 means rate limited; do not retry immediately. Do not use your production alert webhook for this test. You may remove the test webhook from `.env` after confirming delivery.
+
+**3. Local dashboard security:** with `app.py` running in a disposable test session, `netstat -ano -p TCP | findstr ":8080"` should show only **127.0.0.1:8080** (and possibly local established connections), never a `0.0.0.0:8080` listening socket. The setup wizard should similarly listen only at **127.0.0.1:8091**. This local binding test does **not** validate hosted firewall, authentication or public Railway access.
+
 ## Dashboard, stock status and Discord
 
 The dashboard groups SKUs by **model, market and returned Apple Store**, with expandable variant details. Manually configured products appear separately. Search, availability filters, recent stock changes and last-check times are shown.
