@@ -5,7 +5,13 @@
 !.env.example
 config.json
 state*.json
+state*.tmp
+*.log
 session*.json
 capture*.txt
 __pycache__
 *.pyc
+history*.json
+history*.json.tmp
+config.json.bak
+.watcher-config-*.tmp

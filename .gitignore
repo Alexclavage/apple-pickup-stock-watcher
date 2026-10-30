@@ -7,6 +7,11 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 state*.json
+state*.tmp
 session*.json
 capture*.txt
 *.log
+history*.json
+history*.json.tmp
+config.json.bak
+.watcher-config-*.tmp
