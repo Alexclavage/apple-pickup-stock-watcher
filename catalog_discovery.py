@@ -10,7 +10,7 @@ import time
 
 import requests
 
-from regions import region_for
+from regions import region_for, REGIONS, shop_base_for, price_limit_for
 
 
 # A deliberately small allowlist; new families must be manually verified.
@@ -27,7 +27,7 @@ FAMILIES = {
     "apple-watch-ultra": ("Watch", "Apple Watch Ultra"),
 }
 CATEGORY_PATH = {"iPhone": "buy-iphone", "iPad": "buy-ipad", "Mac": "buy-mac", "Watch": "buy-watch"}
-MARKET_PREFIX = {"US": "", "CA": "/ca", "FR": "/fr", "GB": "/uk"}
+MARKET_PREFIX = {market: shop_base_for(market) for market in REGIONS}
 SKU_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{2,19}/[A-Za-z0-9]{1,6}$")
 DATA_KEY = re.compile(rb'(?<![A-Za-z0-9_$])["\x27]?productSelectionData["\x27]?\s*:\s*\{')
 MAX_HTML_BYTES = 7_000_000
@@ -54,7 +54,7 @@ def catalog_url(market, family, experimental=False):
         raise CatalogError(str(exc)) from exc
     category = FAMILIES[family][0]
     path = CATEGORY_PATH[category]
-    return f"https://www.apple.com{MARKET_PREFIX[market]}/shop/{path}/{family}"
+    return f"{MARKET_PREFIX[market]}/shop/{path}/{family}"
 
 
 def _extract_json_object(page, start):
@@ -158,7 +158,7 @@ def parse_catalog_html(page, market, family):
         raise CatalogError("Invalid or oversized catalog page")
     data = _selection_data(page)
     category, title = FAMILIES[family]
-    currency = {"US": "USD", "CA": "CAD", "FR": "EUR", "GB": "GBP"}[market]
+    currency = REGIONS[market].currency
     result = {}
     for raw in data["products"]:
         if not isinstance(raw, dict):
@@ -201,7 +201,7 @@ def parse_catalog_html(page, market, family):
         if (isinstance(candidate_price, (int, float))
                 and not isinstance(candidate_price, bool)
                 and math.isfinite(candidate_price)
-                and 0 < candidate_price <= 100000):
+                and 0 < candidate_price <= price_limit_for(currency)):
             price = round(float(candidate_price), 2)
         result[sku] = {
             "part": sku,

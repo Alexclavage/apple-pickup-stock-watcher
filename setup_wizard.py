@@ -16,7 +16,8 @@ import tempfile
 
 from flask import Flask, abort, jsonify, render_template_string, request
 from monitoring_areas import MAX_MONITORING_AREAS, legacy_areas, validate_monitoring_areas
-from regions import region_for
+from regions import region_for, REGIONS, price_limit_for
+from store_directory import directory_countries, stores_for_country, validation_for_country
 from catalog_discovery import CatalogError, FAMILIES, fetch_catalog
 from model_watch import MODELS, MAX_PRODUCTS, family_for, model_catalog_result, ModelSelectionError, validate_request_budget, MAX_SKUS_PER_MODEL
 
@@ -83,7 +84,7 @@ def validate_config(cfg):
         if not SKU.fullmatch(sku):
             raise InvalidConfig(f"Invalid SKU for {product_id}")
         price = item.get("price")
-        if price is not None and (isinstance(price, bool) or not isinstance(price, (int, float)) or not math.isfinite(price) or not 0 <= price <= 100000):
+        if price is not None and (isinstance(price, bool) or not isinstance(price, (int, float)) or not math.isfinite(price) or not 0 <= price <= price_limit_for(currency)):
             raise InvalidConfig(f"Price for {product_id} must be a valid nonnegative number")
         watch_model = item.get("watch_model")
         if watch_model is not None and watch_model not in MODELS:
@@ -225,13 +226,13 @@ body.has-pending{padding-bottom:95px}
 <div><strong id="setupStateTitle">Reading local configuration…</strong><p id="setupStateDetail">Products are only monitored after they are saved and the watcher is restarted.</p></div>
 </div>
 <section>
-<label class="toggle"><input id="experimentalRegions" type="checkbox"> Enable France/UK preview (experimental)</label>
-<p>France/UK pickup responses still need live verification. Other countries are not supported yet.</p>
+<label class="toggle"><input id="experimentalRegions" type="checkbox"> Enable additional markets (experimental)</label>
+<p>Additional markets remain experimental. The directory shows any limited live-check evidence separately; it does not prove coverage of other products, stores or locations.</p>
 <h2>1. Choose a product model</h2>
 <p>Just choose the model name. Choose a model, then optionally narrow down by colour, storage and carrier connection. By default, all discovered variants are included.</p>
 <div class="fields">
 <div><label for="modelPicker">Apple model</label><select id="modelPicker">{% for model in model_choices %}<option value="{{model.id}}">{{model.name}}</option>{% endfor %}</select></div>
-<div><label for="modelMarket">Country</label><select id="modelMarket"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
+<div><label for="modelMarket">Country</label><select id="modelMarket">{% for region in region_choices %}<option value="{{region.code}}">{{region.name}}{{" (experimental)" if region.experimental else ""}}</option>{% endfor %}</select></div>
 </div>
 <div class="actions"><button id="watchModel" type="button" class="primary">1. Find variants</button><span id="modelStatus" class="catalog-status" role="status" aria-live="polite"></span></div>
 <div id="modelOptions" class="model-filters" hidden>
@@ -267,7 +268,7 @@ body.has-pending{padding-bottom:95px}
 <h2>Discover Apple products — preview</h2>
 <p>Search the live official Apple buying pages on demand. SKU discovery is experimental: model variations and prices can be incomplete or change without notice. You always review the selected entry before saving.</p>
 <div class="fields">
-<div><label for="catalogMarket">Country</label><select id="catalogMarket"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
+<div><label for="catalogMarket">Country</label><select id="catalogMarket">{% for region in region_choices %}<option value="{{region.code}}">{{region.name}}{{" (experimental)" if region.experimental else ""}}</option>{% endfor %}</select></div>
 <div><label for="catalogFamily">Product family</label><select id="catalogFamily">
 <option value="iphone-18-pro">iPhone 18 Pro / Pro Max</option><option value="iphone-17">iPhone 17</option><option value="iphone-air">iPhone Air</option>
 <option value="ipad-pro">iPad Pro</option><option value="ipad-air">iPad Air</option>
@@ -282,11 +283,23 @@ body.has-pending{padding-bottom:95px}
 </div>
 </details>
 <section>
-<div class="toolbar"><div><h2>2. Monitoring areas</h2><p>Select a country and postal code or city for each area. US currently requires a five-digit ZIP; Canada also accepts a city, but postal codes are recommended. Countries beyond US/Canada will be added as validated.</p></div>
+<div class="toolbar"><div><h2>2. Monitoring areas</h2><p>Select a country and postal code or city for each area. US currently requires a five-digit ZIP; Canada also accepts a city, but postal codes are recommended. Additional markets require experimental opt-in and regional SKUs; a nearby query may not return every selected store.</p></div>
 <div class="toolbar"><button id="addRegion" type="button">+ Add area</button><button id="renameAreas" type="button">Rename area IDs from locations</button></div></div>
 <div id="regions"></div>
 <div class="info" id="areaEstimate" role="status" aria-live="polite">Estimated requests: 1 per area per scan.</div>
 <div id="areaWarning" class="area-warning" hidden><strong>⚠ Multiple monitoring areas</strong><p>More areas mean more Apple requests. Monitoring may become slower, return partial results, or be temporarily interrupted by rate limits. The app spaces requests, stops a scan when Apple throttles it, and never reports missed checks as confirmed out-of-stock.</p></div>
+</section>
+<section>
+<h2>Find an Apple Store worldwide</h2>
+<p>Official directory snapshot: 535 stores in 27 countries/territories, observed October 30, 2026. This lists stores, not live stock. It does not start a worldwide scan.</p>
+<div class="fields">
+<div><label for="directoryMarket">Store country</label><select id="directoryMarket">{% for country in directory_choices %}<option value="{{country.code}}">{{country.name}} ({{country.stores}})</option>{% endfor %}</select></div>
+<div><label for="directorySearch">Find a city or store</label><input id="directorySearch" type="search" placeholder="Tokyo, Paris, R102…"></div>
+<div class="full"><label for="directoryStore">Official Apple Store</label><select id="directoryStore"></select></div>
+</div>
+<p id="directoryStatus" role="status" aria-live="polite"></p>
+<div class="actions"><button id="addDirectoryStore" type="button">Add selected store to an area</button><a id="directoryLink" target="_blank" rel="noopener noreferrer">View official store page</a></div>
+<small>Choose a local postal code/city in the area, configure products for that country, then Save and restart. Adding a store is only a draft edit. The advanced US state filter still applies; clear it for nationwide US choice. Macao is directory-only until a pickup adapter is verified.</small>
 </section>
 <div class="grid">
 <section><h2>3. United States</h2><p>Advanced: filter which US states may appear in monitoring results.</p>
@@ -314,20 +327,23 @@ body.has-pending{padding-bottom:95px}
 <div id="toastZone" class="toast-zone" role="status" aria-live="polite" aria-atomic="true"></div>
 <template id="productTemplate"><article class="entry product-entry"><div class="entry-top"><strong>Product</strong><button type="button" class="remove">Remove</button></div><div class="fields">
 <div><label>Product ID (auto-generated for selected variants)</label><input class="pid" placeholder="iphone_18_pro_max_512gb_silver_ca" maxlength="40"></div>
-<div><label>Market</label><select class="market"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
+<div><label>Market</label><select class="market">{% for region in region_choices %}<option value="{{region.code}}">{{region.name}}{{" (experimental)" if region.experimental else ""}}</option>{% endfor %}</select></div>
 <div class="full"><label>Display name</label><input class="pname" placeholder="iPhone 18 Pro 512GB Silver" maxlength="100"></div>
 <div><label>Apple SKU</label><input class="sku" placeholder="MJQ84LL/A" maxlength="32"></div>
 <div><label>Price before tax</label><input class="price" type="number" min="0" max="100000" step=".01"></div>
 </div></article></template>
 <template id="regionTemplate"><article class="entry region-entry"><div class="entry-top"><div class="area-entry-title"><strong class="areaTitle">Monitoring area</strong><span class="area-subtitle">One location can monitor multiple products in this country</span></div><button type="button" class="remove">Remove</button></div><div class="fields">
 <div><label>Area ID (country + postal code / city)</label><input class="areaId" placeholder="us_19702" maxlength="32"></div>
-<div><label>Country</label><select class="country"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
+<div><label>Country</label><select class="country">{% for region in region_choices %}<option value="{{region.code}}">{{region.name}}{{" (experimental)" if region.experimental else ""}}</option>{% endfor %}</select></div>
 <div><label>ZIP / postal code or city</label><input class="location" placeholder="19702 or M5B 2H1" maxlength="64"></div>
 <div><label>Apple Store IDs (optional; blank = all returned)</label><input class="areaStores" placeholder="R102, R121"></div>
 </div></article></template>
 <script>
 const TOKEN = {{ token | tojson }};
 let original = {};
+let regionInfo = {};
+let directoryRows = [];
+let directoryRequest = 0;
 let isLoadingConfig=true;
 let hasSavedFile=false;
 let hasUnsavedChanges=false;
@@ -439,8 +455,8 @@ function renderCatalog(){
 async function discoverCatalog(){
   const button=el("findCatalog");
   const market=el("catalogMarket").value;
-  if(["FR","GB"].includes(market)&&!el("experimentalRegions").checked){
-    el("catalogStatus").textContent="Check the experimental France/UK checkbox above first.";
+  if(regionInfo[market]?.experimental&&!el("experimentalRegions").checked){
+    el("catalogStatus").textContent="Enable the experimental markets checkbox above first.";
     return;
   }
   button.disabled=true;el("catalogStatus").textContent="Reading Apple's product page…";
@@ -603,8 +619,8 @@ async function watchSelectedModel(){
   clearModelPreview();
   const availableMarkets=new Set([...document.querySelectorAll(".region-entry .country")].map(i=>i.value));
   if(!availableMarkets.has(market)){el("modelStatus").textContent="Add a monitoring area for "+market+" first.";return;}
-  if(["FR","GB"].includes(market)&&!el("experimentalRegions").checked){
-    el("modelStatus").textContent="Enable experimental France/UK first.";return;
+  if(regionInfo[market]?.experimental&&!el("experimentalRegions").checked){
+    el("modelStatus").textContent="Enable experimental markets first.";return;
   }
   btn.disabled=true;el("modelStatus").textContent="Finding regional variants from Apple…";
   try{
@@ -690,11 +706,15 @@ function productRow(id, p) {
   root.querySelector(".pname").value=p.name||"";
   root.querySelector(".sku").value=p.part||"";
   root.querySelector(".price").value=p.price??"";
+  root.querySelector(".price").max=regionInfo[p.market]?.price_limit??100000;
+  root.querySelector(".market").addEventListener("change",()=>{
+    root.querySelector(".price").max=regionInfo[root.querySelector(".market").value]?.price_limit??100000;
+  });
   root.dataset.watchModel=p.watch_model||"";
   root.dataset.color=p.color||"";
   root.dataset.storage=p.storage||"";
   root.dataset.carrier=p.carrier||"";
-  root.querySelector(".market").addEventListener("change",()=>{if(["FR","GB"].includes(root.querySelector(".market").value)&&!el("experimentalRegions").checked)status("France/UK requires checking the experimental preview box explicitly.",true);});
+  root.querySelector(".market").addEventListener("change",()=>{if(regionInfo[root.querySelector(".market").value]?.experimental&&!el("experimentalRegions").checked)status("This market requires the experimental opt-in checkbox.",true);});
   root.querySelector(".remove").addEventListener("click",()=>{
     const name=root.querySelector(".pname").value||root.querySelector(".pid").value||"product";
     root.remove();markDirty();
@@ -794,7 +814,7 @@ function collect(){
       name:root.querySelector(".pname").value.trim(),
       part:root.querySelector(".sku").value.trim(),
       price:priceInput===""?null:Number(priceInput),
-      currency:({US:"USD",CA:"CAD",FR:"EUR",GB:"GBP"})[market]
+      currency:regionInfo[market]?.currency
     };
     if(root.dataset.watchModel)data.products[id].watch_model=root.dataset.watchModel;
     for(const attribute of ["color","storage","carrier"]){
@@ -820,8 +840,72 @@ function collect(){
   return data;
 }
 function status(message,error=false){el("message").textContent=message;el("message").style.color=error?"#ff7c8b":"#55e29d";}
+function renderDirectory(){
+  const select=el("directoryStore");select.replaceChildren();
+  const phrase=el("directorySearch").value.trim().toLocaleLowerCase();
+  for(const store of directoryRows.filter(s=>(s.city+" "+s.name+" "+s.id).toLocaleLowerCase().includes(phrase))){
+    const option=document.createElement("option");option.value=store.id;
+    option.textContent=store.city+" · "+store.name+" ("+store.id+")";select.append(option);
+  }
+  updateDirectorySelection();
+}
+function updateDirectorySelection(){
+  const market=el("directoryMarket").value;
+  const store=directoryRows.find(s=>s.id===el("directoryStore").value);
+  el("addDirectoryStore").disabled=!store||!regionInfo[market];
+  el("directoryLink").hidden=!store;
+  if(store)el("directoryLink").href=store.url;
+}
+async function loadDirectory(){
+  const requestId=++directoryRequest;
+  const market=el("directoryMarket").value;
+  directoryRows=[];renderDirectory();
+  el("directoryStatus").textContent="Loading store directory…";
+  try{
+    const response=await fetch("/api/stores?market="+encodeURIComponent(market));
+    if(!response.ok)throw Error("Store directory unavailable");
+    const data=await response.json();
+    if(requestId!==directoryRequest)return;
+    directoryRows=data.stores;renderDirectory();
+    const evidence=regionInfo[market]?.validation;
+    const evidenceDate=String(evidence?.checked_at||evidence?.observed_at||"").slice(0,10)||"date unavailable";
+    const mode=!regionInfo[market]?"Directory only: pickup monitoring is not available.":
+      regionInfo[market].experimental?(evidence?.pickup_observed
+        ?"Experimental market; a limited live check ("+evidenceDate+") observed "+evidence.distinct_variants_observed+" variants in "+evidence.stores_returned+" returned stores. Other combinations remain unverified."
+        :evidence?.catalog_parsed?"Experimental market; catalog parsed, but pickup coverage was incomplete in the recorded check."
+        :"Experimental pickup route; no complete live check recorded.")
+      :"Live-tested market; individual store/SKU coverage is not guaranteed.";
+    el("directoryStatus").textContent=data.stores.length+" stores · snapshot "+data.observed_at+" · "+mode;
+  }catch(error){
+    if(requestId!==directoryRequest)return;
+    directoryRows=[];renderDirectory();el("directoryStatus").textContent=error.message;
+  }
+}
+el("directoryMarket").addEventListener("change",()=>{el("directorySearch").value="";loadDirectory();});
+el("directorySearch").addEventListener("input",renderDirectory);
+el("directoryStore").addEventListener("change",updateDirectorySelection);
+el("addDirectoryStore").addEventListener("click",()=>{
+  const market=el("directoryMarket").value;
+  const store=directoryRows.find(s=>s.id===el("directoryStore").value);
+  if(!store||!regionInfo[market])return;
+  if(regionInfo[market].experimental&&!el("experimentalRegions").checked){status("Enable experimental markets before adding this country.",true);return;}
+  const roots=[...document.querySelectorAll(".region-entry")];
+  const duplicate=roots.some(root=>root.querySelector(".country").value===market&&splitIds(root.querySelector(".areaStores").value).includes(store.id));
+  if(duplicate){status("This store is already selected in an area.",true);return;}
+  if(roots.length>=8){status("Eight areas maximum. Add the store ID to an existing nearby area, or remove an area.",true);return;}
+  regionRow({market,location:"",store_ids:[store.id],autoId:true});
+  const row=el("regions").lastElementChild;
+  row.scrollIntoView({behavior:"smooth",block:"center"});row.querySelector(".location").focus();
+  status("Added "+store.name+". Enter a local postal code/city and configure products for "+market+", then Save.");
+  showToast("Store added to the editor. Complete the area, then Save.");
+});
+
 async function start(){
   try{
+    const metadata=await fetch("/api/regions",{cache:"no-store"});
+    if(!metadata.ok)throw Error("Cannot load country metadata");
+    regionInfo=await metadata.json();
+    await loadDirectory();
     const r=await fetch("/api/config",{cache:"no-store"});
     const payload=await r.json();if(!r.ok)throw Error(payload.error||"Cannot read configuration");
     hasSavedFile=payload.exists===true;
@@ -927,8 +1011,24 @@ def create_wizard_app(config_path=None, sample_path=None):
     def index():
         return render_template_string(
             WIZARD_HTML, token=csrf_token,
+            region_choices=list(REGIONS.values()),
+            directory_choices=directory_countries(),
             model_choices=[{"id": key, "name": item[0]} for key, item in MODELS.items()],
         )
+
+    @app.get("/api/regions")
+    def read_regions():
+        return jsonify({code: {"currency": r.currency, "experimental": r.experimental,
+                               "price_limit": price_limit_for(r.currency),
+                               "validation": validation_for_country(code)}
+                        for code, r in REGIONS.items()})
+
+    @app.get("/api/stores")
+    def read_stores():
+        try:
+            return jsonify(stores_for_country(request.args.get("market", "US")))
+        except ValueError:
+            return jsonify({"error": "Unknown directory country"}), 422
 
     @app.get("/api/config")
     def read_config():
