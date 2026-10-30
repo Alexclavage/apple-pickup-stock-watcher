@@ -456,23 +456,49 @@ def priority_store_embed(item, available=True):
         "footer":{"text":"Apple Stock Watcher V4.5 • vérifie sur Apple avant de te déplacer"}
     }
 
+def bounded_discord_description(items, formatter, separator="\n\n"):
+    """Keep Discord embeds below their 4096-character description limit.
+
+    A busy cycle can contain hundreds of SKU/store rows. The summary always
+    counts ALL events, but displays only the first fitting examples. This is
+    not an exactly-once delivery mechanism.
+    """
+    lines = []
+    used = 0
+    for item in items[:20]:
+        line = str(formatter(item))
+        if len(line) > 500:
+            line = line[:499] + "…"
+        increase = len(line) + (len(separator) if lines else 0)
+        # Reserve space for the omitted-count line and Unicode characters.
+        if used + increase > 3500:
+            break
+        lines.append(line)
+        used += increase
+    omitted = len(items) - len(lines)
+    if omitted:
+        lines.append(f"… et **{omitted}** autre(s) résultat(s).")
+    return separator.join(lines)
+
+
 def normal_available_embed(items):
     # One compact card per cycle, instead of one Discord message per store.
-    lines=[]
-    for item in items[:20]:
-        where=f"Apple {item['storeName']} — {item.get('city') or ''}, {item.get('state') or ''}"
-        lines.append(f"🟢 **{compact_product_name(item)}** • {where}\n↳ **{price_total_text(item)}** • {item.get('quote') or 'Available'}")
-    extra = len(items)-20
-    if extra>0: lines.append(f"… et **{extra}** autre(s) disponibilité(s).")
-    return {"title":f"🟢 {len(items)} nouvelle(s) disponibilité(s)","description":"\n\n".join(lines),"color":0x2ECC71,"footer":{"text":"Apple Stock Watcher V4.5 • non-priority stores"}}
+    def line(item):
+        where = f"Apple {item['storeName']} — {item.get('city') or ''}, {item.get('state') or ''}"
+        return f"🟢 **{compact_product_name(item)}** • {where}\n↳ **{price_total_text(item)}** • {item.get('quote') or 'Available'}"
+    return {"title":f"🟢 {len(items)} nouvelle(s) disponibilité(s)",
+            "description":bounded_discord_description(items, line),
+            "color":0x2ECC71,
+            "footer":{"text":"Apple Stock Watcher V4.5 • non-priority stores"}}
+
 
 def unavailable_embed(items):
-    lines=[]
-    for item in items[:20]:
-        lines.append(f"🔴 **{compact_product_name(item)}** • Apple {item['storeName']} — {item.get('city') or ''}, {item.get('state') or ''}")
-    extra=len(items)-20
-    if extra>0: lines.append(f"… et **{extra}** autre(s) rupture(s).")
-    return {"title":f"🔴 {len(items)} stock(s) redevenu(s) indisponible(s)","description":"\n".join(lines),"color":0xE74C3C,"footer":{"text":"Transition confirmée AVAILABLE → UNAVAILABLE"}}
+    def line(item):
+        return f"🔴 **{compact_product_name(item)}** • Apple {item['storeName']} — {item.get('city') or ''}, {item.get('state') or ''}"
+    return {"title":f"🔴 {len(items)} stock(s) redevenu(s) indisponible(s)",
+            "description":bounded_discord_description(items, line, separator="\n"),
+            "color":0xE74C3C,
+            "footer":{"text":"Transition confirmée AVAILABLE → UNAVAILABLE"}}
 
 def is_alert_target(item):
     return (
