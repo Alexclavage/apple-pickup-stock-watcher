@@ -1,4 +1,4 @@
-import os, json, time, random, threading
+import os, json, time, random, threading, math
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -72,8 +72,13 @@ if CONFIG_PATH.exists():
             if not all(product.get(field) for field in ("name", "part", "currency")):
                 raise ValueError(f"Product {pid} must have name, part and currency")
             price = product.get("price")
-            if price is not None and (isinstance(price, bool) or not isinstance(price, (int, float)) or not 0 <= price <= 100000):
-                raise ValueError(f"Product {pid} must have nonnegative numeric price")
+            if price is not None and (
+                isinstance(price, bool)
+                or not isinstance(price, (int, float))
+                or not math.isfinite(price)
+                or not 0 <= price <= 100000
+            ):
+                raise ValueError(f"Product {pid} must have a finite nonnegative numeric price")
         PRODUCTS = products
     if "search_zips" in cfg:
         if not isinstance(cfg["search_zips"], dict):
@@ -134,8 +139,25 @@ def now():
     return datetime.now(timezone.utc).isoformat()
 
 def load_state():
-    try: return json.loads(STATE_FILE.read_text(encoding="utf-8"))
-    except Exception: return {}
+    """Treat malformed or incompatible JSON state as an empty prior state.
+
+    A file containing valid JSON like [] or {"available_keys": [[]]} used
+    to crash poll_once(), including its exception handler, killing the worker.
+    """
+    try:
+        state = json.loads(STATE_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeError):
+        return {}
+    if not isinstance(state, dict):
+        return {}
+    available_keys = state.get("available_keys", [])
+    if not isinstance(available_keys, list) or any(
+        not isinstance(key, str) or not key for key in available_keys
+    ):
+        return {}
+    if "watcher_error" in state and not isinstance(state["watcher_error"], bool):
+        return {}
+    return state
 
 def save_state(data):
     try:
