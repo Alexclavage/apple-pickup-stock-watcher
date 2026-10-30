@@ -2,7 +2,7 @@
 
 **Unofficial self-hosted Apple Store pickup availability watcher.** Choose supported products, nearby Apple Retail Stores, view a model-grouped dashboard, and optionally get Discord stock-change notifications. It **does not buy or reserve products** and is not affiliated with Apple.
 
-> **V1 prepared for review, not yet published:** a user-validated US/Canada scan observed 3 variants across 17 returned stores with zero coverage issues in that scan. This is not validation of all SKUs or stores. Catalog parsing and France/UK adapters remain experimental. Apple endpoints are undocumented. See [V1 notes](docs/RELEASE_NOTES_V1.md) and [release checklist](docs/RELEASE_CHECKLIST.md).
+> **V1.0.0:** a user-validated US/Canada scan observed 3 variants across 17 returned stores with zero coverage issues in that scan. This is not validation of all SKUs or stores. Catalog parsing and France/UK adapters remain experimental. Apple endpoints are undocumented. See [V1 notes](docs/RELEASE_NOTES_V1.md) and [release checklist](docs/RELEASE_CHECKLIST.md).
 
 ## Quick start (Windows CMD)
 

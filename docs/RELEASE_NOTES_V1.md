@@ -1,7 +1,7 @@
 # Apple Stock Watcher v1.0.0
 
-**Prepared release notes — not yet published.** Proposed tag: `v1.0.0`.
-Maintainer review and explicit approval are required before merge/tag/release.
+**V1.0.0 — October 30, 2026.** The maintainer authorized publication and
+[PR #15](https://github.com/Alexclavage/apple-pickup-stock-watcher/pull/15) was merged.
 
 ## First open-source V1
 

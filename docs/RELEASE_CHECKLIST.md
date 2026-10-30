@@ -1,7 +1,7 @@
 # V1 source publication checklist
 
 Prepared October 30, 2026 for [PR #15](https://github.com/Alexclavage/apple-pickup-stock-watcher/pull/15)
-against `main`. Proposed version/tag: **v1.0.0**, not yet published.
+against `main`. Version/tag: **v1.0.0**. Maintainer authorized publication on October 30, 2026.
 Scope: MIT-licensed source for local self-hosting. Public hosting and Railway
 migration require a separate decision.
 
@@ -32,14 +32,12 @@ These completed validations do not need to be requested from the user again.
 
 ## Publication gates
 
-- [ ] Final PR head CI green; consult the PR's current checks. The run above
-  records the previously validated baseline, not a claim about later commits.
-- [ ] Maintainer reviews and explicitly authorizes merge of PR #15 and publication
-  of `v1.0.0` from the resulting `main` commit using the prepared release notes.
+- [x] Final PR head `5cbc6f2` passed 124 tests in each of four jobs:
+  [final CI](https://github.com/Alexclavage/apple-pickup-stock-watcher/actions/runs/41119379549).
+- [x] Maintainer explicitly authorized merge and `v1.0.0` publication; PR #15 merged.
 
-Until that authorization: **do not merge, modify `main`, create a tag, publish a
-GitHub Release, change Railway or close the fourteen stacked draft PRs**.
-Marking PR #15 ready for review is not publication approval.
+The authorization covers merge and V1 source publication only. **Do not change
+Railway or close the fourteen stacked draft PRs** without a separate owner decision.
 
 ## Declared limitations and separate deployment work
 
