@@ -17,7 +17,7 @@ import tempfile
 from flask import Flask, abort, jsonify, render_template_string, request
 from monitoring_areas import MAX_MONITORING_AREAS, legacy_areas, validate_monitoring_areas
 from regions import region_for, REGIONS, price_limit_for
-from store_directory import directory_countries, stores_for_country
+from store_directory import directory_countries, stores_for_country, validation_for_country
 from catalog_discovery import CatalogError, FAMILIES, fetch_catalog
 from model_watch import MODELS, MAX_PRODUCTS, family_for, model_catalog_result, ModelSelectionError, validate_request_budget, MAX_SKUS_PER_MODEL
 
@@ -227,7 +227,7 @@ body.has-pending{padding-bottom:95px}
 </div>
 <section>
 <label class="toggle"><input id="experimentalRegions" type="checkbox"> Enable additional markets (experimental)</label>
-<p>Only US/Canada have recorded live checks. All other enabled markets use unverified regional route candidates and can fail. Directory coverage does not prove pickup coverage.</p>
+<p>Additional markets remain experimental. The directory shows any limited live-check evidence separately; it does not prove coverage of other products, stores or locations.</p>
 <h2>1. Choose a product model</h2>
 <p>Just choose the model name. Choose a model, then optionally narrow down by colour, storage and carrier connection. By default, all discovered variants are included.</p>
 <div class="fields">
@@ -867,8 +867,13 @@ async function loadDirectory(){
     const data=await response.json();
     if(requestId!==directoryRequest)return;
     directoryRows=data.stores;renderDirectory();
+    const evidence=regionInfo[market]?.validation;
     const mode=!regionInfo[market]?"Directory only: pickup monitoring is not available.":
-      regionInfo[market].experimental?"Experimental pickup route: not independently live-validated.":"Live-tested market; individual store/SKU coverage is not guaranteed.";
+      regionInfo[market].experimental?(evidence?.pickup_observed
+        ?"Experimental market; a limited live check observed "+evidence.distinct_variants_observed+" variants in "+evidence.stores_returned+" returned stores. Other combinations remain unverified."
+        :evidence?.catalog_parsed?"Experimental market; catalog parsed, but pickup coverage was incomplete in the recorded check."
+        :"Experimental pickup route; no complete live check recorded.")
+      :"Live-tested market; individual store/SKU coverage is not guaranteed.";
     el("directoryStatus").textContent=data.stores.length+" stores · snapshot "+data.observed_at+" · "+mode;
   }catch(error){
     if(requestId!==directoryRequest)return;
@@ -1013,7 +1018,8 @@ def create_wizard_app(config_path=None, sample_path=None):
     @app.get("/api/regions")
     def read_regions():
         return jsonify({code: {"currency": r.currency, "experimental": r.experimental,
-                               "price_limit": price_limit_for(r.currency)}
+                               "price_limit": price_limit_for(r.currency),
+                               "validation": validation_for_country(code)}
                         for code, r in REGIONS.items()})
 
     @app.get("/api/stores")

@@ -2,7 +2,7 @@
 
 **Unofficial self-hosted Apple Store pickup availability watcher.** Choose supported products, nearby Apple Retail Stores, view a model-grouped dashboard, and optionally get Discord stock-change notifications. It **does not buy or reserve products** and is not affiliated with Apple.
 
-> **V1.0.0:** a user-validated US/Canada scan observed 3 variants across 17 returned stores with zero coverage issues in that scan. This is not validation of all SKUs or stores. Catalog parsing and France/UK adapters remain experimental. Apple endpoints are undocumented. See [V1 notes](docs/RELEASE_NOTES_V1.md) and [release checklist](docs/RELEASE_CHECKLIST.md).
+> **1.1 development branch:** worldwide store selection is being prepared separately from the published `v1.0.0`. US/Canada retain their completed V1 validation. Additional markets remain experimental, with [bounded live-check evidence](docs/REGIONAL_VALIDATION.md) recorded separately. Apple endpoints are undocumented; no claim of all-SKU/all-store coverage is made. See [V1 notes](docs/RELEASE_NOTES_V1.md).
 
 ## Quick start (Windows CMD)
 
@@ -57,9 +57,10 @@ to a draft area. Enter its local postal code/city and regional products, Save,
 then restart. Directory browsing makes no Apple requests.
 
 US/CA retain their recorded live evidence. The other 24 selectable markets are
-**experimental regional route candidates**, requiring explicit opt-in. Their
-pickup/catalog routes have not been independently live-validated; errors/missing
-responses remain unknown. Macao is directory-only with no enabled pickup adapter.
+**experimental regional adapters**, requiring explicit opt-in. The
+[verification record](docs/REGIONAL_VALIDATION.md) distinguishes completed bounded
+checks from unverified combinations; errors/missing responses remain unknown.
+Macao is directory-only with no enabled pickup adapter.
 The snapshot is not a live opening/closure feed or a guarantee of pickup eligibility.
 There is no "scan all worldwide stores" mode; the 8-area/24-request budgets remain.
 See [worldwide coverage](docs/WORLDWIDE_COVERAGE.md).

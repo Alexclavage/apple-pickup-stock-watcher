@@ -14,6 +14,7 @@ from catalog_discovery import catalog_url, parse_catalog_html
 from regions import REGIONS, normalize_location, region_for
 from setup_wizard import create_wizard_app, validate_config
 from store_directory import directory_countries, stores_for_country
+import store_directory
 from setup_wizard import WIZARD_HTML
 
 
@@ -59,6 +60,16 @@ const fetch=(url)=>new Promise(resolve=>pending.set(url,resolve));
  assert.equal(directoryRows[0].id,'R409');assert.match(el('directoryStatus').textContent,/Experimental/);
  el('directorySearch').value='R409';renderDirectory();assert.equal(el('directoryStore').value,'R409');
  el('directorySearch').value='no such store';renderDirectory();assert.equal(el('addDirectoryStore').disabled,true);
+ regionInfo.HK.validation={pickup_observed:true,distinct_variants_observed:2,stores_returned:6};
+ el('directorySearch').value='';
+ const third=loadDirectory();
+ pending.get('/api/stores?market=HK')({ok:true,json:async()=>latest});await third;
+ assert.match(el('directoryStatus').textContent,/limited live check/);
+ assert.match(el('directoryStatus').textContent,/Other combinations remain unverified/);
+ regionInfo.HK.validation={catalog_parsed:true,pickup_observed:false};
+ const fourth=loadDirectory();
+ pending.get('/api/stores?market=HK')({ok:true,json:async()=>latest});await fourth;
+ assert.match(el('directoryStatus').textContent,/pickup coverage was incomplete/);
  assert.equal(pending.size,2);
 })().catch(error=>{console.error(error);process.exitCode=1});
 '''
@@ -88,6 +99,25 @@ const fetch=(url)=>new Promise(resolve=>pending.set(url,resolve));
         # Caller edits must not corrupt the cached directory.
         payload["stores"][0]["name"] = "Changed"
         self.assertNotEqual(stores_for_country(country["code"])["stores"][0]["name"], "Changed")
+
+    def test_bounded_validation_evidence_does_not_promote_experimental_market(self):
+        with tempfile.TemporaryDirectory() as directory:
+            evidence = Path(directory) / "regional_validation.json"
+            evidence.write_text(json.dumps({"observed_at": "2026-10-30", "markets": [
+                {"market": "GB", "pickup_observed": True, "stores_returned": 12,
+                 "distinct_variants_observed": 2}]}), encoding="utf-8")
+            store_directory._validation.cache_clear()
+            try:
+                with patch.object(store_directory, "VALIDATION_FILE", evidence):
+                    metadata = create_wizard_app().test_client().get("/api/regions").get_json()
+                    self.assertTrue(metadata["GB"]["experimental"])
+                    self.assertTrue(metadata["GB"]["validation"]["pickup_observed"])
+                    self.assertIsNone(metadata["FR"]["validation"])
+                    copy = store_directory.validation_for_country("GB")
+                    copy["pickup_observed"] = False
+                    self.assertTrue(store_directory.validation_for_country("GB")["pickup_observed"])
+            finally:
+                store_directory._validation.cache_clear()
 
     def test_all_candidates_require_opt_in_and_regional_currency(self):
         for code, region in REGIONS.items():
@@ -129,8 +159,8 @@ const fetch=(url)=>new Promise(resolve=>pending.set(url,resolve));
         with self.assertRaises(ValueError):
             region_for("https://example.com", True)
 
-    def test_yen_and_won_prices_are_not_discarded_by_dollar_sized_cap(self):
-        for market, amount in (("JP", 250000), ("KR", 2500000)):
+    def test_high_denomination_prices_are_not_discarded_by_dollar_sized_cap(self):
+        for market, amount in (("JP", 250000), ("KR", 2500000), ("TR", 149999)):
             page = ('productSelectionData:{"products":[{"partNumber":"EXAMPLE/A",'
                     '"price":{"fullPrice":'+str(amount)+'}}]}').encode()
             row = parse_catalog_html(page, market, "iphone-17")[0]

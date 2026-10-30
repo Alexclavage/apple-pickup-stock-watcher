@@ -1,0 +1,67 @@
+{
+  "observed_at": "2026-10-30T21:40:38.156208+00:00",
+  "scope": "one catalog family, two distinct SKUs, one public city/postal search per market",
+  "markets": [
+    {
+      "market": "FR",
+      "catalog_url": "https://www.apple.com/fr/shop/buy-iphone/iphone-18-pro",
+      "pickup_url": "https://www.apple.com/fr/shop/retail/pickup-message",
+      "catalog_parsed": true,
+      "pickup_observed": false,
+      "catalog_variants": 32,
+      "missing_prices": 32,
+      "stores_returned": 10,
+      "distinct_variants_observed": 2,
+      "known_observations": 18,
+      "unknown_observations": 2,
+      "directory_membership_checked": false
+    },
+    {
+      "market": "GB",
+      "catalog_url": "https://www.apple.com/uk/shop/buy-iphone/iphone-18-pro",
+      "pickup_url": "https://www.apple.com/uk/shop/retail/pickup-message",
+      "catalog_parsed": true,
+      "pickup_observed": true,
+      "catalog_variants": 32,
+      "missing_prices": 32,
+      "stores_returned": 12,
+      "distinct_variants_observed": 2,
+      "known_observations": 24,
+      "unknown_observations": 0,
+      "directory_membership_checked": false
+    },
+    {
+      "market": "AU",
+      "catalog_url": "https://www.apple.com/au/shop/buy-iphone/iphone-18-pro",
+      "pickup_url": "https://www.apple.com/au/shop/retail/pickup-message",
+      "catalog_parsed": true,
+      "pickup_observed": true,
+      "catalog_variants": 32,
+      "missing_prices": 32,
+      "stores_returned": 9,
+      "distinct_variants_observed": 2,
+      "known_observations": 18,
+      "unknown_observations": 0,
+      "directory_membership_checked": false
+    },
+    {
+      "market": "AT",
+      "catalog_url": "https://www.apple.com/at/shop/buy-iphone/iphone-18-pro",
+      "pickup_url": "https://www.apple.com/at/shop/retail/pickup-message",
+      "catalog_parsed": true,
+      "pickup_observed": true,
+      "catalog_variants": 32,
+      "missing_prices": 32,
+      "stores_returned": 1,
+      "distinct_variants_observed": 2,
+      "known_observations": 2,
+      "unknown_observations": 0,
+      "directory_membership_checked": false
+    }
+  ],
+  "stopped_on_throttle": false,
+  "recorded_at": "2026-10-30T21:48:39.311967+00:00",
+  "planned_markets": 24,
+  "completed_markets": 4,
+  "campaign_complete": false
+}

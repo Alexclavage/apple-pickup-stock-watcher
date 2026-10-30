@@ -31,8 +31,12 @@ Changes to the directory require a reviewed snapshot refresh, not background scr
   or partial; no store-index entry is interpreted as stock.
 - Keep new-market tax/total/FX estimates unknown instead of applying US/Canada tax
   rules or assuming VAT inclusion. Existing FR/GB behavior is retained.
-- Use currency-specific numeric input caps for JPY/KRW/INR/TWD/THB so ordinary
+- Use currency-specific numeric input caps for JPY/KRW/INR/TWD/THB/TRY so ordinary
   high-denomination prices are not rejected by the inherited dollar-sized cap.
+
+The TRY cap was added after observing Apple's Turkish iPhone 18 Pro page with
+prices over 100,000 TRY. This changes input validation, not estimated prices:
+[official Turkish storefront](https://www.apple.com/tr/shop/buy-iphone/iphone-18-pro).
 
 ## Evidence levels
 
@@ -40,11 +44,12 @@ Changes to the directory require a reviewed snapshot refresh, not background scr
 There is no new assertion that every listed US/CA store has been checked.
 
 **24 other selectable markets:** experimental route candidates. The regional
-pickup/catalog paths are explicit candidates following existing storefront
-conventions, **not independently verified endpoint documentation**. HTTP redirects,
+pickup/catalog paths follow regional storefront conventions. The
+[live verification record](REGIONAL_VALIDATION.md) distinguishes the bounded
+checks already performed from unverified combinations; it is not endpoint documentation. HTTP redirects,
 localization, Apple regional pickup restrictions or parser differences may prevent
-them working. Offline tests prove routing/currency/gating and fail-closed behavior,
-not that Apple accepts these requests. No promotion to supported status is implied.
+them working. Offline tests prove routing/currency/gating and fail-closed behavior;
+live results only cover the recorded inputs. No promotion to supported status is implied.
 
 **Macao:** both stores can be browsed and opened on Apple; adding a monitoring
 area is disabled. No Macao stock route or substitution via Hong Kong is invented.

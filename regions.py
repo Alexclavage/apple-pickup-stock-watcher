@@ -1,7 +1,7 @@
 """Explicit, allowlisted Apple Retail pickup regional adapters.
 
-These are undocumented Apple endpoints. Regions marked experimental have not
-yet been independently verified by this project's maintainers.
+These are undocumented Apple endpoints. Experimental markets retain explicit
+opt-in even when a bounded live check has been recorded; see the coverage docs.
 """
 from dataclasses import dataclass
 import re
@@ -58,7 +58,7 @@ def shop_base_for(market):
 def price_limit_for(currency):
     """Input safety caps in currency units, not product price estimates."""
     return {"JPY": 10_000_000, "KRW": 100_000_000, "INR": 10_000_000,
-            "TWD": 10_000_000, "THB": 10_000_000}.get(currency, 100_000)
+            "TWD": 10_000_000, "THB": 10_000_000, "TRY": 10_000_000}.get(currency, 100_000)
 
 
 def region_for(market, enable_experimental=False):
