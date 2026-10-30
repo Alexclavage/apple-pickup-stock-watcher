@@ -181,6 +181,9 @@ class PartialStockTransitionTests(unittest.TestCase):
         output = StringIO()
         with (
             patch.object(watcher, "DISCORD_WEBHOOK", secret),
+            # Explicitly enable delivery for this error/redaction test:
+            # a developer may have WATCHER_DISABLE_DISCORD=1 in their CMD.
+            patch.object(watcher, "WATCHER_DISABLE_DISCORD", False),
             patch.object(watcher.requests, "post", side_effect=broken_post),
             contextlib.redirect_stdout(output),
         ):
