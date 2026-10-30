@@ -24,7 +24,7 @@ REGIONS = {
     "GB": Region("GB", "United Kingdom", "GBP", "https://www.apple.com/uk/shop/retail/pickup-message", True),
 }
 
-# Regional route candidates: explicit opt-in, not independently live-validated.
+# Additional adapters remain opt-in; bounded live observations are recorded separately.
 REGIONS.update({
     "AU": Region("AU", "Australia", "AUD", "https://www.apple.com/au/shop/retail/pickup-message", True),
     "AT": Region("AT", "Austria", "EUR", "https://www.apple.com/at/shop/retail/pickup-message", True),

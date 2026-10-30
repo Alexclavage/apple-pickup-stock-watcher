@@ -35,11 +35,35 @@ def stores_for_country(code):
 
 @lru_cache(maxsize=1)
 def _validation():
-    if not VALIDATION_FILE.is_file():
+    try:
+        report = json.loads(VALIDATION_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeError):
         return {}
-    report = json.loads(VALIDATION_FILE.read_text(encoding="utf-8"))
-    return {entry["market"]: {**entry, "observed_at": report["observed_at"]}
-            for entry in report["markets"]}
+    if not isinstance(report, dict) or not isinstance(report.get("observed_at"), str):
+        return {}
+    entries = report.get("markets")
+    if not isinstance(entries, list):
+        return {}
+    followups = report.get("followups", [])
+    if isinstance(followups, list):
+        entries = entries + followups
+    evidence = {}
+    for entry in entries:
+        if not isinstance(entry, dict) or not isinstance(entry.get("market"), str):
+            continue
+        if type(entry.get("catalog_parsed")) is not bool or type(entry.get("pickup_observed")) is not bool:
+            continue
+        if entry["pickup_observed"] and (
+            not entry["catalog_parsed"]
+            or type(entry.get("stores_returned")) is not int or entry["stores_returned"] < 1
+            or type(entry.get("distinct_variants_observed")) is not int or entry["distinct_variants_observed"] < 2
+            or type(entry.get("unknown_observations")) is not int or entry["unknown_observations"] != 0
+            or type(entry.get("known_observations")) is not int
+            or entry["known_observations"] != entry["stores_returned"] * entry["distinct_variants_observed"]
+        ):
+            continue
+        evidence[entry["market"]] = {**entry, "observed_at": report["observed_at"]}
+    return evidence
 
 
 def validation_for_country(code):

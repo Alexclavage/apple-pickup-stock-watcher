@@ -868,9 +868,10 @@ async function loadDirectory(){
     if(requestId!==directoryRequest)return;
     directoryRows=data.stores;renderDirectory();
     const evidence=regionInfo[market]?.validation;
+    const evidenceDate=String(evidence?.checked_at||evidence?.observed_at||"").slice(0,10)||"date unavailable";
     const mode=!regionInfo[market]?"Directory only: pickup monitoring is not available.":
       regionInfo[market].experimental?(evidence?.pickup_observed
-        ?"Experimental market; a limited live check observed "+evidence.distinct_variants_observed+" variants in "+evidence.stores_returned+" returned stores. Other combinations remain unverified."
+        ?"Experimental market; a limited live check ("+evidenceDate+") observed "+evidence.distinct_variants_observed+" variants in "+evidence.stores_returned+" returned stores. Other combinations remain unverified."
         :evidence?.catalog_parsed?"Experimental market; catalog parsed, but pickup coverage was incomplete in the recorded check."
         :"Experimental pickup route; no complete live check recorded.")
       :"Live-tested market; individual store/SKU coverage is not guaranteed.";

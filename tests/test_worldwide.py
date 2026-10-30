@@ -104,18 +104,46 @@ const fetch=(url)=>new Promise(resolve=>pending.set(url,resolve));
         with tempfile.TemporaryDirectory() as directory:
             evidence = Path(directory) / "regional_validation.json"
             evidence.write_text(json.dumps({"observed_at": "2026-10-30", "markets": [
-                {"market": "GB", "pickup_observed": True, "stores_returned": 12,
-                 "distinct_variants_observed": 2}]}), encoding="utf-8")
+                {"market": "GB", "catalog_parsed": True, "pickup_observed": True,
+                 "stores_returned": 12, "unknown_observations": 0, "known_observations": 24,
+                 "distinct_variants_observed": 2},
+                {"market": "FR", "catalog_parsed": True, "pickup_observed": False}], "followups": [
+                {"market": "FR", "catalog_parsed": True, "pickup_observed": True,
+                 "stores_returned": 1, "known_observations": 2,
+                 "unknown_observations": 0, "distinct_variants_observed": 2}]}), encoding="utf-8")
             store_directory._validation.cache_clear()
             try:
                 with patch.object(store_directory, "VALIDATION_FILE", evidence):
                     metadata = create_wizard_app().test_client().get("/api/regions").get_json()
                     self.assertTrue(metadata["GB"]["experimental"])
                     self.assertTrue(metadata["GB"]["validation"]["pickup_observed"])
-                    self.assertIsNone(metadata["FR"]["validation"])
+                    self.assertTrue(metadata["FR"]["validation"]["pickup_observed"])
+                    self.assertTrue(metadata["FR"]["experimental"])
+                    self.assertIsNone(metadata["JP"]["validation"])
                     copy = store_directory.validation_for_country("GB")
                     copy["pickup_observed"] = False
                     self.assertTrue(store_directory.validation_for_country("GB")["pickup_observed"])
+            finally:
+                store_directory._validation.cache_clear()
+
+    def test_malformed_optional_evidence_cannot_claim_a_verified_check(self):
+        samples = ["not JSON", "[]", '{"observed_at":"2026-10-30","markets":"bad"}',
+                   json.dumps({"observed_at": "2026-10-30", "markets": [
+                       {"market": "GB", "catalog_parsed": True, "pickup_observed": "false"},
+                       {"market": "FR", "catalog_parsed": True, "pickup_observed": True,
+                        "stores_returned": 1, "distinct_variants_observed": 2,
+                        "unknown_observations": 1}]})]
+        with tempfile.TemporaryDirectory() as directory:
+            evidence = Path(directory) / "evidence.json"
+            try:
+                with patch.object(store_directory, "VALIDATION_FILE", evidence):
+                    for sample in samples:
+                        evidence.write_text(sample, encoding="utf-8")
+                        store_directory._validation.cache_clear()
+                        metadata = create_wizard_app().test_client().get("/api/regions").get_json()
+                        self.assertIsNone(metadata["GB"]["validation"])
+                        self.assertIsNone(metadata["FR"]["validation"])
+                        self.assertTrue(metadata["GB"]["experimental"])
             finally:
                 store_directory._validation.cache_clear()
 

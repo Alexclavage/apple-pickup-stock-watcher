@@ -65,14 +65,20 @@ The snapshot is not a live opening/closure feed or a guarantee of pickup eligibi
 There is no "scan all worldwide stores" mode; the 8-area/24-request budgets remain.
 See [worldwide coverage](docs/WORLDWIDE_COVERAGE.md).
 
+Use a **complete local postal code** when a city search returns no stores. In the
+recorded checks, a full postcode returned stores in China and the Netherlands
+where the earlier city/incomplete-postcode searches had returned none. An empty
+response means unconfirmed coverage, not that every store is sold out.
+
 ## Countries and polling limits
 
 | Market | Availability support | Location input |
 | --- | --- | --- |
 | United States (`US`) | Live-tested for selected SKU/store pairs | Five-digit ZIP |
 | Canada (`CA`) | Live-tested for selected SKU/store pairs | Postal code or city |
-| France (`FR`) | Experimental, explicit opt-in; not live-validated | Five-digit postal code or city |
-| United Kingdom (`GB`) | Experimental, explicit opt-in; not live-validated | UK postcode or city |
+| France (`FR`) | Experimental, explicit opt-in; bounded check recorded | Five-digit postal code or city |
+| United Kingdom (`GB`) | Experimental, explicit opt-in; bounded check recorded | UK postcode or city |
+| Other selectable markets | Experimental, explicit opt-in; see [per-market results](docs/REGIONAL_VALIDATION.md) | Full local postal code or city; results vary by market |
 
 Every configured product country needs **at least one monitoring area in the same country**. A location searches nearby stores returned by Apple, **not every Apple Store in that city or country**. Set optional Apple Store IDs to limit to selected shops; an empty list includes all stores returned by the query. The next-version branch adds opt-in experimental candidates for additional directory markets; Macao remains directory-only.
 
