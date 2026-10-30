@@ -5,6 +5,8 @@
 !.env.example
 config.json
 state*.json
+state*.tmp
+*.log
 session*.json
 capture*.txt
 __pycache__

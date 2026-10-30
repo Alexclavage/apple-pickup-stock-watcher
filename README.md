@@ -2,7 +2,7 @@
 
 **Unofficial self-hosted Apple Store pickup availability watcher.** Choose supported products, nearby Apple Retail Stores, view a model-grouped dashboard, and optionally get Discord stock-change notifications. It **does not buy or reserve products** and is not affiliated with Apple.
 
-> **V1 release candidate:** US/Canada pickup checks have been manually tested for a small number of product/store combinations, not for all SKUs. The model catalog parser is experimental; Apple's endpoints are undocumented. France/UK adapters are experimental and have not been independently live-validated. See [release checklist](docs/RELEASE_CHECKLIST.md).
+> **V1 prepared for review, not yet published:** a user-validated US/Canada scan observed 3 variants across 17 returned stores with zero coverage issues in that scan. This is not validation of all SKUs or stores. Catalog parsing and France/UK adapters remain experimental. Apple endpoints are undocumented. See [V1 notes](docs/RELEASE_NOTES_V1.md) and [release checklist](docs/RELEASE_CHECKLIST.md).
 
 ## Quick start (Windows CMD)
 
@@ -148,6 +148,8 @@ Docker Compose binds the published dashboard to **127.0.0.1:8080** and stores st
 Run `python -m unittest discover -s tests -v`. Tests use **mocked** responses and make no live Apple/Discord calls; passing CI is not proof of complete real-world compatibility.
 
 - [Architecture](docs/ARCHITECTURE.md) — data flows and module responsibilities
+- [V1 release notes](docs/RELEASE_NOTES_V1.md) — features, validation, upgrade and known limits
+- [Publication review](docs/PUBLICATION_REVIEW.md) — findings and review scope
 - [Release checklist](docs/RELEASE_CHECKLIST.md) — requirements for a safe V1
 - [Roadmap](ROADMAP.md) — planned functionality and experimental gaps
 - [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [MIT License](LICENSE)

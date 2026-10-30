@@ -11,6 +11,8 @@ from regions import REGIONS, region_for
 from model_watch import PRODUCT_BATCH_SIZE, MAX_PRODUCTS, validate_request_budget
 from dashboard_groups import build_model_groups
 
+VERSION = "1.0.0"
+
 load_dotenv()
 
 # ========================= CONFIG =========================
@@ -453,7 +455,7 @@ def priority_store_embed(item, available=True):
             {"name":"📦 Retrait","value":item.get("quote") or item.get("pickupDisplay") or "—","inline":True},
             {"name":"🔎 SKU","value":f"`{item['part']}` • `{item['storeNumber']}`","inline":True},
         ],
-        "footer":{"text":"Apple Stock Watcher V4.5 • vérifie sur Apple avant de te déplacer"}
+        "footer":{"text":f"Apple Stock Watcher V{VERSION} • vérifie sur Apple avant de te déplacer"}
     }
 
 def bounded_discord_description(items, formatter, separator="\n\n"):
@@ -489,7 +491,7 @@ def normal_available_embed(items):
     return {"title":f"🟢 {len(items)} nouvelle(s) disponibilité(s)",
             "description":bounded_discord_description(items, line),
             "color":0x2ECC71,
-            "footer":{"text":"Apple Stock Watcher V4.5 • non-priority stores"}}
+            "footer":{"text":f"Apple Stock Watcher V{VERSION} • non-priority stores"}}
 
 
 def unavailable_embed(items):
@@ -554,7 +556,7 @@ def poll_once():
         # until every configured area and selected SKU has been checked.
         was_in_error = previous.get("watcher_error") is True
         if was_in_error and fully_verified:
-            safe_discord("✅ **Apple Stock Watcher V4.5 rétabli**\nLa surveillance fonctionne de nouveau.")
+            safe_discord(f"✅ **Apple Stock Watcher V{VERSION} rétabli**\nLa surveillance fonctionne de nouveau.")
         save_state({
             "available_keys": sorted(current_available),
             "watcher_error": was_in_error and not fully_verified,
@@ -581,7 +583,7 @@ def poll_once():
         error = str(e)
         with lock: errors = latest.get("consecutive_errors",0)+1
         if previous.get("watcher_error") is not True:
-            safe_discord(f"⚠️ **Apple Stock Watcher V4.5 en erreur**\nErreur : {error}\nLe statut est UNKNOWN — jamais interprété comme rupture.")
+            safe_discord(f"⚠️ **Apple Stock Watcher V{VERSION} en erreur**\nErreur : {error}\nLe statut est UNKNOWN — jamais interprété comme rupture.")
         save_state({"available_keys":previous.get("available_keys",[]),"watcher_error":True,"checked_at":checked,"error":error})
         with lock: latest = {"status":"unknown","checked_at":checked,"items":latest.get("items",[]),"error":error,"consecutive_errors":errors}
         print(checked,"UNKNOWN:",error,flush=True)
@@ -594,7 +596,7 @@ def worker():
 
 # ========================= WEB UI =========================
 HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Apple Stock Watcher V4.5</title><style>
+<title>Apple Stock Watcher V{{version}}</title><style>
 
 /* Apple-inspired dashboard skin */
 :root{color-scheme:dark;--bg:#000000;--panel:#11151c;--panel2:#161b24;--line:#2b3442;--text:#f5f6fa;--muted:#9ba8bd;--green:#32d583;--red:#ff6475;--input:#151b25}
@@ -622,7 +624,7 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 .coverage-notice{margin:10px 0;padding:11px 13px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:13px}
 .store-meta{font-size:12px;color:var(--muted)}
 .activity-event{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 0;border-top:1px solid var(--line);font-size:13px}.activity-event small{color:var(--muted);margin-left:auto}.activity-status{display:inline-block;padding:5px 9px;border-radius:10px;font-size:11px;font-weight:700}.activity-status.available{background:rgba(50,213,131,.14);color:var(--green)}.activity-status.unavailable{background:rgba(255,100,117,.13);color:var(--red)}
-</style></head><body><header class="header"><div><h1> Apple Stock Watcher V4.5</h1><p class="sub">{{products|length}} configured products • selected regions pickup availability • dashboard refresh 30 s</p></div><button type="button" id="themeToggle" class="theme-toggle" aria-label="Changer le thème">☀ Mode clair</button></header>
+</style></head><body><header class="header"><div><h1> Apple Stock Watcher V{{version}}</h1><p class="sub">{{products|length}} configured products • selected regions pickup availability • dashboard refresh 30 s</p></div><button type="button" id="themeToggle" class="theme-toggle" aria-label="Changer le thème">☀ Mode clair</button></header>
 
 <div class="search-panel">
     <input id="shopSearch" type="search"
@@ -766,7 +768,7 @@ def home():
         checked_at=snap.get("checked_at"), monitoring_areas=MONITORING_AREAS,
     )
     return render_template_string(
-        HTML, latest=snap, groups=groups, products=PRODUCTS, interval=INTERVAL,
+        HTML, latest=snap, groups=groups, products=PRODUCTS, interval=INTERVAL, version=VERSION,
         priority_us=US_PRIORITY_STORE, target_ca=CA_TARGET_STORE,
         history=read_history(HISTORY_FILE, limit=20), money_symbol=money_symbol,
         uncovered_markets=uncovered_product_markets(PRODUCTS, MONITORING_AREAS),
@@ -781,7 +783,7 @@ def api_history():
     return jsonify({"events": read_history(HISTORY_FILE, limit=100)})
 
 @app.route("/health")
-def health(): return jsonify({"ok":True,"version":"4.5"})
+def health(): return jsonify({"ok":True,"version":VERSION})
 
 def dashboard_bind_host(environ=None):
     """Default to localhost: this dashboard has no user authentication."""
