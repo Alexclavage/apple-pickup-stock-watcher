@@ -15,17 +15,17 @@ The V1 release should be based on **one reviewed consolidated PR against `main`*
 - [x] Provide a short, current Windows CMD / macOS / Linux quick start.
 - [x] Provide a local offline preflight that reports market/area coverage and request budget without secrets or live requests.
 - [x] Add a CI test for importing the app and running preflight against a fresh copy of `config.example.json` in an isolated temporary directory.
-- [ ] Independently clone into a **new directory** on a clean Windows machine and follow the README step by step.
+- [x] Independently cloned into a **new directory** on Windows with a fresh Python venv, installed dependencies, ran preflight and the offline test suite (October 30, 2026). This is **not** a full clean operating-system image.
 - [ ] Try a clean macOS/Linux install and Docker Compose start/stop cycle with a fresh volume, verifying port 8080 is **not publicly exposed**.
-- [ ] Verify the wizard can add/remove/save model variants, generate backups and correctly handle an invalid existing config.
+- [ ] Verify the **full** wizard add/remove/model-variant/backup/invalid-config flow on a fresh installation. Basic browser configuration save/refresh was user-tested; negative cases remain offline simulations.
 
 ## 3. Real pickup and alerts
 
 - [x] **US:** manually observed a real product/store response (Delaware R102, one SKU) during October 2026 testing.
 - [x] **Canada:** manually observed a real product/store response (Toronto R121, one SKU) during October 2026 testing.
-- [ ] Verify **several SKU variants** and **more than one store** per area; one successful pair is not exhaustive endpoint validation.
+- [ ] Verify **several distinct SKU variants in one market** and **more than one store** per area using `integration_smoke.py apple --confirm-live` (explicit one-shot real requests, never state/history or Discord). One successful pair is not exhaustive endpoint validation.
 - [ ] Verify behavior when Apple returns missing products, stores, invalid schema, 429 and 541 without increasing request frequency.
-- [ ] Test Discord delivery in a **dedicated private test webhook** with permission; offline unit tests only simulate posting.
+- [ ] Test Discord delivery in a **dedicated private test webhook** with permission using `integration_smoke.py discord --confirm-send`; the command sends exactly one message. Unit tests only simulate posting.
 - [ ] Confirm the first-run alert behavior, state persistence across restart, deferred negative transitions and retry behavior.
 - [ ] **FR/GB:** retain experimental label until actual live responses and store coverage are independently verified.
 - [ ] Verify official Apple buy-page catalog extraction against current live HTML, including color/storage and carrier ambiguity; failures must be explicit.
@@ -37,7 +37,7 @@ The V1 release should be based on **one reviewed consolidated PR against `main`*
 - [x] Do not return unknown private config fields through the wizard configuration API.
 - [x] Avoid printing Discord exception text that may contain the webhook URL.
 - [ ] Review all logs and API payloads for personal locations, product selections and secrets.
-- [ ] Plan hosted authentication or firewall/routing restrictions before making the dashboard public.
+- [ ] Plan hosted authentication or firewall/routing restrictions before making the dashboard public. Verify local loopback binding using Windows `netstat -ano -p TCP | findstr ":8080"` while the local monitor is running.
 - [ ] Before changing Railway, review persistent volumes, host binding, single-worker behavior and deployment rollback procedure.
 - [ ] Confirm the watcher can be stopped and rolled back without corrupting state/history or deleting user configuration.
 
