@@ -7,11 +7,11 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template_string
 from history import append_history, read_history, transition_event
 from monitoring_areas import legacy_areas, validate_monitoring_areas, uncovered_product_markets, MAX_MONITORING_AREAS
-from regions import REGIONS, region_for
+from regions import REGIONS, region_for, price_limit_for
 from model_watch import PRODUCT_BATCH_SIZE, MAX_PRODUCTS, validate_request_budget
 from dashboard_groups import build_model_groups
 
-VERSION = "1.0.0"
+VERSION = "1.1.0-dev"
 
 load_dotenv()
 
@@ -78,7 +78,7 @@ if CONFIG_PATH.exists():
                 isinstance(price, bool)
                 or not isinstance(price, (int, float))
                 or not math.isfinite(price)
-                or not 0 <= price <= 100000
+                or not 0 <= price <= price_limit_for(region.currency)
             ):
                 raise ValueError(f"Product {pid} must have a finite nonnegative numeric price")
         PRODUCTS = products
@@ -112,10 +112,10 @@ else:
 MARKET_PRODUCT_IDS = {market: [pid for pid, p in PRODUCTS.items() if p["market"] == market] for market in REGIONS}
 US_PRODUCT_IDS = MARKET_PRODUCT_IDS["US"]
 CA_PRODUCT_IDS = MARKET_PRODUCT_IDS["CA"]
-if any(p["market"] in {"FR", "GB"} for p in PRODUCTS.values()) and (
+if any(p["market"] not in {"US", "CA"} for p in PRODUCTS.values()) and (
     not CONFIG_PATH.exists() or "monitoring_areas" not in cfg
 ):
-    raise ValueError("France/UK products require explicit monitoring_areas in config.json")
+    raise ValueError("Products outside US/Canada require explicit monitoring_areas in config.json")
 MONITORING_AREAS = (
     validate_monitoring_areas(cfg["monitoring_areas"], PRODUCTS, enable_experimental=ENABLE_EXPERIMENTAL_REGIONS)
     if CONFIG_PATH.exists() and "monitoring_areas" in cfg
@@ -266,6 +266,11 @@ def money_info(product, store):
                 "price_eur": converted, "tax_amount_eur": None,
                 "total_eur": converted, "fx_rate": rate, "fx_date": date,
                 "tax_included": True}
+    # Do not apply US/Canadian taxes or presume VAT inclusion in new markets.
+    if product["market"] not in {"US", "CA"}:
+        return {"tax_rate": None, "tax_amount": None, "total": None,
+                "price_eur": None, "tax_amount_eur": None, "total_eur": None,
+                "fx_rate": None, "fx_date": None, "tax_included": None}
     tax = CA_TAX_RATE if product["market"] == "CA" else us_tax_rate(store)
     if tax is None:
         return {"tax_rate":None,"tax_amount":None,"total":None,"price_eur":None,"tax_amount_eur":None,"total_eur":None,"fx_rate":None,"fx_date":None}

@@ -48,6 +48,22 @@ The wizard creates readable product IDs such as `iphone_18_pro_max_512gb_silver_
 
 **Carrier caveat:** activation choices at checkout might not have distinct stock SKUs. Missing carrier metadata means **unknown**, not “unlocked.” If catalog discovery fails, add an independently verified SKU under **Advanced: individual SKUs**. Product prices may be unknown and must never be guessed from unrelated variants.
 
+## Worldwide store selection (next-version branch)
+
+The setup wizard contains an offline snapshot of **535 official stores in 27
+countries/territories**, observed from [Apple's directory](https://www.apple.com/retail/storelist/)
+on October 30, 2026. Search by country, city, name or store ID and add a store
+to a draft area. Enter its local postal code/city and regional products, Save,
+then restart. Directory browsing makes no Apple requests.
+
+US/CA retain their recorded live evidence. The other 24 selectable markets are
+**experimental regional route candidates**, requiring explicit opt-in. Their
+pickup/catalog routes have not been independently live-validated; errors/missing
+responses remain unknown. Macao is directory-only with no enabled pickup adapter.
+The snapshot is not a live opening/closure feed or a guarantee of pickup eligibility.
+There is no "scan all worldwide stores" mode; the 8-area/24-request budgets remain.
+See [worldwide coverage](docs/WORLDWIDE_COVERAGE.md).
+
 ## Countries and polling limits
 
 | Market | Availability support | Location input |
@@ -57,7 +73,7 @@ The wizard creates readable product IDs such as `iphone_18_pro_max_512gb_silver_
 | France (`FR`) | Experimental, explicit opt-in; not live-validated | Five-digit postal code or city |
 | United Kingdom (`GB`) | Experimental, explicit opt-in; not live-validated | UK postcode or city |
 
-Every configured product country needs **at least one monitoring area in the same country**. A location searches nearby stores returned by Apple, **not every Apple Store in that city or country**. Set optional Apple Store IDs to limit to selected shops; an empty list includes all stores returned by the query. Other countries are unsupported.
+Every configured product country needs **at least one monitoring area in the same country**. A location searches nearby stores returned by Apple, **not every Apple Store in that city or country**. Set optional Apple Store IDs to limit to selected shops; an empty list includes all stores returned by the query. The next-version branch adds opt-in experimental candidates for additional directory markets; Macao remains directory-only.
 
 Conservative limits: **8 monitoring areas**, **96 configured product IDs**, **48 SKUs/model**, **12 product IDs per Apple request**, **24 pickup requests per scan**. More areas and products increase intervals; HTTP 429/541 triggers longer cooldowns. Avoid aggressive polling.
 

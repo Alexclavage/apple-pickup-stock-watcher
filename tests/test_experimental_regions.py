@@ -127,7 +127,7 @@ class RegionalPreviewTests(unittest.TestCase):
             response = wizard.test_client().get("/")
             self.assertEqual(response.status_code, 200)
             self.assertIn(b"France (experimental)", response.data)
-            self.assertIn(b"Enable France/UK preview", response.data)
+            self.assertIn(b"Enable additional markets", response.data)
         self.assertEqual(watcher.app.test_client().get("/").status_code, 200)
 
 
