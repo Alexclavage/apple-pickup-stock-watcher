@@ -32,6 +32,30 @@ class AlertAndRateLimitTests(unittest.TestCase):
         with patch.object(watcher, "ALERT_STORE_IDS", set()):
             self.assertFalse(watcher.is_alert_target(item))
 
+    def test_large_stock_alerts_fit_discord_embed_description_limits(self):
+        # A many-SKU/many-store scan previously generated >4096-character
+        # descriptions and Discord could reject the whole message with 400.
+        item = {
+            "market": "US",
+            "currency": "USD",
+            "productName": "iPhone " + ("long model name " * 35),
+            "part": "ABC123LL/A",
+            "storeName": "Apple Store " + ("long location " * 40),
+            "storeNumber": "R102",
+            "city": "Newark",
+            "state": "DE",
+            "price": None,
+            "total": None,
+            "quote": "Available Today",
+        }
+        many = [dict(item, storeNumber=f"R{index:03d}") for index in range(120)]
+        for builder in (watcher.normal_available_embed, watcher.unavailable_embed):
+            with self.subTest(builder=builder.__name__):
+                embed = builder(many)
+                self.assertLess(len(embed["description"]), 3900)
+                self.assertIn("autre(s)", embed["description"])
+                self.assertEqual(embed["title"].split()[1], "120")
+
     def test_http_429_is_classified_as_rate_limit(self):
         with patch.object(watcher.requests, "get", return_value=Mock(status_code=429)):
             with self.assertRaisesRegex(RuntimeError, "APPLE_429"):
