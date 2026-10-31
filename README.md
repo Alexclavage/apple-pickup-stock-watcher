@@ -39,10 +39,18 @@ Open **http://127.0.0.1:8080**. This starts real Apple requests and continues po
 
 ### How the wizard works
 
-1. **Find variants** — optional, on-demand preview of SKU variants from official Apple buy pages, not yet added.
-2. **Add selected variants to watchlist** — optional filters for color, storage and a **verified** carrier attribute where Apple actually supplies one.
-3. **Save private configuration** — writes `config.json`; does not start monitoring. The watchlist summary and Save banner distinguish preview, unsaved and saved states.
-4. **Restart `app.py`** — running monitoring reads the latest saved settings.
+1. **Choose a store** — search its country/city/name/ID, then click **Configure selected store**. The wizard shows the adapter's limits, selects that country's catalog/currency and prepares the store without adding an incomplete area.
+2. **Choose regional products** — enter a complete local postal code, find a model's real variants, filter if desired, then **Add selected variants to watchlist**. US/Canada products cannot fill a French area. Discovery remains on demand and may fail; no guessed SKU is created.
+3. **Add completed store selection** — available when regional products and a local search are entered. Stores using the same country/search can share an area. A notice explains when an existing all-returned-stores area will become a precise store filter.
+4. **Save private configuration**, then **restart `app.py`**. Save writes `config.json`; it does not start monitoring. The watcher subsequently checks whether Apple actually returned the chosen stores and variants.
+
+For existing areas, use **Choose products for this country** to repair a missing
+association. Removing the last regional product immediately shows the affected
+areas and a resolution action; removing an area leaves its products available to
+edit/remove. All areas in a country share that country's product selection.
+Manual products have visible Edit/Remove actions. Changing a product country
+requires discovering/adding its regional replacement, so an old SKU or price is
+never silently converted to a new market.
 
 The wizard creates readable product IDs such as `iphone_18_pro_max_512gb_silver_ca`. **Area IDs identify locations, not devices** (`us_19702`, `ca_m5b2h1`), since one location can monitor multiple models. The optional green toast confirms draft edits; you must still Save and restart.
 
@@ -53,8 +61,9 @@ The wizard creates readable product IDs such as `iphone_18_pro_max_512gb_silver_
 The setup wizard contains an offline snapshot of **535 official stores in 27
 countries/territories**, observed from [Apple's directory](https://www.apple.com/retail/storelist/)
 on October 30, 2026. Search by country, city, name or store ID and add a store
-to a draft area. Enter its local postal code/city and regional products, Save,
-then restart. Directory browsing makes no Apple requests.
+to a guided store setup. Complete its local postal search and regional products,
+then add the completed selection, Save and restart. Directory browsing and
+configuration readiness make no Apple requests and do not confirm live coverage.
 
 US/CA retain their recorded live evidence. The other 24 selectable markets are
 **experimental regional adapters**, requiring explicit opt-in. The
@@ -169,6 +178,11 @@ Docker Compose binds the published dashboard to **127.0.0.1:8080** and stores st
 ## Contributing and release readiness
 
 Run `python -m unittest discover -s tests -v`. Tests use **mocked** responses and make no live Apple/Discord calls; passing CI is not proof of complete real-world compatibility.
+
+The complete wizard DOM regression needs Node 18+ and test-only dependencies:
+`npm ci --prefix tests/ui --ignore-scripts --no-audit --no-fund`. CI installs these
+and runs the interaction tests on Windows and Ubuntu. Node/jsdom are not required
+to run the Python watcher. See [v1.1 candidate notes](docs/RELEASE_NOTES_V1_1.md).
 
 - [Architecture](docs/ARCHITECTURE.md) — data flows and module responsibilities
 - [V1 release notes](docs/RELEASE_NOTES_V1.md) — features, validation, upgrade and known limits

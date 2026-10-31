@@ -19,8 +19,12 @@ Changes to the directory require a reviewed snapshot refresh, not background scr
 
 - Browse/search all snapshot countries, cities, names and IDs offline in the
   wizard. Opening an official store link is a separate user action.
-- Add a selected store ID to a draft area. The user supplies a local postcode/city
-  and products with a SKU/currency for that market, then saves and restarts.
+- Prepare a store with its local postal search and regional products. Adding it
+  creates a complete draft area (or joins the same country/search), not an empty
+  area that later fails with "no configured FR products". Save/restart remains explicit.
+- Show regional currency, adapter limits, associated product count and configuration
+  issues separately from live pickup coverage. Existing areas have a regional
+  product action; removals expose missing associations immediately.
 - Source country options and currencies from one region registry, including China
   on `www.apple.com.cn`; no arbitrary request URL input.
 - Require `enable_experimental_regions: true` for **every market except US/CA**.
@@ -76,3 +80,31 @@ remote stores under one search location or increase the request budget.
 The advanced US state filter still applies: clear it for nationwide US choice.
 
 No merge, new tag/release or Railway deployment is included in this work.
+
+## October 31 stabilization
+
+The recorded October 30 observations remain historical evidence: **21/24** extra
+markets have a complete two-SKU check in the selected area, **FR/DE** remain
+partial with `ineligible` values, **BR** remains unconfirmed, and **MO** is
+directory-only. No new nationwide campaign or market promotion was performed.
+
+Malformed/missing store lists now fail explicitly as unknown. Known store IDs
+from another country are rejected in configuration and skipped in responses.
+Unknown/new IDs are not falsely assigned a country by the snapshot. A changed
+product country cannot silently reuse a regional SKU. Late catalog responses
+are discarded after a country/model/family change.
+
+The dashboard expires observations after `max(300, 2 * INTERVAL + 60)` seconds,
+distinguishes last attempt from last received observations, and shows selected
+stores omitted by Apple as unknown. Discord summaries include country, store ID
+and regional SKU; duplicate legacy product IDs for one SKU do not duplicate an
+alert. Existing global partial-scan protection against false stock loss remains.
+
+### Future scale, beyond v1.1
+
+v1.1 groups only stores sharing the same country and local search; every area
+uses that country's SKU batches. It retains eight areas and 24 requests per cycle.
+A simultaneous global service would need a central scheduler, regional queues,
+shared result storage, per-pair observation times and a global request/cooldown
+budget. Sharding must not multiply the Apple request budget or circumvent limits.
+That is future work, not part of this release candidate.

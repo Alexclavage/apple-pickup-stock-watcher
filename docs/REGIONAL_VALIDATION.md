@@ -63,6 +63,21 @@ restriction is not enough to infer physical stock or trigger a stock-loss alert.
 
 ## Limits
 
+### October 31, 2026: offline stabilization
+
+The original live observations and their timestamps have not been replaced or
+promoted. No additional worldwide live campaign was run. The captured FR/DE
+payloads contain the requested SKU entries but return `ineligible` for some
+store/variant combinations, with pickup-restriction text; they cannot establish
+physical stock loss. Brazil's recorded HTTP 200 body lacks a store list, including
+the targeted public postal-code search. This remains unconfirmed pickup coverage.
+
+Regression tests now exercise these exact response shapes, missing variants,
+cross-country IDs, Unicode/full postal inputs, late catalog responses and stale
+observations. The complete wizard DOM is tested with fake data and no real HTTP
+requests. Browser visual rendering remains a separate, unconfirmed check; see
+the single optional manual smoke check in [v1.1 notes](RELEASE_NOTES_V1_1.md).
+
 - These are responses for selected variants and one area, not a full-country
   inventory or proof of current availability for every listed store/product.
 - A complete check means both SKU statuses were present for every returned

@@ -543,5 +543,22 @@
   "recorded_at": "2026-10-30T22:49:41.573236+00:00",
   "planned_markets": 24,
   "completed_markets": 24,
-  "campaign_complete": true
+  "campaign_complete": true,
+  "stabilization": {
+    "reviewed_on": "2026-10-31",
+    "method": "Offline regression tests and captured response shapes; no new live campaign",
+    "original_observations_preserved": true,
+    "additional_markets_complete_bounded_checks": 21,
+    "partial_markets": [
+      "FR",
+      "DE"
+    ],
+    "unconfirmed_markets": [
+      "BR"
+    ],
+    "directory_only_markets": [
+      "MO"
+    ],
+    "notes": "docs/RELEASE_NOTES_V1_1.md"
+  }
 }

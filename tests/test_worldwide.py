@@ -1,9 +1,6 @@
 """Worldwide directory and regional candidates: offline safety regressions."""
 import json
-import re
 import tempfile
-import shutil
-import subprocess
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -19,67 +16,6 @@ from setup_wizard import WIZARD_HTML
 
 
 class WorldwideTests(unittest.TestCase):
-    @unittest.skipUnless(shutil.which("node"), "Node.js unavailable")
-    def test_directory_ui_blocks_unverified_selection_and_ignores_stale_responses(self):
-        version = subprocess.run(["node", "--version"], capture_output=True, text=True, timeout=10)
-        if not re.match(r"v(1[89]|[2-9][0-9])\.", version.stdout):
-            self.skipTest("Node 18+ required")
-        source = WIZARD_HTML.split("function renderDirectory(){", 1)[1].split("async function start(){", 1)[0]
-        fixture = r'''
-const assert=require('node:assert/strict');
-const nodes=new Map();
-function el(id){
- if(!nodes.has(id))nodes.set(id,{value:'',disabled:false,hidden:false,textContent:'',checked:false,
-   replaceChildren(){this.value=''},append(option){if(!this.value)this.value=option.value},
-   addEventListener(name,fn){this[name]=fn}});
- return nodes.get(id);
-}
-const document={createElement(){return {}},querySelectorAll(){return []}};
-let regionInfo={US:{experimental:false},JP:{experimental:true},HK:{experimental:true}};
-let directoryRows=[],directoryRequest=0,added=0,statusText='';
-function status(text){statusText=text}
-function regionRow(){added++}
-function splitIds(s){return s.split(',').filter(Boolean)}
-const pending=new Map();
-const fetch=(url)=>new Promise(resolve=>pending.set(url,resolve));
-'''
-        checks = r'''
-(async()=>{
- el('directoryMarket').value='MO';
- directoryRows=[{id:'R697',name:'Cotai Strip',city:'Macao',url:'https://www.apple.com/mo-en/retail/cotaistrip/'}];
- renderDirectory();assert.equal(el('addDirectoryStore').disabled,true);
- el('addDirectoryStore').click();assert.equal(added,0);
- el('directoryMarket').value='JP';el('directoryStore').value='R697';
- el('addDirectoryStore').click();assert.equal(added,0);
- assert.match(statusText,/experimental/);
- const first=loadDirectory();
- el('directoryMarket').value='HK';const second=loadDirectory();
- const latest={stores:[{id:'R409',name:'Causeway Bay',city:'Hong Kong',url:'https://www.apple.com/hk/en/retail/causewaybay/'}],observed_at:'2026-10-30'};
- pending.get('/api/stores?market=HK')({ok:true,json:async()=>latest});await second;
- pending.get('/api/stores?market=JP')({ok:true,json:async()=>({stores:[],observed_at:'old'})});await first;
- assert.equal(directoryRows[0].id,'R409');assert.match(el('directoryStatus').textContent,/Experimental/);
- el('directorySearch').value='R409';renderDirectory();assert.equal(el('directoryStore').value,'R409');
- el('directorySearch').value='no such store';renderDirectory();assert.equal(el('addDirectoryStore').disabled,true);
- regionInfo.HK.validation={pickup_observed:true,distinct_variants_observed:2,stores_returned:6};
- el('directorySearch').value='';
- const third=loadDirectory();
- pending.get('/api/stores?market=HK')({ok:true,json:async()=>latest});await third;
- assert.match(el('directoryStatus').textContent,/limited live check/);
- assert.match(el('directoryStatus').textContent,/Other combinations remain unverified/);
- regionInfo.HK.validation={catalog_parsed:true,pickup_observed:false};
- const fourth=loadDirectory();
- pending.get('/api/stores?market=HK')({ok:true,json:async()=>latest});await fourth;
- assert.match(el('directoryStatus').textContent,/pickup coverage was incomplete/);
- assert.equal(pending.size,2);
-})().catch(error=>{console.error(error);process.exitCode=1});
-'''
-        with tempfile.TemporaryDirectory() as folder:
-            script = Path(folder) / "worldwide-ui-test.js"
-            script.write_text(fixture + "function renderDirectory(){" + source + checks, encoding="utf-8")
-            proc = subprocess.run(["node", str(script)], capture_output=True, text=True,
-                                  encoding="utf-8", errors="replace", timeout=15)
-        self.assertEqual(proc.returncode, 0, proc.stderr)
-
     def test_snapshot_ids_and_urls_are_official_and_globally_unique(self):
         countries = directory_countries()
         self.assertEqual(len(countries), 27)
@@ -238,12 +174,13 @@ const fetch=(url)=>new Promise(resolve=>pending.set(url,resolve));
                 continue
             product = {"market": code, "currency": region.currency, "price": None,
                        "part": "EXAMPLE/A", "name": "Example"}
-            area = {"id": "test", "market": code, "location": "10001", "store_ids": ["R001"]}
+            store_id = stores_for_country(code)["stores"][0]["id"]
+            area = {"id": "test", "market": code, "location": "10001", "store_ids": [store_id]}
             with (patch.object(watcher, "PRODUCTS", {"phone": product}),
                   patch.object(watcher, "MONITORING_AREAS", [area]),
                   patch.object(watcher, "MARKET_PRODUCT_IDS", {code: ["phone"]}),
                   patch.object(watcher, "fetch_market") as fetch):
-                fetch.return_value = [{"storeNumber": "R001", "storeName": "Example",
+                fetch.return_value = [{"storeNumber": store_id, "storeName": "Example",
                                        "partsAvailability": {"EXAMPLE/A": {"pickupDisplay": "available"}}}]
                 rows, errors = watcher.fetch_all()
                 fetch.assert_called_once_with(region.pickup_url, "10001", ["phone"])

@@ -5,6 +5,7 @@ It does not imply coverage of every store in a city or country.
 """
 import re
 from regions import REGIONS, region_for, normalize_location
+from store_directory import country_for_store
 
 SUPPORTED_MARKETS = set(REGIONS)
 MAX_MONITORING_AREAS = 8
@@ -56,6 +57,8 @@ def validate_monitoring_areas(value, products, enable_experimental=False):
             raise ValueError(f"Area {area_id}: invalid Apple Store ID")
         if len(set(store_ids)) != len(store_ids):
             raise ValueError(f"Area {area_id}: store_ids contains duplicates")
+        if any(country_for_store(store) not in (None, market) for store in store_ids):
+            raise ValueError(f"Area {area_id}: a selected store belongs to another country; choose stores for {market}")
         result.append({
             "id": area_id,
             "market": market,

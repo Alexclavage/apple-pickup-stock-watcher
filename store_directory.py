@@ -22,6 +22,17 @@ def directory_countries():
             for c in _directory()["countries"]]
 
 
+@lru_cache(maxsize=1)
+def _store_countries():
+    return {store["id"]: country["code"]
+            for country in _directory()["countries"] for store in country["stores"]}
+
+
+def country_for_store(store_id):
+    """Identify known cross-country mistakes; unknown/new IDs remain unproven."""
+    return _store_countries().get(store_id)
+
+
 def stores_for_country(code):
     for country in _directory()["countries"]:
         if country["code"] == code:

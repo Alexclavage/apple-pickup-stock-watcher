@@ -1,0 +1,6 @@
+{
+  "name": "watcher-offline-ui-tests",
+  "private": true,
+  "description": "DOM regression tests only; no runtime JavaScript dependencies",
+  "devDependencies": { "jsdom": "26.1.0" }
+}
