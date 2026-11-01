@@ -1,6 +1,6 @@
 # Regional live verification evidence
 
-October 30, 2026. Explicitly authorized, bounded checks using the PR #16 runtime.
+October 30, 2026. User-authorized, bounded checks using the PR #16 runtime.
 
 Campaign progress: **24/24 additional markets**. Completed.
 
@@ -62,6 +62,26 @@ restriction is not enough to infer physical stock or trigger a stock-loss alert.
 
 
 ## Limits
+
+### November 1, 2026: final review and permission boundary
+
+The stabilization commit `af87567fcd6b6b05a7abe4d7561bf05b1f62948d` passed
+146 tests without skips in all four CI environments (Python 3.12/3.14,
+Windows/Ubuntu). Its runtime and interaction-test sources were unchanged when
+work resumed; the local suite was not repeated.
+
+The owner requested further real checks only if permitted by the service terms.
+[Apple's current Website Terms of Use](https://www.apple.com/legal/internet-services/terms/site.html),
+reviewed November 1, restrict automated access and monitoring. No applicable
+permission for the undocumented pickup endpoints was established, so no new
+automated catalog/pickup checks were performed. A reachable endpoint and a slow
+request rate do not establish permission to use it.
+
+The table remains historical observed behavior, not current inventory, official
+API support or renewed regional certification. US/CA retain their selected V1
+checks; the 21 complete additional checks remain bounded and experimental;
+FR/DE remain partial, Brazil unconfirmed, Macao directory-only. Further live
+automation needs applicable permission; no bypass is proposed.
 
 ### October 31, 2026: offline stabilization
 

@@ -53,6 +53,18 @@ No extra Apple, Discord or FX checks were needed for these reproduced failures.
 The completed live campaign was not repeated. No private configuration, webhook,
 logs, state, raw response captures or generated HTML are included in the PR.
 
+On November 1 the interrupted work was resumed at the same code commit,
+`af87567fcd6b6b05a7abe4d7561bf05b1f62948d`. GitHub logs confirmed all 146 tests
+passed without skips in each of the four environments; unchanged code was not
+retested locally. Finalization changes only documentation and PR review metadata.
+
+Real-check permission remains distinct from observed compatibility. Apple's
+[Website Terms of Use](https://www.apple.com/legal/internet-services/terms/site.html)
+restrict automated access/monitoring; applicable permission for these undocumented
+endpoints was not established. No new automated regional checks were performed
+on resumption. Historical evidence does not authorize live polling or establish
+current availability. See the [verification boundary](REGIONAL_VALIDATION.md).
+
 ## One optional visual smoke check
 
 The browser's saved/managed localhost rule blocked visual access during the
@@ -64,8 +76,9 @@ On a disposable copy of your configuration in the local wizard:
 1. Keep US/CA products, select France and a store, enable experimental markets,
    then **Configure selected store**. Check that no French area is added yet.
 2. Enter the store's complete local postal code; **Choose regional products**.
-   Find one model, choose a small variant selection and add it to the watchlist.
-   Discovery is an optional real Apple request; stop if throttled.
+   Use regional references already obtained, or discover variants only when
+   applicable permission for the real Apple request has been established. Choose
+   a small selection and add it to the watchlist. Stop if throttled.
 3. **Add completed store selection**. Confirm the French area shows its store,
    EUR and regional product count. Remove the French model: a clear correction
    action should appear. Choose regional products again or remove the area.

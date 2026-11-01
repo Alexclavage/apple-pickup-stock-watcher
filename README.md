@@ -93,6 +93,13 @@ Every configured product country needs **at least one monitoring area in the sam
 
 Conservative limits: **8 monitoring areas**, **96 configured product IDs**, **48 SKUs/model**, **12 product IDs per Apple request**, **24 pickup requests per scan**. More areas and products increase intervals; HTTP 429/541 triggers longer cooldowns. Avoid aggressive polling.
 
+Live integration uses undocumented Apple endpoints. Apple's
+[Website Terms of Use](https://www.apple.com/legal/internet-services/terms/site.html)
+restrict automated access and monitoring; request limits and a successful response
+do not establish permission. Check applicable authorization before live discovery
+or polling. [Recorded verification and permission limits](docs/REGIONAL_VALIDATION.md)
+are separate from current inventory and official support.
+
 `preflight.py` checks coverage, number of products/areas, estimated request cost and whether alerts are enabled. It performs **no Apple, FX or Discord calls**, writes no files, and does not verify whether SKUs or prices are real. `python preflight.py --json` returns sanitized counts rather than SKUs, postal codes or secrets.
 
 ### Safe real test without Discord alerts
