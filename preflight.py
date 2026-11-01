@@ -44,8 +44,8 @@ def make_report(products, areas, config_exists, request_budget, interval,
         notes.append(
             f"{duplicates} duplicate SKU entry/entries; each product ID consumes an Apple request slot"
         )
-    if set(product_counts) & {"FR", "GB"}:
-        notes.append("France/UK pickup support is experimental and needs live validation")
+    if set(product_counts) - {"US", "CA"}:
+        notes.append("Selected markets outside US/Canada are experimental and need live validation")
     notes.append("SKU identity and actual Apple pickup availability are NOT verified offline")
     return {
         "ready": not issues,

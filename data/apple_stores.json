@@ -1,0 +1,3405 @@
+{
+  "source": "https://www.apple.com/retail/storelist/",
+  "observed_at": "2026-10-30",
+  "countries": [
+    {
+      "code": "US",
+      "locale": "en_US",
+      "name": "United States",
+      "stores": [
+        {
+          "city": "Birmingham",
+          "id": "R225",
+          "name": "The Summit",
+          "url": "https://www.apple.com/retail/thesummit/"
+        },
+        {
+          "city": "Huntsville",
+          "id": "R266",
+          "name": "Bridge Street",
+          "url": "https://www.apple.com/retail/bridgestreet/"
+        },
+        {
+          "city": "Anchorage",
+          "id": "R262",
+          "name": "Anchorage 5th Avenue Mall",
+          "url": "https://www.apple.com/retail/anchorage5thavenuemall/"
+        },
+        {
+          "city": "Chandler",
+          "id": "R026",
+          "name": "Chandler Fashion Center",
+          "url": "https://www.apple.com/retail/chandlerfashioncenter/"
+        },
+        {
+          "city": "Gilbert",
+          "id": "R267",
+          "name": "SanTan Village",
+          "url": "https://www.apple.com/retail/santanvillage/"
+        },
+        {
+          "city": "Glendale",
+          "id": "R247",
+          "name": "Arrowhead",
+          "url": "https://www.apple.com/retail/arrowhead/"
+        },
+        {
+          "city": "Scottsdale",
+          "id": "R031",
+          "name": "Scottsdale Fashion Square",
+          "url": "https://www.apple.com/retail/scottsdalefashionsquare/"
+        },
+        {
+          "city": "Scottsdale",
+          "id": "R292",
+          "name": "Scottsdale Quarter",
+          "url": "https://www.apple.com/retail/scottsdalequarter/"
+        },
+        {
+          "city": "Tucson",
+          "id": "R086",
+          "name": "La Encantada",
+          "url": "https://www.apple.com/retail/laencantada/"
+        },
+        {
+          "city": "Little Rock",
+          "id": "R286",
+          "name": "The Promenade at Chenal",
+          "url": "https://www.apple.com/retail/thepromenadeatchenal/"
+        },
+        {
+          "city": "Bakersfield",
+          "id": "R550",
+          "name": "Valley Plaza",
+          "url": "https://www.apple.com/retail/valleyplaza/"
+        },
+        {
+          "city": "Berkeley",
+          "id": "R414",
+          "name": "4th Street",
+          "url": "https://www.apple.com/retail/4thstreet/"
+        },
+        {
+          "city": "Brea",
+          "id": "R156",
+          "name": "Brea Mall",
+          "url": "https://www.apple.com/retail/breamall/"
+        },
+        {
+          "city": "Burlingame",
+          "id": "R029",
+          "name": "Burlingame",
+          "url": "https://www.apple.com/retail/burlingame/"
+        },
+        {
+          "city": "Canoga Park",
+          "id": "R189",
+          "name": "Topanga",
+          "url": "https://www.apple.com/retail/topanga/"
+        },
+        {
+          "city": "Carlsbad",
+          "id": "R294",
+          "name": "Carlsbad",
+          "url": "https://www.apple.com/retail/carlsbad/"
+        },
+        {
+          "city": "Cerritos",
+          "id": "R300",
+          "name": "Los Cerritos",
+          "url": "https://www.apple.com/retail/loscerritos/"
+        },
+        {
+          "city": "Chula Vista",
+          "id": "R213",
+          "name": "Otay Ranch",
+          "url": "https://www.apple.com/retail/otayranch/"
+        },
+        {
+          "city": "Corte Madera",
+          "id": "R071",
+          "name": "Corte Madera",
+          "url": "https://www.apple.com/retail/cortemadera/"
+        },
+        {
+          "city": "Costa Mesa",
+          "id": "R004",
+          "name": "South Coast Plaza",
+          "url": "https://www.apple.com/retail/southcoastplaza/"
+        },
+        {
+          "city": "Cupertino",
+          "id": "R824",
+          "name": "Apple Park Visitor Center",
+          "url": "https://www.apple.com/retail/appleparkvisitorcenter/"
+        },
+        {
+          "city": "Emeryville",
+          "id": "R057",
+          "name": "Bay Street",
+          "url": "https://www.apple.com/retail/baystreet/"
+        },
+        {
+          "city": "Fresno",
+          "id": "R236",
+          "name": "Fashion Fair",
+          "url": "https://www.apple.com/retail/fashionfair/"
+        },
+        {
+          "city": "Glendale",
+          "id": "R001",
+          "name": "Glendale Galleria",
+          "url": "https://www.apple.com/retail/glendalegalleria/"
+        },
+        {
+          "city": "Glendale",
+          "id": "R451",
+          "name": "The Americana at Brand",
+          "url": "https://www.apple.com/retail/theamericanaatbrand/"
+        },
+        {
+          "city": "Irvine",
+          "id": "R146",
+          "name": "Irvine Spectrum Center",
+          "url": "https://www.apple.com/retail/irvinespectrumcenter/"
+        },
+        {
+          "city": "Los Angeles",
+          "id": "R050",
+          "name": "The Grove",
+          "url": "https://www.apple.com/retail/thegrove/"
+        },
+        {
+          "city": "Los Angeles",
+          "id": "R124",
+          "name": "Beverly Center",
+          "url": "https://www.apple.com/retail/beverlycenter/"
+        },
+        {
+          "city": "Los Angeles",
+          "id": "R720",
+          "name": "Tower Theatre",
+          "url": "https://www.apple.com/retail/towertheatre/"
+        },
+        {
+          "city": "Los Angeles",
+          "id": "R108",
+          "name": "Century City",
+          "url": "https://www.apple.com/retail/centurycity/"
+        },
+        {
+          "city": "Los Gatos",
+          "id": "R240",
+          "name": "Los Gatos",
+          "url": "https://www.apple.com/retail/losgatos/"
+        },
+        {
+          "city": "Manhattan Beach",
+          "id": "R122",
+          "name": "Manhattan Village",
+          "url": "https://www.apple.com/retail/manhattanvillage/"
+        },
+        {
+          "city": "Mission Viejo",
+          "id": "R069",
+          "name": "Mission Viejo",
+          "url": "https://www.apple.com/retail/missionviejo/"
+        },
+        {
+          "city": "Modesto",
+          "id": "R322",
+          "name": "Vintage Faire",
+          "url": "https://www.apple.com/retail/vintagefaire/"
+        },
+        {
+          "city": "Monterey",
+          "id": "R305",
+          "name": "Del Monte",
+          "url": "https://www.apple.com/retail/delmonte/"
+        },
+        {
+          "city": "Newport Beach",
+          "id": "R015",
+          "name": "Fashion Island",
+          "url": "https://www.apple.com/retail/fashionisland/"
+        },
+        {
+          "city": "Northridge",
+          "id": "R023",
+          "name": "Northridge",
+          "url": "https://www.apple.com/retail/northridge/"
+        },
+        {
+          "city": "Palm Desert",
+          "id": "R297",
+          "name": "El Paseo Village",
+          "url": "https://www.apple.com/retail/elpaseovillage/"
+        },
+        {
+          "city": "Palo Alto",
+          "id": "R002",
+          "name": "Palo Alto",
+          "url": "https://www.apple.com/retail/paloalto/"
+        },
+        {
+          "city": "Palo Alto",
+          "id": "R099",
+          "name": "Stanford Shopping Center",
+          "url": "https://www.apple.com/retail/stanfordshoppingcenter/"
+        },
+        {
+          "city": "Pasadena",
+          "id": "R034",
+          "name": "Pasadena",
+          "url": "https://www.apple.com/retail/pasadena/"
+        },
+        {
+          "city": "Pleasanton",
+          "id": "R101",
+          "name": "Stoneridge Mall",
+          "url": "https://www.apple.com/retail/stoneridgemall/"
+        },
+        {
+          "city": "Rancho Cucamonga",
+          "id": "R094",
+          "name": "Victoria Gardens",
+          "url": "https://www.apple.com/retail/victoriagardens/"
+        },
+        {
+          "city": "Roseville",
+          "id": "R298",
+          "name": "Roseville",
+          "url": "https://www.apple.com/retail/roseville/"
+        },
+        {
+          "city": "Sacramento",
+          "id": "R070",
+          "name": "Arden Fair",
+          "url": "https://www.apple.com/retail/ardenfair/"
+        },
+        {
+          "city": "San Diego",
+          "id": "R040",
+          "name": "Fashion Valley",
+          "url": "https://www.apple.com/retail/fashionvalley/"
+        },
+        {
+          "city": "San Diego",
+          "id": "R082",
+          "name": "UTC",
+          "url": "https://www.apple.com/retail/utc/"
+        },
+        {
+          "city": "San Francisco",
+          "id": "R033",
+          "name": "Stonestown",
+          "url": "https://www.apple.com/retail/stonestown/"
+        },
+        {
+          "city": "San Francisco",
+          "id": "R075",
+          "name": "Union Square",
+          "url": "https://www.apple.com/retail/unionsquare/"
+        },
+        {
+          "city": "San Francisco",
+          "id": "R217",
+          "name": "Chestnut Street",
+          "url": "https://www.apple.com/retail/chestnutstreet/"
+        },
+        {
+          "city": "San Jose",
+          "id": "R105",
+          "name": "Oakridge",
+          "url": "https://www.apple.com/retail/oakridge/"
+        },
+        {
+          "city": "San Luis Obispo",
+          "id": "R199",
+          "name": "Higuera Street",
+          "url": "https://www.apple.com/retail/higuerastreet/"
+        },
+        {
+          "city": "San Mateo",
+          "id": "R231",
+          "name": "Hillsdale",
+          "url": "https://www.apple.com/retail/hillsdale/"
+        },
+        {
+          "city": "Santa Barbara",
+          "id": "R317",
+          "name": "State Street",
+          "url": "https://www.apple.com/retail/statestreet/"
+        },
+        {
+          "city": "Santa Clara",
+          "id": "R039",
+          "name": "Valley Fair",
+          "url": "https://www.apple.com/retail/valleyfair/"
+        },
+        {
+          "city": "Santa Monica",
+          "id": "R051",
+          "name": "Third Street Promenade",
+          "url": "https://www.apple.com/retail/thirdstreetpromenade/"
+        },
+        {
+          "city": "Santa Rosa",
+          "id": "R044",
+          "name": "Montgomery Village",
+          "url": "https://www.apple.com/retail/montgomeryvillage/"
+        },
+        {
+          "city": "Sherman Oaks",
+          "id": "R148",
+          "name": "Sherman Oaks",
+          "url": "https://www.apple.com/retail/shermanoaks/"
+        },
+        {
+          "city": "Temecula",
+          "id": "R345",
+          "name": "Promenade Temecula",
+          "url": "https://www.apple.com/retail/promenadetemecula/"
+        },
+        {
+          "city": "Thousand Oaks",
+          "id": "R154",
+          "name": "The Oaks",
+          "url": "https://www.apple.com/retail/theoaks/"
+        },
+        {
+          "city": "Torrance",
+          "id": "R777",
+          "name": "Del Amo",
+          "url": "https://www.apple.com/retail/delamo/"
+        },
+        {
+          "city": "Valencia",
+          "id": "R462",
+          "name": "Valencia Town Center",
+          "url": "https://www.apple.com/retail/valenciatowncenter/"
+        },
+        {
+          "city": "Walnut Creek",
+          "id": "R014",
+          "name": "Broadway Plaza",
+          "url": "https://www.apple.com/retail/broadwayplaza/"
+        },
+        {
+          "city": "Boulder",
+          "id": "R172",
+          "name": "Twenty Ninth Street",
+          "url": "https://www.apple.com/retail/twentyninthstreet/"
+        },
+        {
+          "city": "Broomfield",
+          "id": "R182",
+          "name": "FlatIron Crossing",
+          "url": "https://www.apple.com/retail/flatironcrossing/"
+        },
+        {
+          "city": "Colorado Springs",
+          "id": "R338",
+          "name": "The Promenade Shops at Briargate",
+          "url": "https://www.apple.com/retail/thepromenadeshopsatbriargate/"
+        },
+        {
+          "city": "Denver",
+          "id": "R047",
+          "name": "Cherry Creek",
+          "url": "https://www.apple.com/retail/cherrycreek/"
+        },
+        {
+          "city": "Littleton",
+          "id": "R030",
+          "name": "Aspen Grove",
+          "url": "https://www.apple.com/retail/aspengrove/"
+        },
+        {
+          "city": "Lone Tree",
+          "id": "R228",
+          "name": "Park Meadows",
+          "url": "https://www.apple.com/retail/parkmeadows/"
+        },
+        {
+          "city": "Danbury",
+          "id": "R093",
+          "name": "Danbury Fair Mall",
+          "url": "https://www.apple.com/retail/danburyfairmall/"
+        },
+        {
+          "city": "Farmington",
+          "id": "R025",
+          "name": "Westfarms",
+          "url": "https://www.apple.com/retail/westfarms/"
+        },
+        {
+          "city": "Greenwich",
+          "id": "R282",
+          "name": "Greenwich Avenue",
+          "url": "https://www.apple.com/retail/greenwichavenue/"
+        },
+        {
+          "city": "New Haven",
+          "id": "R446",
+          "name": "New Haven",
+          "url": "https://www.apple.com/retail/newhaven/"
+        },
+        {
+          "city": "Norwalk",
+          "id": "R202",
+          "name": "SoNo Collection",
+          "url": "https://www.apple.com/retail/sonocollection/"
+        },
+        {
+          "city": "South Windsor",
+          "id": "R613",
+          "name": "Evergreen Walk",
+          "url": "https://www.apple.com/retail/evergreenwalk/"
+        },
+        {
+          "city": "Newark",
+          "id": "R102",
+          "name": "Christiana Mall",
+          "url": "https://www.apple.com/retail/christianamall/"
+        },
+        {
+          "city": "Washington",
+          "id": "R287",
+          "name": "Georgetown",
+          "url": "https://www.apple.com/retail/georgetown/"
+        },
+        {
+          "city": "Washington",
+          "id": "R516",
+          "name": "Carnegie Library",
+          "url": "https://www.apple.com/retail/carnegielibrary/"
+        },
+        {
+          "city": "Altamonte Springs",
+          "id": "R291",
+          "name": "Altamonte",
+          "url": "https://www.apple.com/retail/altamonte/"
+        },
+        {
+          "city": "Aventura",
+          "id": "R087",
+          "name": "Aventura",
+          "url": "https://www.apple.com/retail/aventura/"
+        },
+        {
+          "city": "Boca Raton",
+          "id": "R074",
+          "name": "Boca Raton",
+          "url": "https://www.apple.com/retail/bocaraton/"
+        },
+        {
+          "city": "Brandon",
+          "id": "R289",
+          "name": "Brandon",
+          "url": "https://www.apple.com/retail/brandon/"
+        },
+        {
+          "city": "Estero",
+          "id": "R185",
+          "name": "Coconut Point",
+          "url": "https://www.apple.com/retail/coconutpoint/"
+        },
+        {
+          "city": "Fort Lauderdale",
+          "id": "R214",
+          "name": "The Galleria",
+          "url": "https://www.apple.com/retail/thegalleria/"
+        },
+        {
+          "city": "Jacksonville",
+          "id": "R111",
+          "name": "St. Johns Town Center",
+          "url": "https://www.apple.com/retail/stjohnstowncenter/"
+        },
+        {
+          "city": "Miami",
+          "id": "R312",
+          "name": "Dadeland",
+          "url": "https://www.apple.com/retail/dadeland/"
+        },
+        {
+          "city": "Miami",
+          "id": "R752",
+          "name": "Miami Worldcenter",
+          "url": "https://www.apple.com/retail/miamiworldcenter/"
+        },
+        {
+          "city": "Miami",
+          "id": "R623",
+          "name": "Brickell City Centre",
+          "url": "https://www.apple.com/retail/brickellcitycentre/"
+        },
+        {
+          "city": "Miami",
+          "id": "R012",
+          "name": "The Falls",
+          "url": "https://www.apple.com/retail/thefalls/"
+        },
+        {
+          "city": "Miami Beach",
+          "id": "R115",
+          "name": "Lincoln Road",
+          "url": "https://www.apple.com/retail/lincolnroad/"
+        },
+        {
+          "city": "Naples",
+          "id": "R169",
+          "name": "Waterside Shops",
+          "url": "https://www.apple.com/retail/watersideshops/"
+        },
+        {
+          "city": "Orlando",
+          "id": "R143",
+          "name": "Florida Mall",
+          "url": "https://www.apple.com/retail/floridamall/"
+        },
+        {
+          "city": "Orlando",
+          "id": "R053",
+          "name": "Millenia",
+          "url": "https://www.apple.com/retail/millenia/"
+        },
+        {
+          "city": "Palm Beach Gardens",
+          "id": "R127",
+          "name": "The Gardens Mall",
+          "url": "https://www.apple.com/retail/thegardensmall/"
+        },
+        {
+          "city": "Sarasota",
+          "id": "R615",
+          "name": "University Town Center",
+          "url": "https://www.apple.com/retail/universitytowncenter/"
+        },
+        {
+          "city": "Tampa",
+          "id": "R019",
+          "name": "International Plaza",
+          "url": "https://www.apple.com/retail/internationalplaza/"
+        },
+        {
+          "city": "Wellington",
+          "id": "R024",
+          "name": "Wellington Green",
+          "url": "https://www.apple.com/retail/wellingtongreen/"
+        },
+        {
+          "city": "Alpharetta",
+          "id": "R080",
+          "name": "Avalon",
+          "url": "https://www.apple.com/retail/avalon/"
+        },
+        {
+          "city": "Atlanta",
+          "id": "R006",
+          "name": "Lenox Square",
+          "url": "https://www.apple.com/retail/lenoxsquare/"
+        },
+        {
+          "city": "Atlanta",
+          "id": "R184",
+          "name": "Perimeter",
+          "url": "https://www.apple.com/retail/perimeter/"
+        },
+        {
+          "city": "Atlanta",
+          "id": "R591",
+          "name": "Cumberland Mall",
+          "url": "https://www.apple.com/retail/cumberlandmall/"
+        },
+        {
+          "city": "Augusta",
+          "id": "R364",
+          "name": "Augusta",
+          "url": "https://www.apple.com/retail/augusta/"
+        },
+        {
+          "city": "Buford",
+          "id": "R259",
+          "name": "Mall of Georgia",
+          "url": "https://www.apple.com/retail/mallofgeorgia/"
+        },
+        {
+          "city": "Honolulu",
+          "id": "R210",
+          "name": "Kahala",
+          "url": "https://www.apple.com/retail/kahala/"
+        },
+        {
+          "city": "Honolulu",
+          "id": "R073",
+          "name": "Ala Moana",
+          "url": "https://www.apple.com/retail/alamoana/"
+        },
+        {
+          "city": "Boise",
+          "id": "R303",
+          "name": "Boise Towne Square",
+          "url": "https://www.apple.com/retail/boisetownesquare/"
+        },
+        {
+          "city": "Chicago",
+          "id": "R035",
+          "name": "Michigan Avenue",
+          "url": "https://www.apple.com/retail/michiganavenue/"
+        },
+        {
+          "city": "Chicago",
+          "id": "R284",
+          "name": "Lincoln Park",
+          "url": "https://www.apple.com/retail/lincolnpark/"
+        },
+        {
+          "city": "Deer Park",
+          "id": "R258",
+          "name": "Deer Park",
+          "url": "https://www.apple.com/retail/deerpark/"
+        },
+        {
+          "city": "Naperville",
+          "id": "R348",
+          "name": "Main Place",
+          "url": "https://www.apple.com/retail/mainplace/"
+        },
+        {
+          "city": "Oak Brook",
+          "id": "R056",
+          "name": "Oakbrook",
+          "url": "https://www.apple.com/retail/oakbrook/"
+        },
+        {
+          "city": "Orland Park",
+          "id": "R237",
+          "name": "Orland Square Mall",
+          "url": "https://www.apple.com/retail/orlandsquaremall/"
+        },
+        {
+          "city": "Schaumburg",
+          "id": "R018",
+          "name": "Woodfield",
+          "url": "https://www.apple.com/retail/woodfield/"
+        },
+        {
+          "city": "Skokie",
+          "id": "R089",
+          "name": "Old Orchard",
+          "url": "https://www.apple.com/retail/oldorchard/"
+        },
+        {
+          "city": "Indianapolis",
+          "id": "R066",
+          "name": "The Fashion Mall at Keystone",
+          "url": "https://www.apple.com/retail/thefashionmallatkeystone/"
+        },
+        {
+          "city": "Mishawaka",
+          "id": "R360",
+          "name": "University Park Mall",
+          "url": "https://www.apple.com/retail/universityparkmall/"
+        },
+        {
+          "city": "West Des Moines",
+          "id": "R109",
+          "name": "Jordan Creek",
+          "url": "https://www.apple.com/retail/jordancreek/"
+        },
+        {
+          "city": "Leawood",
+          "id": "R283",
+          "name": "Leawood",
+          "url": "https://www.apple.com/retail/leawood/"
+        },
+        {
+          "city": "Lexington",
+          "id": "R288",
+          "name": "Fritz Farm",
+          "url": "https://www.apple.com/retail/fritzfarm/"
+        },
+        {
+          "city": "Louisville",
+          "id": "R264",
+          "name": "Oxmoor",
+          "url": "https://www.apple.com/retail/oxmoor/"
+        },
+        {
+          "city": "Baton Rouge",
+          "id": "R263",
+          "name": "Mall of Louisiana",
+          "url": "https://www.apple.com/retail/malloflouisiana/"
+        },
+        {
+          "city": "Metairie",
+          "id": "R235",
+          "name": "Lakeside Shopping Center",
+          "url": "https://www.apple.com/retail/lakesideshoppingcenter/"
+        },
+        {
+          "city": "South Portland",
+          "id": "R307",
+          "name": "Maine Mall",
+          "url": "https://www.apple.com/retail/mainemall/"
+        },
+        {
+          "city": "Annapolis",
+          "id": "R142",
+          "name": "Annapolis",
+          "url": "https://www.apple.com/retail/annapolis/"
+        },
+        {
+          "city": "Bethesda",
+          "id": "R084",
+          "name": "Montgomery Mall",
+          "url": "https://www.apple.com/retail/montgomerymall/"
+        },
+        {
+          "city": "Bethesda",
+          "id": "R112",
+          "name": "Bethesda Row",
+          "url": "https://www.apple.com/retail/bethesdarow/"
+        },
+        {
+          "city": "Columbia",
+          "id": "R168",
+          "name": "Columbia",
+          "url": "https://www.apple.com/retail/columbia/"
+        },
+        {
+          "city": "Boston",
+          "id": "R149",
+          "name": "Boylston Street",
+          "url": "https://www.apple.com/retail/boylstonstreet/"
+        },
+        {
+          "city": "Braintree",
+          "id": "R110",
+          "name": "South Shore",
+          "url": "https://www.apple.com/retail/southshore/"
+        },
+        {
+          "city": "Burlington",
+          "id": "R155",
+          "name": "Burlington",
+          "url": "https://www.apple.com/retail/burlington/"
+        },
+        {
+          "city": "Cambridge",
+          "id": "R021",
+          "name": "CambridgeSide",
+          "url": "https://www.apple.com/retail/cambridgeside/"
+        },
+        {
+          "city": "Chestnut Hill",
+          "id": "R076",
+          "name": "Chestnut Hill",
+          "url": "https://www.apple.com/retail/chestnuthill/"
+        },
+        {
+          "city": "Dedham",
+          "id": "R346",
+          "name": "Legacy Place",
+          "url": "https://www.apple.com/retail/legacyplace/"
+        },
+        {
+          "city": "Hingham",
+          "id": "R137",
+          "name": "Derby Street",
+          "url": "https://www.apple.com/retail/derbystreet/"
+        },
+        {
+          "city": "Holyoke",
+          "id": "R191",
+          "name": "Holyoke",
+          "url": "https://www.apple.com/retail/holyoke/"
+        },
+        {
+          "city": "Lynnfield",
+          "id": "R011",
+          "name": "MarketStreet",
+          "url": "https://www.apple.com/retail/marketstreet/"
+        },
+        {
+          "city": "Millbury",
+          "id": "R622",
+          "name": "The Shops at Blackstone Valley",
+          "url": "https://www.apple.com/retail/theshopsatblackstonevalley/"
+        },
+        {
+          "city": "Natick",
+          "id": "R232",
+          "name": "Natick",
+          "url": "https://www.apple.com/retail/natick/"
+        },
+        {
+          "city": "Ann Arbor",
+          "id": "R230",
+          "name": "Briarwood",
+          "url": "https://www.apple.com/retail/briarwood/"
+        },
+        {
+          "city": "Detroit",
+          "id": "R763",
+          "name": "Downtown Detroit",
+          "url": "https://www.apple.com/retail/downtowndetroit/"
+        },
+        {
+          "city": "Grand Rapids",
+          "id": "R132",
+          "name": "Woodland",
+          "url": "https://www.apple.com/retail/woodland/"
+        },
+        {
+          "city": "Lansing",
+          "id": "R616",
+          "name": "Eastwood Towne Center",
+          "url": "https://www.apple.com/retail/eastwoodtownecenter/"
+        },
+        {
+          "city": "Novi",
+          "id": "R041",
+          "name": "Twelve Oaks",
+          "url": "https://www.apple.com/retail/twelveoaks/"
+        },
+        {
+          "city": "Troy",
+          "id": "R055",
+          "name": "Somerset",
+          "url": "https://www.apple.com/retail/somerset/"
+        },
+        {
+          "city": "Bloomington",
+          "id": "R007",
+          "name": "Mall of America",
+          "url": "https://www.apple.com/retail/mallofamerica/"
+        },
+        {
+          "city": "Edina",
+          "id": "R054",
+          "name": "Southdale",
+          "url": "https://www.apple.com/retail/southdale/"
+        },
+        {
+          "city": "Minnetonka",
+          "id": "R183",
+          "name": "Ridgedale",
+          "url": "https://www.apple.com/retail/ridgedale/"
+        },
+        {
+          "city": "Roseville",
+          "id": "R022",
+          "name": "Rosedale Center",
+          "url": "https://www.apple.com/retail/rosedalecenter/"
+        },
+        {
+          "city": "Ridgeland",
+          "id": "R324",
+          "name": "Renaissance at Colony Park",
+          "url": "https://www.apple.com/retail/renaissanceatcolonypark/"
+        },
+        {
+          "city": "Kansas City",
+          "id": "R097",
+          "name": "Country Club Plaza",
+          "url": "https://www.apple.com/retail/countryclubplaza/"
+        },
+        {
+          "city": "Saint Louis",
+          "id": "R114",
+          "name": "Saint Louis Galleria",
+          "url": "https://www.apple.com/retail/saintlouisgalleria/"
+        },
+        {
+          "city": "Saint Louis",
+          "id": "R062",
+          "name": "West County",
+          "url": "https://www.apple.com/retail/westcounty/"
+        },
+        {
+          "city": "Omaha",
+          "id": "R190",
+          "name": "Village Pointe",
+          "url": "https://www.apple.com/retail/villagepointe/"
+        },
+        {
+          "city": "Las Vegas",
+          "id": "R219",
+          "name": "Town Square",
+          "url": "https://www.apple.com/retail/townsquare/"
+        },
+        {
+          "city": "Las Vegas",
+          "id": "R161",
+          "name": "The Forum Shops",
+          "url": "https://www.apple.com/retail/theforumshops/"
+        },
+        {
+          "city": "Las Vegas",
+          "id": "R650",
+          "name": "Summerlin",
+          "url": "https://www.apple.com/retail/summerlin/"
+        },
+        {
+          "city": "Las Vegas",
+          "id": "R064",
+          "name": "Fashion Show",
+          "url": "https://www.apple.com/retail/fashionshow/"
+        },
+        {
+          "city": "Reno",
+          "id": "R186",
+          "name": "Shayden Summit",
+          "url": "https://www.apple.com/retail/shaydensummit/"
+        },
+        {
+          "city": "Manchester",
+          "id": "R631",
+          "name": "The Mall of New Hampshire",
+          "url": "https://www.apple.com/retail/themallofnewhampshire/"
+        },
+        {
+          "city": "Nashua",
+          "id": "R354",
+          "name": "Pheasant Lane",
+          "url": "https://www.apple.com/retail/pheasantlane/"
+        },
+        {
+          "city": "Salem",
+          "id": "R027",
+          "name": "Rockingham Park",
+          "url": "https://www.apple.com/retail/rockinghampark/"
+        },
+        {
+          "city": "Bridgewater",
+          "id": "R104",
+          "name": "Bridgewater",
+          "url": "https://www.apple.com/retail/bridgewater/"
+        },
+        {
+          "city": "Cherry Hill",
+          "id": "R206",
+          "name": "Cherry Hill",
+          "url": "https://www.apple.com/retail/cherryhill/"
+        },
+        {
+          "city": "East Rutherford",
+          "id": "R755",
+          "name": "American Dream",
+          "url": "https://www.apple.com/retail/americandream/"
+        },
+        {
+          "city": "Edison",
+          "id": "R067",
+          "name": "Menlo Park",
+          "url": "https://www.apple.com/retail/menlopark/"
+        },
+        {
+          "city": "Freehold",
+          "id": "R138",
+          "name": "Freehold Raceway Mall",
+          "url": "https://www.apple.com/retail/freeholdracewaymall/"
+        },
+        {
+          "city": "Lawrence Township",
+          "id": "R549",
+          "name": "Quaker Bridge",
+          "url": "https://www.apple.com/retail/quakerbridge/"
+        },
+        {
+          "city": "Marlton",
+          "id": "R088",
+          "name": "Sagemore",
+          "url": "https://www.apple.com/retail/sagemore/"
+        },
+        {
+          "city": "Paramus",
+          "id": "R117",
+          "name": "Garden State Plaza",
+          "url": "https://www.apple.com/retail/gardenstateplaza/"
+        },
+        {
+          "city": "Rockaway",
+          "id": "R103",
+          "name": "Rockaway",
+          "url": "https://www.apple.com/retail/rockaway/"
+        },
+        {
+          "city": "Short Hills",
+          "id": "R043",
+          "name": "Short Hills",
+          "url": "https://www.apple.com/retail/shorthills/"
+        },
+        {
+          "city": "Wayne",
+          "id": "R325",
+          "name": "Willowbrook",
+          "url": "https://www.apple.com/retail/willowbrook/"
+        },
+        {
+          "city": "Woodcliff Lake",
+          "id": "R013",
+          "name": "Tice's Corner",
+          "url": "https://www.apple.com/retail/ticescorner/"
+        },
+        {
+          "city": "Albuquerque",
+          "id": "R177",
+          "name": "ABQ Uptown",
+          "url": "https://www.apple.com/retail/abquptown/"
+        },
+        {
+          "city": "Albany",
+          "id": "R017",
+          "name": "Crossgates",
+          "url": "https://www.apple.com/retail/crossgates/"
+        },
+        {
+          "city": "Bronx",
+          "id": "R753",
+          "name": "The Mall at Bay Plaza",
+          "url": "https://www.apple.com/retail/themallatbayplaza/"
+        },
+        {
+          "city": "Brooklyn",
+          "id": "R594",
+          "name": "Williamsburg",
+          "url": "https://www.apple.com/retail/williamsburg/"
+        },
+        {
+          "city": "Brooklyn",
+          "id": "R715",
+          "name": "Downtown Brooklyn",
+          "url": "https://www.apple.com/retail/downtownbrooklyn/"
+        },
+        {
+          "city": "Buffalo",
+          "id": "R016",
+          "name": "Walden Galleria",
+          "url": "https://www.apple.com/retail/waldengalleria/"
+        },
+        {
+          "city": "Elmhurst",
+          "id": "R612",
+          "name": "Queens Center",
+          "url": "https://www.apple.com/retail/queenscenter/"
+        },
+        {
+          "city": "Garden City",
+          "id": "R060",
+          "name": "Roosevelt Field",
+          "url": "https://www.apple.com/retail/rooseveltfield/"
+        },
+        {
+          "city": "Huntington Station",
+          "id": "R068",
+          "name": "Walt Whitman",
+          "url": "https://www.apple.com/retail/waltwhitman/"
+        },
+        {
+          "city": "Lake Grove",
+          "id": "R139",
+          "name": "Smith Haven",
+          "url": "https://www.apple.com/retail/smithhaven/"
+        },
+        {
+          "city": "Manhasset",
+          "id": "R327",
+          "name": "Manhasset",
+          "url": "https://www.apple.com/retail/manhasset/"
+        },
+        {
+          "city": "Nanuet",
+          "id": "R046",
+          "name": "Nanuet",
+          "url": "https://www.apple.com/retail/nanuet/"
+        },
+        {
+          "city": "New York",
+          "id": "R250",
+          "name": "West 14th Street",
+          "url": "https://www.apple.com/retail/west14thstreet/"
+        },
+        {
+          "city": "New York",
+          "id": "R095",
+          "name": "Fifth Avenue",
+          "url": "https://www.apple.com/retail/fifthavenue/"
+        },
+        {
+          "city": "New York",
+          "id": "R654",
+          "name": "World Trade Center",
+          "url": "https://www.apple.com/retail/worldtradecenter/"
+        },
+        {
+          "city": "New York",
+          "id": "R032",
+          "name": "SoHo",
+          "url": "https://www.apple.com/retail/soho/"
+        },
+        {
+          "city": "New York",
+          "id": "R251",
+          "name": "Upper West Side",
+          "url": "https://www.apple.com/retail/upperwestside/"
+        },
+        {
+          "city": "New York",
+          "id": "R582",
+          "name": "Upper East Side",
+          "url": "https://www.apple.com/retail/uppereastside/"
+        },
+        {
+          "city": "New York",
+          "id": "R415",
+          "name": "Grand Central",
+          "url": "https://www.apple.com/retail/grandcentral/"
+        },
+        {
+          "city": "Staten Island",
+          "id": "R152",
+          "name": "Staten Island",
+          "url": "https://www.apple.com/retail/statenisland/"
+        },
+        {
+          "city": "Syracuse",
+          "id": "R107",
+          "name": "Syracuse",
+          "url": "https://www.apple.com/retail/syracuse/"
+        },
+        {
+          "city": "Victor",
+          "id": "R140",
+          "name": "Eastview",
+          "url": "https://www.apple.com/retail/eastview/"
+        },
+        {
+          "city": "White Plains",
+          "id": "R061",
+          "name": "The Westchester",
+          "url": "https://www.apple.com/retail/thewestchester/"
+        },
+        {
+          "city": "Yonkers",
+          "id": "R261",
+          "name": "Ridge Hill",
+          "url": "https://www.apple.com/retail/ridgehill/"
+        },
+        {
+          "city": "Charlotte",
+          "id": "R083",
+          "name": "SouthPark",
+          "url": "https://www.apple.com/retail/southpark/"
+        },
+        {
+          "city": "Durham",
+          "id": "R049",
+          "name": "Southpoint",
+          "url": "https://www.apple.com/retail/southpoint/"
+        },
+        {
+          "city": "Greensboro",
+          "id": "R293",
+          "name": "Friendly Center",
+          "url": "https://www.apple.com/retail/friendlycenter/"
+        },
+        {
+          "city": "Huntersville",
+          "id": "R796",
+          "name": "Birkdale Village",
+          "url": "https://www.apple.com/retail/birkdalevillage/"
+        },
+        {
+          "city": "Raleigh",
+          "id": "R116",
+          "name": "Crabtree Valley Mall",
+          "url": "https://www.apple.com/retail/crabtreevalleymall/"
+        },
+        {
+          "city": "Akron",
+          "id": "R353",
+          "name": "Summit Mall",
+          "url": "https://www.apple.com/retail/summitmall/"
+        },
+        {
+          "city": "Beavercreek",
+          "id": "R518",
+          "name": "The Greene",
+          "url": "https://www.apple.com/retail/thegreene/"
+        },
+        {
+          "city": "Cincinnati",
+          "id": "R028",
+          "name": "Kenwood Towne Centre",
+          "url": "https://www.apple.com/retail/kenwoodtownecentre/"
+        },
+        {
+          "city": "Columbus",
+          "id": "R417",
+          "name": "Polaris Fashion Place",
+          "url": "https://www.apple.com/retail/polarisfashionplace/"
+        },
+        {
+          "city": "Columbus",
+          "id": "R009",
+          "name": "Easton Town Center",
+          "url": "https://www.apple.com/retail/eastontowncenter/"
+        },
+        {
+          "city": "Toledo",
+          "id": "R299",
+          "name": "Franklin Park Mall",
+          "url": "https://www.apple.com/retail/franklinparkmall/"
+        },
+        {
+          "city": "Westlake",
+          "id": "R192",
+          "name": "Crocker Park",
+          "url": "https://www.apple.com/retail/crockerpark/"
+        },
+        {
+          "city": "Woodmere",
+          "id": "R081",
+          "name": "Eton",
+          "url": "https://www.apple.com/retail/eton/"
+        },
+        {
+          "city": "Oklahoma City",
+          "id": "R130",
+          "name": "Penn Square",
+          "url": "https://www.apple.com/retail/pennsquare/"
+        },
+        {
+          "city": "Tulsa",
+          "id": "R233",
+          "name": "Woodland Hills",
+          "url": "https://www.apple.com/retail/woodlandhills/"
+        },
+        {
+          "city": "Portland",
+          "id": "R077",
+          "name": "Pioneer Place",
+          "url": "https://www.apple.com/retail/pioneerplace/"
+        },
+        {
+          "city": "Tigard",
+          "id": "R134",
+          "name": "Bridgeport Village",
+          "url": "https://www.apple.com/retail/bridgeportvillage/"
+        },
+        {
+          "city": "Tigard",
+          "id": "R090",
+          "name": "Washington Square",
+          "url": "https://www.apple.com/retail/washingtonsquare/"
+        },
+        {
+          "city": "Ardmore",
+          "id": "R166",
+          "name": "Suburban Square",
+          "url": "https://www.apple.com/retail/suburbansquare/"
+        },
+        {
+          "city": "King of Prussia",
+          "id": "R065",
+          "name": "King of Prussia",
+          "url": "https://www.apple.com/retail/kingofprussia/"
+        },
+        {
+          "city": "Lancaster",
+          "id": "R304",
+          "name": "Park City",
+          "url": "https://www.apple.com/retail/parkcity/"
+        },
+        {
+          "city": "Philadelphia",
+          "id": "R162",
+          "name": "Walnut Street",
+          "url": "https://www.apple.com/retail/walnutstreet/"
+        },
+        {
+          "city": "Pittsburgh",
+          "id": "R413",
+          "name": "Ross Park",
+          "url": "https://www.apple.com/retail/rosspark/"
+        },
+        {
+          "city": "Pittsburgh",
+          "id": "R096",
+          "name": "Shadyside",
+          "url": "https://www.apple.com/retail/shadyside/"
+        },
+        {
+          "city": "Pittsburgh",
+          "id": "R147",
+          "name": "South Hills Village",
+          "url": "https://www.apple.com/retail/southhillsvillage/"
+        },
+        {
+          "city": "Whitehall",
+          "id": "R281",
+          "name": "Lehigh Valley",
+          "url": "https://www.apple.com/retail/lehighvalley/"
+        },
+        {
+          "city": "Willow Grove",
+          "id": "R234",
+          "name": "Willow Grove Park",
+          "url": "https://www.apple.com/retail/willowgrovepark/"
+        },
+        {
+          "city": "Providence",
+          "id": "R167",
+          "name": "Providence Place",
+          "url": "https://www.apple.com/retail/providenceplace/"
+        },
+        {
+          "city": "Charleston",
+          "id": "R318",
+          "name": "Charleston",
+          "url": "https://www.apple.com/retail/charleston/"
+        },
+        {
+          "city": "Greenville",
+          "id": "R355",
+          "name": "Haywood Mall",
+          "url": "https://www.apple.com/retail/haywoodmall/"
+        },
+        {
+          "city": "Franklin",
+          "id": "R513",
+          "name": "CoolSprings Galleria",
+          "url": "https://www.apple.com/retail/coolspringsgalleria/"
+        },
+        {
+          "city": "Germantown",
+          "id": "R020",
+          "name": "Saddle Creek",
+          "url": "https://www.apple.com/retail/saddlecreek/"
+        },
+        {
+          "city": "Knoxville",
+          "id": "R203",
+          "name": "West Town Mall",
+          "url": "https://www.apple.com/retail/westtownmall/"
+        },
+        {
+          "city": "Nashville",
+          "id": "R123",
+          "name": "Green Hills",
+          "url": "https://www.apple.com/retail/greenhills/"
+        },
+        {
+          "city": "Nashville",
+          "id": "R133",
+          "name": "Downtown Nashville",
+          "url": "https://www.apple.com/retail/downtownnashville/"
+        },
+        {
+          "city": "Austin",
+          "id": "R216",
+          "name": "Domain NORTHSIDE",
+          "url": "https://www.apple.com/retail/domainnorthside/"
+        },
+        {
+          "city": "Austin",
+          "id": "R085",
+          "name": "Barton Creek",
+          "url": "https://www.apple.com/retail/bartoncreek/"
+        },
+        {
+          "city": "Dallas",
+          "id": "R144",
+          "name": "NorthPark Center",
+          "url": "https://www.apple.com/retail/northparkcenter/"
+        },
+        {
+          "city": "Dallas",
+          "id": "R042",
+          "name": "Knox Street",
+          "url": "https://www.apple.com/retail/knoxstreet/"
+        },
+        {
+          "city": "Dallas",
+          "id": "R746",
+          "name": "Galleria Dallas",
+          "url": "https://www.apple.com/retail/galleriadallas/"
+        },
+        {
+          "city": "El Paso",
+          "id": "R492",
+          "name": "Cielo Vista Mall",
+          "url": "https://www.apple.com/retail/cielovistamall/"
+        },
+        {
+          "city": "Fort Worth",
+          "id": "R316",
+          "name": "University Park Village",
+          "url": "https://www.apple.com/retail/universityparkvillage/"
+        },
+        {
+          "city": "Friendswood",
+          "id": "R204",
+          "name": "Baybrook",
+          "url": "https://www.apple.com/retail/baybrook/"
+        },
+        {
+          "city": "Houston",
+          "id": "R164",
+          "name": "Memorial City",
+          "url": "https://www.apple.com/retail/memorialcity/"
+        },
+        {
+          "city": "Houston",
+          "id": "R058",
+          "name": "Houston Galleria",
+          "url": "https://www.apple.com/retail/houstongalleria/"
+        },
+        {
+          "city": "Houston",
+          "id": "R321",
+          "name": "Willowbrook Mall",
+          "url": "https://www.apple.com/retail/willowbrookmall/"
+        },
+        {
+          "city": "Houston",
+          "id": "R437",
+          "name": "Highland Village",
+          "url": "https://www.apple.com/retail/highlandvillage/"
+        },
+        {
+          "city": "San Antonio",
+          "id": "R290",
+          "name": "North Star",
+          "url": "https://www.apple.com/retail/northstar/"
+        },
+        {
+          "city": "San Antonio",
+          "id": "R131",
+          "name": "La Cantera",
+          "url": "https://www.apple.com/retail/lacantera/"
+        },
+        {
+          "city": "Southlake",
+          "id": "R151",
+          "name": "Southlake Town Square",
+          "url": "https://www.apple.com/retail/southlaketownsquare/"
+        },
+        {
+          "city": "Sugar Land",
+          "id": "R205",
+          "name": "First Colony Mall",
+          "url": "https://www.apple.com/retail/firstcolonymall/"
+        },
+        {
+          "city": "The Woodlands",
+          "id": "R126",
+          "name": "The Woodlands",
+          "url": "https://www.apple.com/retail/thewoodlands/"
+        },
+        {
+          "city": "Farmington",
+          "id": "R599",
+          "name": "Station Park",
+          "url": "https://www.apple.com/retail/stationpark/"
+        },
+        {
+          "city": "Murray",
+          "id": "R461",
+          "name": "Fashion Place",
+          "url": "https://www.apple.com/retail/fashionplace/"
+        },
+        {
+          "city": "Salt Lake City",
+          "id": "R125",
+          "name": "City Creek Center",
+          "url": "https://www.apple.com/retail/citycreekcenter/"
+        },
+        {
+          "city": "Arlington",
+          "id": "R036",
+          "name": "Clarendon",
+          "url": "https://www.apple.com/retail/clarendon/"
+        },
+        {
+          "city": "Arlington",
+          "id": "R129",
+          "name": "Pentagon City",
+          "url": "https://www.apple.com/retail/pentagoncity/"
+        },
+        {
+          "city": "Fairfax",
+          "id": "R221",
+          "name": "Fairfax Corner",
+          "url": "https://www.apple.com/retail/fairfaxcorner/"
+        },
+        {
+          "city": "McLean",
+          "id": "R010",
+          "name": "Tysons Corner",
+          "url": "https://www.apple.com/retail/tysonscorner/"
+        },
+        {
+          "city": "Reston",
+          "id": "R271",
+          "name": "Reston",
+          "url": "https://www.apple.com/retail/reston/"
+        },
+        {
+          "city": "Richmond",
+          "id": "R078",
+          "name": "Short Pump Town Center",
+          "url": "https://www.apple.com/retail/shortpumptowncenter/"
+        },
+        {
+          "city": "Virginia Beach",
+          "id": "R614",
+          "name": "Lynnhaven Mall",
+          "url": "https://www.apple.com/retail/lynnhavenmall/"
+        },
+        {
+          "city": "Woodbridge",
+          "id": "R598",
+          "name": "Stonebridge Potomac Town Center",
+          "url": "https://www.apple.com/retail/stonebridgepotomactowncenter/"
+        },
+        {
+          "city": "Bellevue",
+          "id": "R003",
+          "name": "Bellevue Square",
+          "url": "https://www.apple.com/retail/bellevuesquare/"
+        },
+        {
+          "city": "Lynnwood",
+          "id": "R100",
+          "name": "Alderwood",
+          "url": "https://www.apple.com/retail/alderwood/"
+        },
+        {
+          "city": "Seattle",
+          "id": "R072",
+          "name": "University Village",
+          "url": "https://www.apple.com/retail/universityvillage/"
+        },
+        {
+          "city": "Spokane",
+          "id": "R420",
+          "name": "River Park Square",
+          "url": "https://www.apple.com/retail/riverparksquare/"
+        },
+        {
+          "city": "Tacoma",
+          "id": "R339",
+          "name": "Tacoma Mall",
+          "url": "https://www.apple.com/retail/tacomamall/"
+        },
+        {
+          "city": "Tukwila",
+          "id": "R106",
+          "name": "Southcenter",
+          "url": "https://www.apple.com/retail/southcenter/"
+        },
+        {
+          "city": "Glendale",
+          "id": "R257",
+          "name": "Bayshore",
+          "url": "https://www.apple.com/retail/bayshore/"
+        },
+        {
+          "city": "Madison",
+          "id": "R229",
+          "name": "Hilldale",
+          "url": "https://www.apple.com/retail/hilldale/"
+        },
+        {
+          "city": "Wauwatosa",
+          "id": "R059",
+          "name": "Mayfair",
+          "url": "https://www.apple.com/retail/mayfair/"
+        }
+      ]
+    },
+    {
+      "code": "AU",
+      "locale": "en_AU",
+      "name": "Australia",
+      "stores": [
+        {
+          "city": "Canberra",
+          "id": "R483",
+          "name": "Canberra",
+          "url": "https://www.apple.com/au/retail/canberra/"
+        },
+        {
+          "city": "Bondi Junction",
+          "id": "R254",
+          "name": "Bondi",
+          "url": "https://www.apple.com/au/retail/bondi/"
+        },
+        {
+          "city": "Broadway",
+          "id": "R523",
+          "name": "Broadway",
+          "url": "https://www.apple.com/au/retail/broadway/"
+        },
+        {
+          "city": "Castle Hill",
+          "id": "R344",
+          "name": "Castle Towers",
+          "url": "https://www.apple.com/au/retail/castletowers/"
+        },
+        {
+          "city": "Charlestown",
+          "id": "R385",
+          "name": "Charlestown",
+          "url": "https://www.apple.com/au/retail/charlestown/"
+        },
+        {
+          "city": "Chatswood",
+          "id": "R253",
+          "name": "Chatswood Chase",
+          "url": "https://www.apple.com/au/retail/chatswoodchase/"
+        },
+        {
+          "city": "Miranda",
+          "id": "R606",
+          "name": "Miranda",
+          "url": "https://www.apple.com/au/retail/miranda/"
+        },
+        {
+          "city": "Penrith",
+          "id": "R440",
+          "name": "Penrith",
+          "url": "https://www.apple.com/au/retail/penrith/"
+        },
+        {
+          "city": "Sydney",
+          "id": "R238",
+          "name": "Sydney",
+          "url": "https://www.apple.com/au/retail/sydney/"
+        },
+        {
+          "city": "Brisbane City",
+          "id": "R466",
+          "name": "Brisbane",
+          "url": "https://www.apple.com/au/retail/brisbane/"
+        },
+        {
+          "city": "Carindale",
+          "id": "R509",
+          "name": "Carindale",
+          "url": "https://www.apple.com/au/retail/carindale/"
+        },
+        {
+          "city": "Chermside",
+          "id": "R384",
+          "name": "Chermside",
+          "url": "https://www.apple.com/au/retail/chermside/"
+        },
+        {
+          "city": "Robina",
+          "id": "R351",
+          "name": "Robina",
+          "url": "https://www.apple.com/au/retail/robina/"
+        },
+        {
+          "city": "Adelaide",
+          "id": "R405",
+          "name": "Rundle Place",
+          "url": "https://www.apple.com/au/retail/rundleplace/"
+        },
+        {
+          "city": "Chadstone",
+          "id": "R180",
+          "name": "Chadstone",
+          "url": "https://www.apple.com/au/retail/chadstone/"
+        },
+        {
+          "city": "Cheltenham",
+          "id": "R343",
+          "name": "Southland",
+          "url": "https://www.apple.com/au/retail/southland/"
+        },
+        {
+          "city": "Doncaster",
+          "id": "R342",
+          "name": "Doncaster",
+          "url": "https://www.apple.com/au/retail/doncaster/"
+        },
+        {
+          "city": "Fountain Gate",
+          "id": "R530",
+          "name": "Fountain Gate",
+          "url": "https://www.apple.com/au/retail/fountaingate/"
+        },
+        {
+          "city": "Maribyrnong",
+          "id": "R504",
+          "name": "Highpoint",
+          "url": "https://www.apple.com/au/retail/highpoint/"
+        },
+        {
+          "city": "Booragoon",
+          "id": "R508",
+          "name": "Booragoon",
+          "url": "https://www.apple.com/au/retail/booragoon/"
+        },
+        {
+          "city": "Perth",
+          "id": "R386",
+          "name": "Perth City",
+          "url": "https://www.apple.com/au/retail/perthcity/"
+        }
+      ]
+    },
+    {
+      "code": "AT",
+      "locale": "en_AT",
+      "name": "Austria",
+      "stores": [
+        {
+          "city": "Vienna",
+          "id": "R687",
+          "name": "Kärntner Straße",
+          "url": "https://www.apple.com/at/retail/kaerntnerstrasse/"
+        }
+      ]
+    },
+    {
+      "code": "BE",
+      "locale": "en_BE",
+      "name": "Belgium",
+      "stores": [
+        {
+          "city": "Brussels",
+          "id": "R486",
+          "name": "Brussels",
+          "url": "https://www.apple.com/befr/retail/brussels/"
+        }
+      ]
+    },
+    {
+      "code": "BR",
+      "locale": "en_BR",
+      "name": "Brazil",
+      "stores": [
+        {
+          "city": "Barra da Tijuca",
+          "id": "R567",
+          "name": "VillageMall",
+          "url": "https://www.apple.com/br/retail/villagemall/"
+        },
+        {
+          "city": "São Paulo",
+          "id": "R608",
+          "name": "Morumbi",
+          "url": "https://www.apple.com/br/retail/morumbi/"
+        }
+      ]
+    },
+    {
+      "code": "CA",
+      "locale": "en_CA",
+      "name": "Canada",
+      "stores": [
+        {
+          "city": "Calgary",
+          "id": "R301",
+          "name": "Market Mall",
+          "url": "https://www.apple.com/ca/retail/marketmall/"
+        },
+        {
+          "city": "Calgary",
+          "id": "R209",
+          "name": "Chinook Centre",
+          "url": "https://www.apple.com/ca/retail/chinookcentre/"
+        },
+        {
+          "city": "Edmonton",
+          "id": "R411",
+          "name": "Southgate Centre",
+          "url": "https://www.apple.com/ca/retail/southgatecentre/"
+        },
+        {
+          "city": "Edmonton",
+          "id": "R273",
+          "name": "West Edmonton",
+          "url": "https://www.apple.com/ca/retail/westedmonton/"
+        },
+        {
+          "city": "Burnaby",
+          "id": "R460",
+          "name": "Metrotown",
+          "url": "https://www.apple.com/ca/retail/metrotown/"
+        },
+        {
+          "city": "Coquitlam",
+          "id": "R488",
+          "name": "Coquitlam Centre",
+          "url": "https://www.apple.com/ca/retail/coquitlamcentre/"
+        },
+        {
+          "city": "Richmond",
+          "id": "R421",
+          "name": "Richmond Centre",
+          "url": "https://www.apple.com/ca/retail/richmondcentre/"
+        },
+        {
+          "city": "Surrey",
+          "id": "R601",
+          "name": "Guildford Town Centre",
+          "url": "https://www.apple.com/ca/retail/guildfordtowncentre/"
+        },
+        {
+          "city": "Vancouver",
+          "id": "R280",
+          "name": "Pacific Centre",
+          "url": "https://www.apple.com/ca/retail/pacificcentre/"
+        },
+        {
+          "city": "Winnipeg",
+          "id": "R369",
+          "name": "Polo Park",
+          "url": "https://www.apple.com/ca/retail/polopark/"
+        },
+        {
+          "city": "Halifax",
+          "id": "R514",
+          "name": "Halifax Shopping Centre",
+          "url": "https://www.apple.com/ca/retail/halifaxshoppingcentre/"
+        },
+        {
+          "city": "Burlington",
+          "id": "R447",
+          "name": "Mapleview Centre",
+          "url": "https://www.apple.com/ca/retail/mapleviewcentre/"
+        },
+        {
+          "city": "London",
+          "id": "R489",
+          "name": "Masonville",
+          "url": "https://www.apple.com/ca/retail/masonville/"
+        },
+        {
+          "city": "Markham",
+          "id": "R515",
+          "name": "Markville Shopping Centre",
+          "url": "https://www.apple.com/ca/retail/markvilleshoppingcentre/"
+        },
+        {
+          "city": "Mississauga",
+          "id": "R350",
+          "name": "Square One",
+          "url": "https://www.apple.com/ca/retail/squareone/"
+        },
+        {
+          "city": "Newmarket",
+          "id": "R429",
+          "name": "Upper Canada Mall",
+          "url": "https://www.apple.com/ca/retail/uppercanadamall/"
+        },
+        {
+          "city": "Ottawa",
+          "id": "R332",
+          "name": "Rideau",
+          "url": "https://www.apple.com/ca/retail/rideau/"
+        },
+        {
+          "city": "Ottawa",
+          "id": "R490",
+          "name": "Bayshore Shopping Centre",
+          "url": "https://www.apple.com/ca/retail/bayshoreshoppingcentre/"
+        },
+        {
+          "city": "Toronto",
+          "id": "R120",
+          "name": "Yorkdale",
+          "url": "https://www.apple.com/ca/retail/yorkdale/"
+        },
+        {
+          "city": "Toronto",
+          "id": "R208",
+          "name": "Sherway Gardens",
+          "url": "https://www.apple.com/ca/retail/sherwaygardens/"
+        },
+        {
+          "city": "Toronto",
+          "id": "R333",
+          "name": "Fairview",
+          "url": "https://www.apple.com/ca/retail/fairview/"
+        },
+        {
+          "city": "Toronto",
+          "id": "R121",
+          "name": "Eaton Centre",
+          "url": "https://www.apple.com/ca/retail/eatoncentre/"
+        },
+        {
+          "city": "Waterloo",
+          "id": "R464",
+          "name": "Conestoga",
+          "url": "https://www.apple.com/ca/retail/conestoga/"
+        },
+        {
+          "city": "Brossard",
+          "id": "R512",
+          "name": "DIX30",
+          "url": "https://www.apple.com/ca/retail/dix30/"
+        },
+        {
+          "city": "Laval",
+          "id": "R207",
+          "name": "Carrefour Laval",
+          "url": "https://www.apple.com/ca/retail/carrefourlaval/"
+        },
+        {
+          "city": "Montreal",
+          "id": "R248",
+          "name": "Sainte-Catherine",
+          "url": "https://www.apple.com/ca/retail/saintecatherine/"
+        },
+        {
+          "city": "Pointe-Claire",
+          "id": "R392",
+          "name": "Fairview Pointe-Claire",
+          "url": "https://www.apple.com/ca/retail/fairviewpointeclaire/"
+        },
+        {
+          "city": "Quebec City",
+          "id": "R412",
+          "name": "Place Ste-Foy",
+          "url": "https://www.apple.com/ca/retail/placestefoy/"
+        }
+      ]
+    },
+    {
+      "code": "CN",
+      "locale": "en_CN",
+      "name": "China mainland",
+      "stores": [
+        {
+          "city": "Hefei",
+          "id": "R765",
+          "name": "MixC Hefei",
+          "url": "https://www.apple.com.cn/retail/mixchefei/"
+        },
+        {
+          "city": "Beijing",
+          "id": "R388",
+          "name": "Xidan Joy City",
+          "url": "https://www.apple.com.cn/retail/xidanjoycity/"
+        },
+        {
+          "city": "Beijing",
+          "id": "R792",
+          "name": "Livat Beijing",
+          "url": "https://www.apple.com.cn/retail/livatbeijing/"
+        },
+        {
+          "city": "Beijing",
+          "id": "R645",
+          "name": "Chaoyang Joy City",
+          "url": "https://www.apple.com.cn/retail/chaoyangjoycity/"
+        },
+        {
+          "city": "Beijing",
+          "id": "R448",
+          "name": "Wangfujing",
+          "url": "https://www.apple.com.cn/retail/wangfujing/"
+        },
+        {
+          "city": "Beijing",
+          "id": "R479",
+          "name": "China Central Mall",
+          "url": "https://www.apple.com.cn/retail/chinacentralmall/"
+        },
+        {
+          "city": "Beijing",
+          "id": "R320",
+          "name": "Sanlitun",
+          "url": "https://www.apple.com.cn/retail/sanlitun/"
+        },
+        {
+          "city": "Chongqing",
+          "id": "R480",
+          "name": "Jiefangbei",
+          "url": "https://www.apple.com.cn/retail/jiefangbei/"
+        },
+        {
+          "city": "Chongqing",
+          "id": "R573",
+          "name": "MixC Chongqing",
+          "url": "https://www.apple.com.cn/retail/mixcchongqing/"
+        },
+        {
+          "city": "Chongqing",
+          "id": "R476",
+          "name": "Paradise Walk Chongqing",
+          "url": "https://www.apple.com.cn/retail/paradisewalkchongqing/"
+        },
+        {
+          "city": "Fuzhou",
+          "id": "R646",
+          "name": "Tahoe Plaza",
+          "url": "https://www.apple.com.cn/retail/tahoeplaza/"
+        },
+        {
+          "city": "Xiamen",
+          "id": "R644",
+          "name": "Xiamen Lifestyle Center",
+          "url": "https://www.apple.com.cn/retail/xiamenlifestylecenter/"
+        },
+        {
+          "city": "Guangzhou",
+          "id": "R639",
+          "name": "Zhujiang New Town",
+          "url": "https://www.apple.com.cn/retail/zhujiangnewtown/"
+        },
+        {
+          "city": "Guangzhou",
+          "id": "R577",
+          "name": "Parc Central",
+          "url": "https://www.apple.com.cn/retail/parccentral/"
+        },
+        {
+          "city": "Shenzhen",
+          "id": "R761",
+          "name": "MixC Shenzhen",
+          "url": "https://www.apple.com.cn/retail/mixcshenzhen/"
+        },
+        {
+          "city": "Shenzhen",
+          "id": "R484",
+          "name": "Holiday Plaza Shenzhen",
+          "url": "https://www.apple.com.cn/retail/holidayplazashenzhen/"
+        },
+        {
+          "city": "Shenzhen",
+          "id": "R793",
+          "name": "Uniwalk Qianhai",
+          "url": "https://www.apple.com.cn/retail/uniwalkqianhai/"
+        },
+        {
+          "city": "Nanning",
+          "id": "R571",
+          "name": "MixC Nanning",
+          "url": "https://www.apple.com.cn/retail/mixcnanning/"
+        },
+        {
+          "city": "Zhengzhou",
+          "id": "R572",
+          "name": "MixC Zhengzhou",
+          "url": "https://www.apple.com.cn/retail/mixczhengzhou/"
+        },
+        {
+          "city": "Wuhan",
+          "id": "R575",
+          "name": "Wuhan",
+          "url": "https://www.apple.com.cn/retail/wuhan/"
+        },
+        {
+          "city": "Changsha",
+          "id": "R617",
+          "name": "Changsha",
+          "url": "https://www.apple.com.cn/retail/changsha/"
+        },
+        {
+          "city": "Nanjing",
+          "id": "R643",
+          "name": "Wonder City",
+          "url": "https://www.apple.com.cn/retail/wondercity/"
+        },
+        {
+          "city": "Nanjing",
+          "id": "R493",
+          "name": "Xinjiekou",
+          "url": "https://www.apple.com.cn/retail/xinjiekou/"
+        },
+        {
+          "city": "Nanjing",
+          "id": "R703",
+          "name": "Xuanwu Lake",
+          "url": "https://www.apple.com.cn/retail/xuanwulake/"
+        },
+        {
+          "city": "Suzhou",
+          "id": "R688",
+          "name": "Suzhou",
+          "url": "https://www.apple.com.cn/retail/suzhou/"
+        },
+        {
+          "city": "Wuxi",
+          "id": "R574",
+          "name": "Center 66 Wuxi",
+          "url": "https://www.apple.com.cn/retail/center66wuxi/"
+        },
+        {
+          "city": "Dalian",
+          "id": "R609",
+          "name": "Olympia 66 Dalian",
+          "url": "https://www.apple.com.cn/retail/olympia66dalian/"
+        },
+        {
+          "city": "Shenyang",
+          "id": "R534",
+          "name": "Zhongjie Joy City",
+          "url": "https://www.apple.com.cn/retail/zhongjiejoycity/"
+        },
+        {
+          "city": "Shenyang",
+          "id": "R576",
+          "name": "MixC Shenyang",
+          "url": "https://www.apple.com.cn/retail/mixcshenyang/"
+        },
+        {
+          "city": "Jinan",
+          "id": "R648",
+          "name": "Parc 66 Jinan",
+          "url": "https://www.apple.com.cn/retail/parc66jinan/"
+        },
+        {
+          "city": "Qingdao",
+          "id": "R557",
+          "name": "MixC Qingdao",
+          "url": "https://www.apple.com.cn/retail/mixcqingdao/"
+        },
+        {
+          "city": "Shanghai",
+          "id": "R683",
+          "name": "Global Harbor",
+          "url": "https://www.apple.com.cn/retail/globalharbor/"
+        },
+        {
+          "city": "Shanghai",
+          "id": "R390",
+          "name": "Hong Kong Plaza",
+          "url": "https://www.apple.com.cn/retail/hongkongplaza/"
+        },
+        {
+          "city": "Shanghai",
+          "id": "R581",
+          "name": "Wujiaochang",
+          "url": "https://www.apple.com.cn/retail/wujiaochang/"
+        },
+        {
+          "city": "Shanghai",
+          "id": "R401",
+          "name": "Shanghai iapm",
+          "url": "https://www.apple.com.cn/retail/shanghaiiapm/"
+        },
+        {
+          "city": "Shanghai",
+          "id": "R389",
+          "name": "Pudong",
+          "url": "https://www.apple.com.cn/retail/pudong/"
+        },
+        {
+          "city": "Shanghai",
+          "id": "R678",
+          "name": "Jing'an",
+          "url": "https://www.apple.com.cn/retail/jingan/"
+        },
+        {
+          "city": "Shanghai",
+          "id": "R359",
+          "name": "Nanjing East",
+          "url": "https://www.apple.com.cn/retail/nanjingeast/"
+        },
+        {
+          "city": "Shanghai",
+          "id": "R705",
+          "name": "Qibao",
+          "url": "https://www.apple.com.cn/retail/qibao/"
+        },
+        {
+          "city": "Chengdu",
+          "id": "R502",
+          "name": "MixC Chengdu",
+          "url": "https://www.apple.com.cn/retail/mixcchengdu/"
+        },
+        {
+          "city": "Chengdu",
+          "id": "R580",
+          "name": "Taikoo Li Chengdu",
+          "url": "https://www.apple.com.cn/retail/taikoolichengdu/"
+        },
+        {
+          "city": "Tianjin",
+          "id": "R637",
+          "name": "Tianjin Joy City",
+          "url": "https://www.apple.com.cn/retail/tianjinjoycity/"
+        },
+        {
+          "city": "Tianjin",
+          "id": "R638",
+          "name": "MixC Tianjin",
+          "url": "https://www.apple.com.cn/retail/mixctianjin/"
+        },
+        {
+          "city": "Tianjin",
+          "id": "R579",
+          "name": "Riverside 66 Tianjin",
+          "url": "https://www.apple.com.cn/retail/riverside66tianjin/"
+        },
+        {
+          "city": "Kunming",
+          "id": "R670",
+          "name": "Kunming",
+          "url": "https://www.apple.com.cn/retail/kunming/"
+        },
+        {
+          "city": "Hangzhou",
+          "id": "R471",
+          "name": "West Lake",
+          "url": "https://www.apple.com.cn/retail/westlake/"
+        },
+        {
+          "city": "Hangzhou",
+          "id": "R532",
+          "name": "MixC Hangzhou",
+          "url": "https://www.apple.com.cn/retail/mixchangzhou/"
+        },
+        {
+          "city": "Ningbo",
+          "id": "R531",
+          "name": "Tianyi Square",
+          "url": "https://www.apple.com.cn/retail/tianyisquare/"
+        },
+        {
+          "city": "Wenzhou",
+          "id": "R766",
+          "name": "MixC Wenzhou",
+          "url": "https://www.apple.com.cn/retail/mixcwenzhou/"
+        }
+      ]
+    },
+    {
+      "code": "FR",
+      "locale": "en_FR",
+      "name": "France",
+      "stores": [
+        {
+          "city": "Nice",
+          "id": "R395",
+          "name": "CAP 3000",
+          "url": "https://www.apple.com/fr/retail/cap3000/"
+        },
+        {
+          "city": "Strasbourg",
+          "id": "R394",
+          "name": "Strasbourg",
+          "url": "https://www.apple.com/fr/retail/strasbourg/"
+        },
+        {
+          "city": "Aix-en-Provence",
+          "id": "R477",
+          "name": "Aix-en-Provence",
+          "url": "https://www.apple.com/fr/retail/aix-en-provence/"
+        },
+        {
+          "city": "Marseille",
+          "id": "R357",
+          "name": "Marseille",
+          "url": "https://www.apple.com/fr/retail/marseille/"
+        },
+        {
+          "city": "Dijon",
+          "id": "R522",
+          "name": "La Toison d’Or",
+          "url": "https://www.apple.com/fr/retail/latoisondor/"
+        },
+        {
+          "city": "Bordeaux",
+          "id": "R424",
+          "name": "Sainte-Catherine",
+          "url": "https://www.apple.com/fr/retail/sainte-catherine/"
+        },
+        {
+          "city": "Puteaux - la Defense",
+          "id": "R178",
+          "name": "Les Quatre Temps",
+          "url": "https://www.apple.com/fr/retail/lesquatretemps/"
+        },
+        {
+          "city": "Montpellier",
+          "id": "R367",
+          "name": "Odysseum",
+          "url": "https://www.apple.com/fr/retail/odysseum/"
+        },
+        {
+          "city": "Saint Herblain",
+          "id": "R470",
+          "name": "Atlantis",
+          "url": "https://www.apple.com/fr/retail/atlantis/"
+        },
+        {
+          "city": "Lille",
+          "id": "R376",
+          "name": "Lille",
+          "url": "https://www.apple.com/fr/retail/lille/"
+        },
+        {
+          "city": "Paris",
+          "id": "R566",
+          "name": "Marché Saint-Germain",
+          "url": "https://www.apple.com/fr/retail/marchesaintgermain/"
+        },
+        {
+          "city": "Paris",
+          "id": "R277",
+          "name": "Opéra",
+          "url": "https://www.apple.com/fr/retail/opera/"
+        },
+        {
+          "city": "Lyon",
+          "id": "R373",
+          "name": "Part-Dieu",
+          "url": "https://www.apple.com/fr/retail/part-dieu/"
+        },
+        {
+          "city": "Lyon",
+          "id": "R469",
+          "name": "Confluence",
+          "url": "https://www.apple.com/fr/retail/confluence/"
+        },
+        {
+          "city": "Rosny-Sous-Bois",
+          "id": "R536",
+          "name": "Rosny 2",
+          "url": "https://www.apple.com/fr/retail/rosny2/"
+        },
+        {
+          "city": "Lieusaint",
+          "id": "R438",
+          "name": "Carré Sénart",
+          "url": "https://www.apple.com/fr/retail/carresenart/"
+        },
+        {
+          "city": "Marne-la-Vallee",
+          "id": "R425",
+          "name": "Val d’Europe",
+          "url": "https://www.apple.com/fr/retail/valdeurope/"
+        },
+        {
+          "city": "Le Chesnay",
+          "id": "R374",
+          "name": "Parly 2",
+          "url": "https://www.apple.com/fr/retail/parly2/"
+        },
+        {
+          "city": "Velizy-Villacoublay",
+          "id": "R315",
+          "name": "Vélizy 2",
+          "url": "https://www.apple.com/fr/retail/velizy2/"
+        },
+        {
+          "city": "Paris",
+          "id": "R675",
+          "name": "Champs-Élysées",
+          "url": "https://www.apple.com/fr/retail/champs-elysees/"
+        }
+      ]
+    },
+    {
+      "code": "DE",
+      "locale": "en_DE",
+      "name": "Germany",
+      "stores": [
+        {
+          "city": "Sindelfingen",
+          "id": "R519",
+          "name": "Sindelfingen",
+          "url": "https://www.apple.com/de/retail/sindelfingen/"
+        },
+        {
+          "city": "Augsburg",
+          "id": "R431",
+          "name": "City-Galerie",
+          "url": "https://www.apple.com/de/retail/city-galerie/"
+        },
+        {
+          "city": "Munich",
+          "id": "R045",
+          "name": "Rosenstrasse",
+          "url": "https://www.apple.com/de/retail/rosenstrasse/"
+        },
+        {
+          "city": "Munich",
+          "id": "R521",
+          "name": "OEZ",
+          "url": "https://www.apple.com/de/retail/oez/"
+        },
+        {
+          "city": "Berlin",
+          "id": "R358",
+          "name": "Kurfürstendamm",
+          "url": "https://www.apple.com/de/retail/kurfuerstendamm/"
+        },
+        {
+          "city": "Berlin",
+          "id": "R443",
+          "name": "Rosenthaler Strasse",
+          "url": "https://www.apple.com/de/retail/rosenthalerstrasse/"
+        },
+        {
+          "city": "Hamburg",
+          "id": "R366",
+          "name": "Alstertal",
+          "url": "https://www.apple.com/de/retail/alstertal/"
+        },
+        {
+          "city": "Hamburg",
+          "id": "R396",
+          "name": "Jungfernstieg",
+          "url": "https://www.apple.com/de/retail/jungfernstieg/"
+        },
+        {
+          "city": "Frankfurt",
+          "id": "R352",
+          "name": "Grosse Bockenheimer Strasse",
+          "url": "https://www.apple.com/de/retail/grossebockenheimerstrasse/"
+        },
+        {
+          "city": "Sulzbach",
+          "id": "R434",
+          "name": "MTZ",
+          "url": "https://www.apple.com/de/retail/mtz/"
+        },
+        {
+          "city": "Hannover",
+          "id": "R455",
+          "name": "Hannover",
+          "url": "https://www.apple.com/de/retail/hannover/"
+        },
+        {
+          "city": "Cologne",
+          "id": "R520",
+          "name": "Rhein Center",
+          "url": "https://www.apple.com/de/retail/rheincenter/"
+        },
+        {
+          "city": "Cologne",
+          "id": "R559",
+          "name": "Schildergasse",
+          "url": "https://www.apple.com/de/retail/schildergasse/"
+        },
+        {
+          "city": "Düsseldorf",
+          "id": "R331",
+          "name": "Düsseldorf",
+          "url": "https://www.apple.com/de/retail/duesseldorf/"
+        },
+        {
+          "city": "Oberhausen",
+          "id": "R403",
+          "name": "CentrO",
+          "url": "https://www.apple.com/de/retail/centro/"
+        },
+        {
+          "city": "Dresden",
+          "id": "R430",
+          "name": "Altmarkt-Galerie",
+          "url": "https://www.apple.com/de/retail/altmarkt-galerie/"
+        }
+      ]
+    },
+    {
+      "code": "HK",
+      "locale": "en_HK",
+      "name": "Hong Kong",
+      "stores": [
+        {
+          "city": "Causeway Bay",
+          "id": "R409",
+          "name": "Causeway Bay",
+          "url": "https://www.apple.com/hk/en/retail/causewaybay/"
+        },
+        {
+          "city": "Central",
+          "id": "R428",
+          "name": "ifc mall",
+          "url": "https://www.apple.com/hk/en/retail/ifcmall/"
+        },
+        {
+          "city": "Kowloon Tong",
+          "id": "R485",
+          "name": "Festival Walk",
+          "url": "https://www.apple.com/hk/en/retail/festivalwalk/"
+        },
+        {
+          "city": "Kwun Tong",
+          "id": "R673",
+          "name": "apm Hong Kong",
+          "url": "https://www.apple.com/hk/en/retail/apmhongkong/"
+        },
+        {
+          "city": "Sha Tin",
+          "id": "R610",
+          "name": "New Town Plaza",
+          "url": "https://www.apple.com/hk/en/retail/newtownplaza/"
+        },
+        {
+          "city": "Tsim Sha Tsui",
+          "id": "R499",
+          "name": "Canton Road",
+          "url": "https://www.apple.com/hk/en/retail/cantonroad/"
+        }
+      ]
+    },
+    {
+      "code": "IN",
+      "locale": "en_IN",
+      "name": "India",
+      "stores": [
+        {
+          "city": "New Delhi",
+          "id": "R756",
+          "name": "Saket",
+          "url": "https://www.apple.com/in/retail/saket/"
+        },
+        {
+          "city": "Bengaluru",
+          "id": "R790",
+          "name": "Hebbal",
+          "url": "https://www.apple.com/in/retail/hebbal/"
+        },
+        {
+          "city": "Mumbai",
+          "id": "R744",
+          "name": "BKC",
+          "url": "https://www.apple.com/in/retail/bkc/"
+        },
+        {
+          "city": "Mumbai",
+          "id": "R757",
+          "name": "Borivali",
+          "url": "https://www.apple.com/in/retail/borivali/"
+        },
+        {
+          "city": "Pune",
+          "id": "R788",
+          "name": "Koregaon Park",
+          "url": "https://www.apple.com/in/retail/koregaonpark/"
+        },
+        {
+          "city": "Noida",
+          "id": "R787",
+          "name": "Noida",
+          "url": "https://www.apple.com/in/retail/noida/"
+        }
+      ]
+    },
+    {
+      "code": "IT",
+      "locale": "en_IT",
+      "name": "Italy",
+      "stores": [
+        {
+          "city": "Orio al Serio",
+          "id": "R418",
+          "name": "Oriocenter",
+          "url": "https://www.apple.com/it/retail/oriocenter/"
+        },
+        {
+          "city": "Bologna",
+          "id": "R427",
+          "name": "Via Rizzoli",
+          "url": "https://www.apple.com/it/retail/viarizzoli/"
+        },
+        {
+          "city": "Lonato",
+          "id": "R547",
+          "name": "il Leone",
+          "url": "https://www.apple.com/it/retail/illeone/"
+        },
+        {
+          "city": "Marcianise",
+          "id": "R453",
+          "name": "Campania",
+          "url": "https://www.apple.com/it/retail/campania/"
+        },
+        {
+          "city": "Misterbianco",
+          "id": "R454",
+          "name": "Centro Sicilia",
+          "url": "https://www.apple.com/it/retail/centrosicilia/"
+        },
+        {
+          "city": "Campi Bisenzio",
+          "id": "R449",
+          "name": "I Gigli",
+          "url": "https://www.apple.com/it/retail/igigli/"
+        },
+        {
+          "city": "Florence",
+          "id": "R602",
+          "name": "Firenze",
+          "url": "https://www.apple.com/it/retail/firenze/"
+        },
+        {
+          "city": "Milan",
+          "id": "R667",
+          "name": "Piazza Liberty",
+          "url": "https://www.apple.com/it/retail/piazzaliberty/"
+        },
+        {
+          "city": "Carugate",
+          "id": "R365",
+          "name": "Carosello",
+          "url": "https://www.apple.com/it/retail/carosello/"
+        },
+        {
+          "city": "Rozzano",
+          "id": "R441",
+          "name": "Fiordaliso",
+          "url": "https://www.apple.com/it/retail/fiordaliso/"
+        },
+        {
+          "city": "Turin",
+          "id": "R442",
+          "name": "Via Roma",
+          "url": "https://www.apple.com/it/retail/viaroma/"
+        },
+        {
+          "city": "Rimini",
+          "id": "R564",
+          "name": "Le Befane",
+          "url": "https://www.apple.com/it/retail/lebefane/"
+        },
+        {
+          "city": "Roma",
+          "id": "R562",
+          "name": "Euroma2",
+          "url": "https://www.apple.com/it/retail/euroma2/"
+        },
+        {
+          "city": "Roma Bufalotta",
+          "id": "R381",
+          "name": "Porta di Roma",
+          "url": "https://www.apple.com/it/retail/portadiroma/"
+        },
+        {
+          "city": "Rome",
+          "id": "R382",
+          "name": "Via del Corso",
+          "url": "https://www.apple.com/it/retail/viadelcorso/"
+        },
+        {
+          "city": "Grugliasco",
+          "id": "R278",
+          "name": "Le Gru",
+          "url": "https://www.apple.com/it/retail/legru/"
+        },
+        {
+          "city": "Mestre",
+          "id": "R625",
+          "name": "Nave de Vero",
+          "url": "https://www.apple.com/it/retail/navedevero/"
+        }
+      ]
+    },
+    {
+      "code": "JP",
+      "locale": "en_JP",
+      "name": "Japan",
+      "stores": [
+        {
+          "city": "Nagoya-shi Nagoya Sakae",
+          "id": "R005",
+          "name": "Nagoya Sakae",
+          "url": "https://www.apple.com/jp/retail/nagoyasakae/"
+        },
+        {
+          "city": "Fukuoka-shi Fukuoka",
+          "id": "R048",
+          "name": "Fukuoka",
+          "url": "https://www.apple.com/jp/retail/fukuoka/"
+        },
+        {
+          "city": "Kawasaki-shi Kawasaki",
+          "id": "R710",
+          "name": "Kawasaki",
+          "url": "https://www.apple.com/jp/retail/kawasaki/"
+        },
+        {
+          "city": "Kyoto-shi Kyoto",
+          "id": "R711",
+          "name": "Kyoto",
+          "url": "https://www.apple.com/jp/retail/kyoto/"
+        },
+        {
+          "city": "Osaka-shi Umeda",
+          "id": "R768",
+          "name": "Umeda",
+          "url": "https://www.apple.com/jp/retail/umeda/"
+        },
+        {
+          "city": "Osaka-shi Shinsaibashi",
+          "id": "R091",
+          "name": "Shinsaibashi",
+          "url": "https://www.apple.com/jp/retail/shinsaibashi/"
+        },
+        {
+          "city": "Chiyoda-ku Marunouchi",
+          "id": "R718",
+          "name": "Marunouchi",
+          "url": "https://www.apple.com/jp/retail/marunouchi/"
+        },
+        {
+          "city": "Chuo-ku Ginza",
+          "id": "R079",
+          "name": "Ginza",
+          "url": "https://www.apple.com/jp/retail/ginza/"
+        },
+        {
+          "city": "Shibuya-ku Shibuya",
+          "id": "R119",
+          "name": "Shibuya",
+          "url": "https://www.apple.com/jp/retail/shibuya/"
+        },
+        {
+          "city": "Shibuya-ku Omotesando",
+          "id": "R224",
+          "name": "Omotesando",
+          "url": "https://www.apple.com/jp/retail/omotesando/"
+        },
+        {
+          "city": "Shinjuku-ku Shinjuku",
+          "id": "R128",
+          "name": "Shinjuku",
+          "url": "https://www.apple.com/jp/retail/shinjuku/"
+        }
+      ]
+    },
+    {
+      "code": "MO",
+      "locale": "en_MO",
+      "name": "Macao",
+      "stores": [
+        {
+          "city": "Macao",
+          "id": "R697",
+          "name": "Cotai Strip",
+          "url": "https://www.apple.com/mo-en/retail/cotaistrip/"
+        },
+        {
+          "city": "Macao",
+          "id": "R672",
+          "name": "Galaxy Macau",
+          "url": "https://www.apple.com/mo-en/retail/galaxymacau/"
+        }
+      ]
+    },
+    {
+      "code": "MY",
+      "locale": "en_MY",
+      "name": "Malaysia",
+      "stores": [
+        {
+          "city": "Kuala Lumpur",
+          "id": "R742",
+          "name": "The Exchange TRX",
+          "url": "https://www.apple.com/my/retail/exchangetrx/"
+        }
+      ]
+    },
+    {
+      "code": "MX",
+      "locale": "en_MX",
+      "name": "Mexico",
+      "stores": [
+        {
+          "city": "Cuajimalpa de Morelos",
+          "id": "R708",
+          "name": "Vía Santa Fe",
+          "url": "https://www.apple.com/mx/retail/viasantafe/"
+        },
+        {
+          "city": "Mexico City",
+          "id": "R740",
+          "name": "Antara",
+          "url": "https://www.apple.com/mx/retail/antara/"
+        }
+      ]
+    },
+    {
+      "code": "NL",
+      "locale": "en_NL",
+      "name": "Netherlands",
+      "stores": [
+        {
+          "city": "Amsterdam",
+          "id": "R408",
+          "name": "Amsterdam",
+          "url": "https://www.apple.com/nl/retail/amsterdam/"
+        },
+        {
+          "city": "Haarlem",
+          "id": "R539",
+          "name": "Haarlem",
+          "url": "https://www.apple.com/nl/retail/haarlem/"
+        },
+        {
+          "city": "The Hague",
+          "id": "R540",
+          "name": "Den Haag",
+          "url": "https://www.apple.com/nl/retail/denhaag/"
+        }
+      ]
+    },
+    {
+      "code": "SG",
+      "locale": "en_SG",
+      "name": "Singapore",
+      "stores": [
+        {
+          "city": "Singapore",
+          "id": "R736",
+          "name": "Jewel Changi Airport",
+          "url": "https://www.apple.com/sg/retail/jewelchangiairport/"
+        },
+        {
+          "city": "Singapore",
+          "id": "R669",
+          "name": "Orchard Road",
+          "url": "https://www.apple.com/sg/retail/orchardroad/"
+        },
+        {
+          "city": "Singapore",
+          "id": "R633",
+          "name": "Marina Bay Sands",
+          "url": "https://www.apple.com/sg/retail/marinabaysands/"
+        }
+      ]
+    },
+    {
+      "code": "KR",
+      "locale": "en_KR",
+      "name": "South Korea",
+      "stores": [
+        {
+          "city": "Gyeonggi",
+          "id": "R770",
+          "name": "Hanam",
+          "url": "https://www.apple.com/kr/retail/hanam/"
+        },
+        {
+          "city": "Seoul",
+          "id": "R751",
+          "name": "Jamsil",
+          "url": "https://www.apple.com/kr/retail/jamsil/"
+        },
+        {
+          "city": "Seoul",
+          "id": "R738",
+          "name": "Myeongdong",
+          "url": "https://www.apple.com/kr/retail/myeongdong/"
+        },
+        {
+          "city": "Seoul",
+          "id": "R692",
+          "name": "Garosugil",
+          "url": "https://www.apple.com/kr/retail/garosugil/"
+        },
+        {
+          "city": "Seoul",
+          "id": "R747",
+          "name": "Yeouido",
+          "url": "https://www.apple.com/kr/retail/yeouido/"
+        },
+        {
+          "city": "Seoul",
+          "id": "R691",
+          "name": "Gangnam",
+          "url": "https://www.apple.com/kr/retail/gangnam/"
+        },
+        {
+          "city": "Seoul",
+          "id": "R764",
+          "name": "Hongdae",
+          "url": "https://www.apple.com/kr/retail/hongdae/"
+        }
+      ]
+    },
+    {
+      "code": "ES",
+      "locale": "en_ES",
+      "name": "Spain",
+      "stores": [
+        {
+          "city": "Barcelona",
+          "id": "R368",
+          "name": "Passeig de Gràcia",
+          "url": "https://www.apple.com/es/retail/passeigdegracia/"
+        },
+        {
+          "city": "Barcelona",
+          "id": "R406",
+          "name": "La Maquinista",
+          "url": "https://www.apple.com/es/retail/lamaquinista/"
+        },
+        {
+          "city": "Arroyomolinos",
+          "id": "R397",
+          "name": "Xanadú",
+          "url": "https://www.apple.com/es/retail/xanadu/"
+        },
+        {
+          "city": "Leganés",
+          "id": "R436",
+          "name": "Parquesur",
+          "url": "https://www.apple.com/es/retail/parquesur/"
+        },
+        {
+          "city": "Madrid",
+          "id": "R450",
+          "name": "Puerta del Sol",
+          "url": "https://www.apple.com/es/retail/puertadelsol/"
+        },
+        {
+          "city": "Madrid",
+          "id": "R624",
+          "name": "La Vaguada",
+          "url": "https://www.apple.com/es/retail/lavaguada/"
+        },
+        {
+          "city": "Majadahonda",
+          "id": "R435",
+          "name": "Gran Plaza 2",
+          "url": "https://www.apple.com/es/retail/granplaza2/"
+        },
+        {
+          "city": "Churra",
+          "id": "R507",
+          "name": "Nueva Condomina",
+          "url": "https://www.apple.com/es/retail/nuevacondomina/"
+        },
+        {
+          "city": "Marbella",
+          "id": "R468",
+          "name": "La Cañada",
+          "url": "https://www.apple.com/es/retail/lacanada/"
+        },
+        {
+          "city": "Valencia",
+          "id": "R419",
+          "name": "Valencia",
+          "url": "https://www.apple.com/es/retail/valencia/"
+        },
+        {
+          "city": "Arroyo de la Encomienda",
+          "id": "R538",
+          "name": "Río Shopping",
+          "url": "https://www.apple.com/es/retail/rioshopping/"
+        },
+        {
+          "city": "Zaragoza",
+          "id": "R377",
+          "name": "Puerto Venecia",
+          "url": "https://www.apple.com/es/retail/puertovenecia/"
+        }
+      ]
+    },
+    {
+      "code": "SE",
+      "locale": "en_SE",
+      "name": "Sweden",
+      "stores": [
+        {
+          "city": "Malmö",
+          "id": "R503",
+          "name": "Emporia",
+          "url": "https://www.apple.com/se/retail/emporia/"
+        },
+        {
+          "city": "Solna",
+          "id": "R626",
+          "name": "Mall of Scandinavia",
+          "url": "https://www.apple.com/se/retail/mallofscandinavia/"
+        },
+        {
+          "city": "Täby",
+          "id": "R505",
+          "name": "Täby Centrum",
+          "url": "https://www.apple.com/se/retail/tabycentrum/"
+        }
+      ]
+    },
+    {
+      "code": "CH",
+      "locale": "en_CH",
+      "name": "Switzerland",
+      "stores": [
+        {
+          "city": "Basel",
+          "id": "R439",
+          "name": "Freie Strasse",
+          "url": "https://www.apple.com/chfr/retail/freiestrasse/"
+        },
+        {
+          "city": "Geneva",
+          "id": "R275",
+          "name": "Rue de Rive",
+          "url": "https://www.apple.com/chfr/retail/ruederive/"
+        },
+        {
+          "city": "Glattzentrum bei Wallisellen",
+          "id": "R309",
+          "name": "Glattzentrum",
+          "url": "https://www.apple.com/chfr/retail/glattzentrum/"
+        },
+        {
+          "city": "Zurich",
+          "id": "R159",
+          "name": "Rennweg",
+          "url": "https://www.apple.com/chfr/retail/rennweg/"
+        }
+      ]
+    },
+    {
+      "code": "TW",
+      "locale": "en_TW",
+      "name": "Taiwan",
+      "stores": [
+        {
+          "city": "Xinyi A13",
+          "id": "R694",
+          "name": "Xinyi A13",
+          "url": "https://www.apple.com/tw/retail/xinyia13/"
+        },
+        {
+          "city": "Taipei 101",
+          "id": "R713",
+          "name": "Taipei 101",
+          "url": "https://www.apple.com/tw/retail/taipei101/"
+        }
+      ]
+    },
+    {
+      "code": "TH",
+      "locale": "en_TH",
+      "name": "Thailand",
+      "stores": [
+        {
+          "city": "Bangkok",
+          "id": "R733",
+          "name": "Central World",
+          "url": "https://www.apple.com/th/retail/centralworld/"
+        },
+        {
+          "city": "Bangkok",
+          "id": "R728",
+          "name": "Iconsiam",
+          "url": "https://www.apple.com/th/retail/iconsiam/"
+        }
+      ]
+    },
+    {
+      "code": "TR",
+      "locale": "en_TR",
+      "name": "Türkiye",
+      "stores": [
+        {
+          "city": "Beşiktaş İstanbul",
+          "id": "R583",
+          "name": "Zorlu Center",
+          "url": "https://www.apple.com/tr/retail/zorlucenter/"
+        },
+        {
+          "city": "Kadıköy İstanbul",
+          "id": "R724",
+          "name": "Bağdat Caddesi",
+          "url": "https://www.apple.com/tr/retail/bagdatcaddesi/"
+        },
+        {
+          "city": "Üsküdar İstanbul",
+          "id": "R588",
+          "name": "Akasya",
+          "url": "https://www.apple.com/tr/retail/akasya/"
+        }
+      ]
+    },
+    {
+      "code": "AE",
+      "locale": "en_AE",
+      "name": "United Arab Emirates",
+      "stores": [
+        {
+          "city": "Abu Dhabi",
+          "id": "R706",
+          "name": "Al Maryah Island",
+          "url": "https://www.apple.com/ae/retail/almaryahisland/"
+        },
+        {
+          "city": "Abu Dhabi",
+          "id": "R595",
+          "name": "Yas Mall",
+          "url": "https://www.apple.com/ae/retail/yasmall/"
+        },
+        {
+          "city": "Al Ain",
+          "id": "R785",
+          "name": "Al Jimi Mall",
+          "url": "https://www.apple.com/ae/retail/aljimimall/"
+        },
+        {
+          "city": "Dubai",
+          "id": "R596",
+          "name": "Mall of the Emirates",
+          "url": "https://www.apple.com/ae/retail/malloftheemirates/"
+        },
+        {
+          "city": "Dubai",
+          "id": "R597",
+          "name": "Dubai Mall",
+          "url": "https://www.apple.com/ae/retail/dubaimall/"
+        }
+      ]
+    },
+    {
+      "code": "GB",
+      "locale": "en_GB",
+      "name": "United Kingdom",
+      "stores": [
+        {
+          "city": "Aberdeen",
+          "id": "R363",
+          "name": "Union Square",
+          "url": "https://www.apple.com/uk/retail/unionsquare/"
+        },
+        {
+          "city": "Reading",
+          "id": "R176",
+          "name": "The Oracle",
+          "url": "https://www.apple.com/uk/retail/theoracle/"
+        },
+        {
+          "city": "Bristol",
+          "id": "R393",
+          "name": "Cribbs Causeway",
+          "url": "https://www.apple.com/uk/retail/cribbscauseway/"
+        },
+        {
+          "city": "Milton Keynes",
+          "id": "R269",
+          "name": "Milton Keynes",
+          "url": "https://www.apple.com/uk/retail/miltonkeynes/"
+        },
+        {
+          "city": "Cambridge",
+          "id": "R270",
+          "name": "Grand Arcade",
+          "url": "https://www.apple.com/uk/retail/grandarcade/"
+        },
+        {
+          "city": "Cardiff",
+          "id": "R334",
+          "name": "Cardiff",
+          "url": "https://www.apple.com/uk/retail/cardiff/"
+        },
+        {
+          "city": "London",
+          "id": "R092",
+          "name": "Regent Street",
+          "url": "https://www.apple.com/uk/retail/regentstreet/"
+        },
+        {
+          "city": "London",
+          "id": "R245",
+          "name": "Covent Garden",
+          "url": "https://www.apple.com/uk/retail/coventgarden/"
+        },
+        {
+          "city": "London",
+          "id": "R329",
+          "name": "Brompton Road",
+          "url": "https://www.apple.com/uk/retail/bromptonroad/"
+        },
+        {
+          "city": "Exeter",
+          "id": "R279",
+          "name": "Princesshay",
+          "url": "https://www.apple.com/uk/retail/princesshay/"
+        },
+        {
+          "city": "Plymouth",
+          "id": "R545",
+          "name": "Plymouth",
+          "url": "https://www.apple.com/uk/retail/plymouth/"
+        },
+        {
+          "city": "Brighton",
+          "id": "R244",
+          "name": "Churchill Square",
+          "url": "https://www.apple.com/uk/retail/churchillsquare/"
+        },
+        {
+          "city": "Edinburgh",
+          "id": "R328",
+          "name": "Edinburgh",
+          "url": "https://www.apple.com/uk/retail/edinburgh/"
+        },
+        {
+          "city": "Grays",
+          "id": "R242",
+          "name": "Lakeside",
+          "url": "https://www.apple.com/uk/retail/lakeside/"
+        },
+        {
+          "city": "Glasgow",
+          "id": "R135",
+          "name": "Glasgow",
+          "url": "https://www.apple.com/uk/retail/glasgow/"
+        },
+        {
+          "city": "Glasgow",
+          "id": "R340",
+          "name": "Braehead",
+          "url": "https://www.apple.com/uk/retail/braehead/"
+        },
+        {
+          "city": "Kingston upon Thames",
+          "id": "R227",
+          "name": "Bentall Centre",
+          "url": "https://www.apple.com/uk/retail/bentallcentre/"
+        },
+        {
+          "city": "London",
+          "id": "R410",
+          "name": "Stratford City",
+          "url": "https://www.apple.com/uk/retail/stratfordcity/"
+        },
+        {
+          "city": "London",
+          "id": "R163",
+          "name": "Brent Cross",
+          "url": "https://www.apple.com/uk/retail/brentcross/"
+        },
+        {
+          "city": "London",
+          "id": "R762",
+          "name": "Battersea",
+          "url": "https://www.apple.com/uk/retail/battersea/"
+        },
+        {
+          "city": "London",
+          "id": "R226",
+          "name": "White City",
+          "url": "https://www.apple.com/uk/retail/whitecity/"
+        },
+        {
+          "city": "Manchester",
+          "id": "R215",
+          "name": "Manchester Arndale",
+          "url": "https://www.apple.com/uk/retail/manchesterarndale/"
+        },
+        {
+          "city": "Manchester",
+          "id": "R136",
+          "name": "Trafford Centre",
+          "url": "https://www.apple.com/uk/retail/traffordcentre/"
+        },
+        {
+          "city": "Basingstoke",
+          "id": "R482",
+          "name": "Festival Place",
+          "url": "https://www.apple.com/uk/retail/festivalplace/"
+        },
+        {
+          "city": "Southampton",
+          "id": "R174",
+          "name": "Southampton",
+          "url": "https://www.apple.com/uk/retail/southampton/"
+        },
+        {
+          "city": "Watford",
+          "id": "R527",
+          "name": "Watford",
+          "url": "https://www.apple.com/uk/retail/watford/"
+        },
+        {
+          "city": "Bromley",
+          "id": "R496",
+          "name": "Bromley",
+          "url": "https://www.apple.com/uk/retail/bromley/"
+        },
+        {
+          "city": "Greenhithe",
+          "id": "R113",
+          "name": "Bluewater",
+          "url": "https://www.apple.com/uk/retail/bluewater/"
+        },
+        {
+          "city": "Leicester",
+          "id": "R308",
+          "name": "Highcross",
+          "url": "https://www.apple.com/uk/retail/highcross/"
+        },
+        {
+          "city": "Liverpool",
+          "id": "R239",
+          "name": "Liverpool",
+          "url": "https://www.apple.com/uk/retail/liverpool/"
+        },
+        {
+          "city": "Norwich",
+          "id": "R391",
+          "name": "Norwich",
+          "url": "https://www.apple.com/uk/retail/norwich/"
+        },
+        {
+          "city": "Belfast",
+          "id": "R313",
+          "name": "Belfast",
+          "url": "https://www.apple.com/uk/retail/belfast/"
+        },
+        {
+          "city": "Bath",
+          "id": "R335",
+          "name": "SouthGate",
+          "url": "https://www.apple.com/uk/retail/southgate/"
+        },
+        {
+          "city": "Sheffield",
+          "id": "R153",
+          "name": "Meadowhall",
+          "url": "https://www.apple.com/uk/retail/meadowhall/"
+        },
+        {
+          "city": "Gateshead",
+          "id": "R423",
+          "name": "Metrocentre",
+          "url": "https://www.apple.com/uk/retail/metrocentre/"
+        },
+        {
+          "city": "Newcastle upon Tyne",
+          "id": "R341",
+          "name": "Eldon Square",
+          "url": "https://www.apple.com/uk/retail/eldonsquare/"
+        },
+        {
+          "city": "Birmingham",
+          "id": "R118",
+          "name": "Birmingham",
+          "url": "https://www.apple.com/uk/retail/birmingham/"
+        },
+        {
+          "city": "Solihull",
+          "id": "R255",
+          "name": "Touchwood Centre",
+          "url": "https://www.apple.com/uk/retail/touchwoodcentre/"
+        },
+        {
+          "city": "Leeds",
+          "id": "R372",
+          "name": "Trinity Leeds",
+          "url": "https://www.apple.com/uk/retail/trinityleeds/"
+        }
+      ]
+    }
+  ]
+}

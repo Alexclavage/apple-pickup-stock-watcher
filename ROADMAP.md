@@ -4,6 +4,23 @@ Apple Pickup Stock Watcher is an independent, self-hosted project. Its long-term
 
 This roadmap is directional, not a promise that a feature already exists.
 
+## Worldwide expansion branch after V1
+
+- [x] Add official directory snapshot: 535 store IDs/names/cities/links across
+  27 countries/territories, observed October 30, 2026.
+- [x] Add country/city/name/ID store selection to the local wizard without live
+  requests; selected stores remain draft edits until Save/restart.
+- [x] Centralize 26 selectable regional candidates/currencies; require opt-in
+  outside US/CA and support non-Latin search inputs and high-denomination prices.
+- [ ] Independently verify each additional regional pickup/catalog route with
+  real local SKUs and observed store coverage; all remain experimental until then.
+- [ ] Implement a verified Macao pickup integration; both stores are directory-only.
+- [ ] Implement any full-country/worldwide scheduler with explicit coverage and
+  budgets; the existing eight-area/24-request limits remain in this branch.
+
+See [worldwide coverage](docs/WORLDWIDE_COVERAGE.md). Directory presence and
+mocked tests never certify real stock compatibility.
+
 ## Product vision — Worldwide monitoring by selected area
 
 **Simplest onboarding:** the user chooses a **country/region + postal code or city**, adds one or more monitoring areas, selects products and optionally narrows monitoring to individual official Apple Retail Stores returned for each area. This scales conceptually to countries around the world **after their regional pickup APIs and product catalogs have been verified**.

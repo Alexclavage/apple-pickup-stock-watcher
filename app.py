@@ -1,17 +1,18 @@
 import os, json, time, random, threading, math
 from datetime import datetime, timezone
 from pathlib import Path
+from store_directory import country_for_store
 
 import requests
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template_string
 from history import append_history, read_history, transition_event
 from monitoring_areas import legacy_areas, validate_monitoring_areas, uncovered_product_markets, MAX_MONITORING_AREAS
-from regions import REGIONS, region_for
+from regions import REGIONS, region_for, price_limit_for
 from model_watch import PRODUCT_BATCH_SIZE, MAX_PRODUCTS, validate_request_budget
 from dashboard_groups import build_model_groups
 
-VERSION = "1.0.0"
+VERSION = "1.1.0-dev"
 
 load_dotenv()
 
@@ -78,7 +79,7 @@ if CONFIG_PATH.exists():
                 isinstance(price, bool)
                 or not isinstance(price, (int, float))
                 or not math.isfinite(price)
-                or not 0 <= price <= 100000
+                or not 0 <= price <= price_limit_for(region.currency)
             ):
                 raise ValueError(f"Product {pid} must have a finite nonnegative numeric price")
         PRODUCTS = products
@@ -112,10 +113,10 @@ else:
 MARKET_PRODUCT_IDS = {market: [pid for pid, p in PRODUCTS.items() if p["market"] == market] for market in REGIONS}
 US_PRODUCT_IDS = MARKET_PRODUCT_IDS["US"]
 CA_PRODUCT_IDS = MARKET_PRODUCT_IDS["CA"]
-if any(p["market"] in {"FR", "GB"} for p in PRODUCTS.values()) and (
+if any(p["market"] not in {"US", "CA"} for p in PRODUCTS.values()) and (
     not CONFIG_PATH.exists() or "monitoring_areas" not in cfg
 ):
-    raise ValueError("France/UK products require explicit monitoring_areas in config.json")
+    raise ValueError("Products outside US/Canada require explicit monitoring_areas in config.json")
 MONITORING_AREAS = (
     validate_monitoring_areas(cfg["monitoring_areas"], PRODUCTS, enable_experimental=ENABLE_EXPERIMENTAL_REGIONS)
     if CONFIG_PATH.exists() and "monitoring_areas" in cfg
@@ -266,6 +267,11 @@ def money_info(product, store):
                 "price_eur": converted, "tax_amount_eur": None,
                 "total_eur": converted, "fx_rate": rate, "fx_date": date,
                 "tax_included": True}
+    # Do not apply US/Canadian taxes or presume VAT inclusion in new markets.
+    if product["market"] not in {"US", "CA"}:
+        return {"tax_rate": None, "tax_amount": None, "total": None,
+                "price_eur": None, "tax_amount_eur": None, "total_eur": None,
+                "fx_rate": None, "fx_date": None, "tax_included": None}
     tax = CA_TAX_RATE if product["market"] == "CA" else us_tax_rate(store)
     if tax is None:
         return {"tax_rate":None,"tax_amount":None,"total":None,"price_eur":None,"tax_amount_eur":None,"total_eur":None,"fx_rate":None,"fx_date":None}
@@ -291,8 +297,18 @@ def fetch_market(url, location, product_ids):
     if r.status_code in (429, 541): raise RuntimeError(f"APPLE_{r.status_code}")
     if r.status_code != 200: raise RuntimeError(f"Apple HTTP {r.status_code}")
     try: data = r.json()
-    except Exception: raise RuntimeError("Apple returned invalid JSON")
-    return (data.get("body") or {}).get("stores") or []
+    except ValueError: raise RuntimeError("Apple returned invalid JSON") from None
+    body = data.get("body") if isinstance(data, dict) else None
+    if not isinstance(body, dict) or not isinstance(body.get("stores"), list):
+        raise RuntimeError("Apple returned no valid store list; availability unknown")
+    stores = body["stores"]
+    for store in stores:
+        if not isinstance(store, dict) or not isinstance(store.get("storeNumber"), str) or not store["storeNumber"]:
+            raise RuntimeError("Apple returned an invalid store entry; availability unknown")
+        parts = store.get("partsAvailability")
+        if parts is not None and (not isinstance(parts, dict) or any(not isinstance(value, dict) for value in parts.values())):
+            raise RuntimeError("Apple returned invalid variant data; availability unknown")
+    return stores
 
 def status_from_availability(av):
     display = av.get("pickupDisplay")
@@ -358,6 +374,9 @@ def fetch_all():
                 stores = fetch_market(url, area["location"], batch_ids)
                 for raw in stores:
                     store_id = raw.get("storeNumber")
+                    if store_id and country_for_store(store_id) not in (None, market):
+                        errors.append(f'{area["id"]}: returned store belongs to another country; availability unknown')
+                        continue
                     if not store_id or (desired and store_id not in desired):
                         continue
                     if market == "US" and ALLOWED_STATES and (raw.get("state") or "").upper() not in ALLOWED_STATES:
@@ -445,6 +464,7 @@ def priority_store_embed(item, available=True):
         color = 0xE74C3C
         description = "La cible prioritaire était disponible au cycle précédent."
     tax = "Inconnue" if item.get("tax_rate") is None else f"{item['tax_rate']*100:.3f}% • +{sym}{item['tax_amount']:,.2f}"
+    description += f"\nCountry: {item.get('market', '?')}"
     return {
         "title": title, "description": description, "color": color,
         "fields": [
@@ -486,8 +506,8 @@ def bounded_discord_description(items, formatter, separator="\n\n"):
 def normal_available_embed(items):
     # One compact card per cycle, instead of one Discord message per store.
     def line(item):
-        where = f"Apple {item['storeName']} — {item.get('city') or ''}, {item.get('state') or ''}"
-        return f"🟢 **{compact_product_name(item)}** • {where}\n↳ **{price_total_text(item)}** • {item.get('quote') or 'Available'}"
+        where = f"Apple {item['storeName']} [{item.get('market', '?')} · {item.get('storeNumber', '?')}] — {item.get('city') or ''}, {item.get('state') or ''}"
+        return f"🟢 **{compact_product_name(item)}** • {where}\n↳ SKU {item.get('part', '?')} • **{price_total_text(item)}** • {item.get('quote') or 'Available'}"
     return {"title":f"🟢 {len(items)} nouvelle(s) disponibilité(s)",
             "description":bounded_discord_description(items, line),
             "color":0x2ECC71,
@@ -496,7 +516,7 @@ def normal_available_embed(items):
 
 def unavailable_embed(items):
     def line(item):
-        return f"🔴 **{compact_product_name(item)}** • Apple {item['storeName']} — {item.get('city') or ''}, {item.get('state') or ''}"
+        return f"🔴 **{compact_product_name(item)}** • Apple {item['storeName']} [{item.get('market', '?')} · {item.get('storeNumber', '?')}] — {item.get('city') or ''}, {item.get('state') or ''} • SKU {item.get('part', '?')}"
     return {"title":f"🔴 {len(items)} stock(s) redevenu(s) indisponible(s)",
             "description":bounded_discord_description(items, line, separator="\n"),
             "color":0xE74C3C,
@@ -512,6 +532,12 @@ def is_alert_target(item):
 def send_stock_changes(new_available, newly_unavailable):
     new_available = [x for x in new_available if is_alert_target(x)]
     newly_unavailable = [x for x in newly_unavailable if is_alert_target(x)]
+    # V1 configurations may contain two IDs for the same regional SKU. Retain
+    # both state keys, but do not send duplicate messages for one store/variant.
+    def unique(items):
+        return list({(x.get("market"), x["part"].upper() if x.get("part") else x.get("product_id"), x.get("storeNumber")): x for x in items}.values())
+    new_available = unique(new_available)
+    newly_unavailable = unique(newly_unavailable)
     priority_up = [x for x in new_available if x.get("storeNumber") == US_PRIORITY_STORE and x.get("market") == "US"]
     normal_up = [x for x in new_available if x not in priority_up]
     priority_down = [x for x in newly_unavailable if x.get("storeNumber") == US_PRIORITY_STORE and x.get("market") == "US"]
@@ -574,7 +600,7 @@ def poll_once():
         else:
             overall = "unavailable"
         with lock:
-            latest = {"status":overall,"checked_at":checked,"items":items,"error":" | ".join(partial_errors) if partial_errors else None,"consecutive_errors":0}
+            latest = {"status":overall,"checked_at":checked,"observed_at":checked,"items":items,"error":" | ".join(partial_errors) if partial_errors else None,"consecutive_errors":0}
         print(checked, f"{len(items)} product/store rows", f"{len(available)} available", ("PARTIAL" if partial_errors else "OK"), flush=True)
         if any(("APPLE_429" in err or "APPLE_541" in err or "Apple 429" in err or "Apple 541" in err) for err in partial_errors):
             return max(INTERVAL, 900)
@@ -585,7 +611,7 @@ def poll_once():
         if previous.get("watcher_error") is not True:
             safe_discord(f"⚠️ **Apple Stock Watcher V{VERSION} en erreur**\nErreur : {error}\nLe statut est UNKNOWN — jamais interprété comme rupture.")
         save_state({"available_keys":previous.get("available_keys",[]),"watcher_error":True,"checked_at":checked,"error":error})
-        with lock: latest = {"status":"unknown","checked_at":checked,"items":latest.get("items",[]),"error":error,"consecutive_errors":errors}
+        with lock: latest = {"status":"unknown","checked_at":checked,"observed_at":latest.get("observed_at",latest.get("checked_at")),"items":latest.get("items",[]),"error":error,"consecutive_errors":errors}
         print(checked,"UNKNOWN:",error,flush=True)
         if error in {"APPLE_429", "APPLE_541", "APPLE_RATE_LIMIT_ALL"}: return 900
         return min(900,max(INTERVAL,INTERVAL*errors))
@@ -634,9 +660,11 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
     <div id="searchCount"></div>
 </div>
 <div class="summary"><b>Global:</b> <span class="overall-{{latest.status|e}}">{{latest.status|upper}}</span>
-&nbsp; • &nbsp; <b>Dernier check:</b>
+&nbsp; • &nbsp; <b>Dernière tentative:</b>
 {% if latest.checked_at %}<time class="local-datetime" datetime="{{latest.checked_at|e}}">{{latest.checked_at}}</time>{% else %}—{% endif %}
 &nbsp; • &nbsp; <b>Intervalle:</b> ~{{interval}} s
+{% if latest.observed_at %}<div>Dernières observations reçues : <time class="local-datetime" datetime="{{latest.observed_at|e}}">{{latest.observed_at}}</time></div>{% endif %}
+{% if latest.stale %}<div class="coverage-notice">Données anciennes ou non datées — disponibilité actuelle inconnue. Une nouvelle vérification est nécessaire.</div>{% endif %}
 {% if latest.error %}<div class="error">⚠ {{latest.error}}</div>{% endif %}
 {% if uncovered_markets %}<div class="coverage-notice">Zones manquantes : {{uncovered_markets|join(', ')}}. Les produits de ces pays ne sont pas vérifiés et ne doivent pas être considérés comme indisponibles.</div>{% endif %}
 </div>
@@ -648,7 +676,7 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 {% for e in history %}
 <div class="activity-event">
 <span class="activity-status {{e.type}}">{{'IN STOCK' if e.type=='available' else 'SOLD OUT'}}</span>
-<span>{{e.product or e.product_id}} · Apple {{e.store or e.store_id}}{% if e.city %}, {{e.city}}{% endif %}</span>
+<span>{{e.product or e.product_id}} · Apple {{e.store or e.store_id}}{% if e.city %}, {{e.city}}{% endif %} · {{e.market or '?'}} · {{e.store_id}}</span>
 <small>{{e.at}}</small>
 </div>
 {% endfor %}
@@ -681,6 +709,7 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
       <div class="store-meta">{{store.city}}{% if store.state %}, {{store.state}}{% endif %} · {{store.id}}</div>
       <div class="badge">{{store.status_label}}</div>
       <div class="store-meta">{{store.available}} available · {{store.unavailable}} unavailable · {{store.unknown}} unknown</div>
+      {% if not store.observed %}<div class="coverage-notice">Selected store not returned in this check — availability unknown.</div>{% endif %}
       <details class="variant-details">
         <summary>See {{store.variants|length}} selected variants</summary>
         <ul class="store-variant-list">
@@ -760,9 +789,33 @@ HTML = r'''<!doctype html><html><head><meta charset="utf-8"><meta name="viewport
 </script>
 </body></html>'''
 
+def snapshot_for_display(snapshot, current_time=None):
+    """Expire observations without rewriting alert state or relabeling old stock."""
+    result = dict(snapshot)
+    result["observed_at"] = snapshot.get("observed_at", snapshot.get("checked_at"))
+    threshold = max(300, 2 * INTERVAL + 60)
+    age = None
+    if result["observed_at"]:
+        try:
+            observed = datetime.fromisoformat(result["observed_at"])
+            if observed.tzinfo is None:
+                raise ValueError("Timestamp lacks timezone")
+            age = ((current_time or datetime.now(timezone.utc)) - observed).total_seconds()
+        except (TypeError, ValueError, OverflowError):
+            pass
+    stale = snapshot.get("status") != "starting" and (age is None or age < -60 or age > threshold)
+    result.update(stale=stale, observation_age_seconds=age, stale_after_seconds=threshold)
+    if stale:
+        result["status"] = "unknown"
+        result["error"] = " | ".join(filter(None, [snapshot.get("error"), "Observations are stale or undated; waiting for a new check"]))
+    result["items"] = [] if stale or result.get("status") in {"unknown", "starting"} else list(snapshot.get("items", []))
+    return result
+
+
 @app.route("/")
 def home():
     with lock: snap = dict(latest); snap["items"] = list(latest.get("items",[]))
+    snap = snapshot_for_display(snap)
     groups = build_model_groups(
         PRODUCTS, snap["items"], scan_status=snap.get("status", "starting"),
         checked_at=snap.get("checked_at"), monitoring_areas=MONITORING_AREAS,
@@ -776,7 +829,8 @@ def home():
 
 @app.route("/api/status")
 def api_status():
-    with lock: return jsonify(latest)
+    with lock: snap = dict(latest)
+    return jsonify(snapshot_for_display(snap))
 
 @app.route("/api/history")
 def api_history():

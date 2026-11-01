@@ -2,7 +2,7 @@
 
 **Unofficial self-hosted Apple Store pickup availability watcher.** Choose supported products, nearby Apple Retail Stores, view a model-grouped dashboard, and optionally get Discord stock-change notifications. It **does not buy or reserve products** and is not affiliated with Apple.
 
-> **V1.0.0:** a user-validated US/Canada scan observed 3 variants across 17 returned stores with zero coverage issues in that scan. This is not validation of all SKUs or stores. Catalog parsing and France/UK adapters remain experimental. Apple endpoints are undocumented. See [V1 notes](docs/RELEASE_NOTES_V1.md) and [release checklist](docs/RELEASE_CHECKLIST.md).
+> **1.1 development branch:** worldwide store selection is being prepared separately from the published `v1.0.0`. US/Canada retain their completed V1 validation. Additional markets remain experimental, with [bounded live-check evidence](docs/REGIONAL_VALIDATION.md) recorded separately. Apple endpoints are undocumented; no claim of all-SKU/all-store coverage is made. See [V1 notes](docs/RELEASE_NOTES_V1.md).
 
 ## Quick start (Windows CMD)
 
@@ -39,14 +39,45 @@ Open **http://127.0.0.1:8080**. This starts real Apple requests and continues po
 
 ### How the wizard works
 
-1. **Find variants** — optional, on-demand preview of SKU variants from official Apple buy pages, not yet added.
-2. **Add selected variants to watchlist** — optional filters for color, storage and a **verified** carrier attribute where Apple actually supplies one.
-3. **Save private configuration** — writes `config.json`; does not start monitoring. The watchlist summary and Save banner distinguish preview, unsaved and saved states.
-4. **Restart `app.py`** — running monitoring reads the latest saved settings.
+1. **Choose a store** — search its country/city/name/ID, then click **Configure selected store**. The wizard shows the adapter's limits, selects that country's catalog/currency and prepares the store without adding an incomplete area.
+2. **Choose regional products** — enter a complete local postal code, find a model's real variants, filter if desired, then **Add selected variants to watchlist**. US/Canada products cannot fill a French area. Discovery remains on demand and may fail; no guessed SKU is created.
+3. **Add completed store selection** — available when regional products and a local search are entered. Stores using the same country/search can share an area. A notice explains when an existing all-returned-stores area will become a precise store filter.
+4. **Save private configuration**, then **restart `app.py`**. Save writes `config.json`; it does not start monitoring. The watcher subsequently checks whether Apple actually returned the chosen stores and variants.
+
+For existing areas, use **Choose products for this country** to repair a missing
+association. Removing the last regional product immediately shows the affected
+areas and a resolution action; removing an area leaves its products available to
+edit/remove. All areas in a country share that country's product selection.
+Manual products have visible Edit/Remove actions. Changing a product country
+requires discovering/adding its regional replacement, so an old SKU or price is
+never silently converted to a new market.
 
 The wizard creates readable product IDs such as `iphone_18_pro_max_512gb_silver_ca`. **Area IDs identify locations, not devices** (`us_19702`, `ca_m5b2h1`), since one location can monitor multiple models. The optional green toast confirms draft edits; you must still Save and restart.
 
 **Carrier caveat:** activation choices at checkout might not have distinct stock SKUs. Missing carrier metadata means **unknown**, not “unlocked.” If catalog discovery fails, add an independently verified SKU under **Advanced: individual SKUs**. Product prices may be unknown and must never be guessed from unrelated variants.
+
+## Worldwide store selection (next-version branch)
+
+The setup wizard contains an offline snapshot of **535 official stores in 27
+countries/territories**, observed from [Apple's directory](https://www.apple.com/retail/storelist/)
+on October 30, 2026. Search by country, city, name or store ID and add a store
+to a guided store setup. Complete its local postal search and regional products,
+then add the completed selection, Save and restart. Directory browsing and
+configuration readiness make no Apple requests and do not confirm live coverage.
+
+US/CA retain their recorded live evidence. The other 24 selectable markets are
+**experimental regional adapters**, requiring explicit opt-in. The
+[verification record](docs/REGIONAL_VALIDATION.md) distinguishes completed bounded
+checks from unverified combinations; errors/missing responses remain unknown.
+Macao is directory-only with no enabled pickup adapter.
+The snapshot is not a live opening/closure feed or a guarantee of pickup eligibility.
+There is no "scan all worldwide stores" mode; the 8-area/24-request budgets remain.
+See [worldwide coverage](docs/WORLDWIDE_COVERAGE.md).
+
+Use a **complete local postal code** when a city search returns no stores. In the
+recorded checks, a full postcode returned stores in China and the Netherlands
+where the earlier city/incomplete-postcode searches had returned none. An empty
+response means unconfirmed coverage, not that every store is sold out.
 
 ## Countries and polling limits
 
@@ -54,12 +85,20 @@ The wizard creates readable product IDs such as `iphone_18_pro_max_512gb_silver_
 | --- | --- | --- |
 | United States (`US`) | Live-tested for selected SKU/store pairs | Five-digit ZIP |
 | Canada (`CA`) | Live-tested for selected SKU/store pairs | Postal code or city |
-| France (`FR`) | Experimental, explicit opt-in; not live-validated | Five-digit postal code or city |
-| United Kingdom (`GB`) | Experimental, explicit opt-in; not live-validated | UK postcode or city |
+| France (`FR`) | Experimental, explicit opt-in; bounded check recorded | Five-digit postal code or city |
+| United Kingdom (`GB`) | Experimental, explicit opt-in; bounded check recorded | UK postcode or city |
+| Other selectable markets | Experimental, explicit opt-in; see [per-market results](docs/REGIONAL_VALIDATION.md) | Full local postal code or city; results vary by market |
 
-Every configured product country needs **at least one monitoring area in the same country**. A location searches nearby stores returned by Apple, **not every Apple Store in that city or country**. Set optional Apple Store IDs to limit to selected shops; an empty list includes all stores returned by the query. Other countries are unsupported.
+Every configured product country needs **at least one monitoring area in the same country**. A location searches nearby stores returned by Apple, **not every Apple Store in that city or country**. Set optional Apple Store IDs to limit to selected shops; an empty list includes all stores returned by the query. The next-version branch adds opt-in experimental candidates for additional directory markets; Macao remains directory-only.
 
 Conservative limits: **8 monitoring areas**, **96 configured product IDs**, **48 SKUs/model**, **12 product IDs per Apple request**, **24 pickup requests per scan**. More areas and products increase intervals; HTTP 429/541 triggers longer cooldowns. Avoid aggressive polling.
+
+Live integration uses undocumented Apple endpoints. Apple's
+[Website Terms of Use](https://www.apple.com/legal/internet-services/terms/site.html)
+restrict automated access and monitoring; request limits and a successful response
+do not establish permission. Check applicable authorization before live discovery
+or polling. [Recorded verification and permission limits](docs/REGIONAL_VALIDATION.md)
+are separate from current inventory and official support.
 
 `preflight.py` checks coverage, number of products/areas, estimated request cost and whether alerts are enabled. It performs **no Apple, FX or Discord calls**, writes no files, and does not verify whether SKUs or prices are real. `python preflight.py --json` returns sanitized counts rather than SKUs, postal codes or secrets.
 
@@ -146,6 +185,11 @@ Docker Compose binds the published dashboard to **127.0.0.1:8080** and stores st
 ## Contributing and release readiness
 
 Run `python -m unittest discover -s tests -v`. Tests use **mocked** responses and make no live Apple/Discord calls; passing CI is not proof of complete real-world compatibility.
+
+The complete wizard DOM regression needs Node 18+ and test-only dependencies:
+`npm ci --prefix tests/ui --ignore-scripts --no-audit --no-fund`. CI installs these
+and runs the interaction tests on Windows and Ubuntu. Node/jsdom are not required
+to run the Python watcher. See [v1.1 candidate notes](docs/RELEASE_NOTES_V1_1.md).
 
 - [Architecture](docs/ARCHITECTURE.md) — data flows and module responsibilities
 - [V1 release notes](docs/RELEASE_NOTES_V1.md) — features, validation, upgrade and known limits

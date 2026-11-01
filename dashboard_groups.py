@@ -77,6 +77,10 @@ def build_model_groups(products, observations, scan_status="starting", checked_a
             identity = product_to_bucket.get(row.get("product_id"))
             if identity is None:
                 continue
+            expected = products[row["product_id"]]
+            if any(row.get(field) is not None and row[field] != expected.get(field)
+                   for field in ("market", "currency", "part")):
+                continue
             store_id = row.get("storeNumber")
             if not store_id:
                 continue
@@ -92,6 +96,17 @@ def build_model_groups(products, observations, scan_status="starting", checked_a
                     "items": {},
                 }
             stores[store_key]["items"][row["product_id"]] = row
+
+    if fresh:
+        for identity, group in buckets.items():
+            for area in monitoring_areas or []:
+                if area["market"] != group["market"]:
+                    continue
+                for store_id in area.get("store_ids", []):
+                    by_store[identity].setdefault((group["market"], str(store_id)), {
+                        "id": str(store_id), "name": str(store_id), "city": "", "state": "",
+                        "postal_code": "", "items": {},
+                    })
 
     results = []
     for identity, group in buckets.items():
@@ -144,11 +159,12 @@ def build_model_groups(products, observations, scan_status="starting", checked_a
                 "unavailable": unavailable_count,
                 "unknown": unknown_count,
                 "variants": entries,
+                "observed": bool(store["items"]),
             })
         group["variant_count"] = len(group["variants"])
         group["colors"] = sorted({v["color"] for v in group["variants"] if v["color"]})
         group["storages"] = sorted({v["storage"] for v in group["variants"] if v["storage"]})
-        group["checked_stores"] = len(group["stores"])
+        group["checked_stores"] = sum(store["observed"] for store in group["stores"])
         group["available_stores"] = sum(store["available"] > 0 for store in group["stores"])
         group["reliable"] = fresh
         group["partial"] = scan_status == "partial" or has_unknown

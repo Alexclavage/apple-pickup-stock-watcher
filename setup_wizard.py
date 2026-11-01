@@ -16,7 +16,8 @@ import tempfile
 
 from flask import Flask, abort, jsonify, render_template_string, request
 from monitoring_areas import MAX_MONITORING_AREAS, legacy_areas, validate_monitoring_areas
-from regions import region_for
+from regions import region_for, REGIONS, price_limit_for
+from store_directory import directory_countries, stores_for_country, validation_for_country
 from catalog_discovery import CatalogError, FAMILIES, fetch_catalog
 from model_watch import MODELS, MAX_PRODUCTS, family_for, model_catalog_result, ModelSelectionError, validate_request_budget, MAX_SKUS_PER_MODEL
 
@@ -83,7 +84,7 @@ def validate_config(cfg):
         if not SKU.fullmatch(sku):
             raise InvalidConfig(f"Invalid SKU for {product_id}")
         price = item.get("price")
-        if price is not None and (isinstance(price, bool) or not isinstance(price, (int, float)) or not math.isfinite(price) or not 0 <= price <= 100000):
+        if price is not None and (isinstance(price, bool) or not isinstance(price, (int, float)) or not math.isfinite(price) or not 0 <= price <= price_limit_for(currency)):
             raise InvalidConfig(f"Price for {product_id} must be a valid nonnegative number")
         watch_model = item.get("watch_model")
         if watch_model is not None and watch_model not in MODELS:
@@ -225,13 +226,33 @@ body.has-pending{padding-bottom:95px}
 <div><strong id="setupStateTitle">Reading local configuration…</strong><p id="setupStateDetail">Products are only monitored after they are saved and the watcher is restarted.</p></div>
 </div>
 <section>
-<label class="toggle"><input id="experimentalRegions" type="checkbox"> Enable France/UK preview (experimental)</label>
-<p>France/UK pickup responses still need live verification. Other countries are not supported yet.</p>
-<h2>1. Choose a product model</h2>
+<h2>Find an Apple Store worldwide</h2>
+<p>Official directory snapshot: 535 stores in 27 countries/territories, observed October 30, 2026. This lists stores, not live stock. It does not start a worldwide scan.</p>
+<label class="toggle"><input id="experimentalRegions" type="checkbox"> Enable additional markets (experimental)</label>
+<p>Additional markets remain experimental. The directory shows any limited live-check evidence separately; it does not prove coverage of other products, stores or locations.</p>
+<div class="fields">
+<div><label for="directoryMarket">Store country</label><select id="directoryMarket">{% for country in directory_choices %}<option value="{{country.code}}">{{country.name}} ({{country.stores}})</option>{% endfor %}</select></div>
+<div><label for="directorySearch">Find a city or store</label><input id="directorySearch" type="search" placeholder="Tokyo, Paris, R102…"></div>
+<div class="full"><label for="directoryStore">Official Apple Store</label><select id="directoryStore"></select></div>
+</div>
+<p id="directoryStatus" role="status" aria-live="polite"></p>
+<div class="actions"><button id="addDirectoryStore" type="button">Configure selected store</button><a id="directoryLink" target="_blank" rel="noopener noreferrer">View official store page</a></div>
+<small>A directory entry is not a live stock check. Prepare the local search and regional products below before adding a monitoring area. Macao is directory-only.</small>
+<div id="storeSetup" class="info" hidden>
+<h3 id="storeSetupTitle"></h3><p id="storeSetupSupport"></p>
+<label for="storeLocation">Complete local postal code (or city where supported)</label><input id="storeLocation" maxlength="64" placeholder="For example: 75001 for Paris">
+<p id="storeSetupStatus" role="status" aria-live="polite"></p>
+<div class="actions"><button id="chooseStoreProducts" type="button">Choose regional products</button><button id="commitStore" type="button" class="primary">Add completed store selection</button><button id="cancelStore" type="button">Cancel store setup</button></div>
+</div>
+</section>
+<section>
+
+<h2 id="modelHeading" tabindex="-1">Choose products for your store's country</h2>
+<p id="modelContext" role="status">Choose a store above or configure products for an existing area. All products of a country are checked in its areas.</p>
 <p>Just choose the model name. Choose a model, then optionally narrow down by colour, storage and carrier connection. By default, all discovered variants are included.</p>
 <div class="fields">
 <div><label for="modelPicker">Apple model</label><select id="modelPicker">{% for model in model_choices %}<option value="{{model.id}}">{{model.name}}</option>{% endfor %}</select></div>
-<div><label for="modelMarket">Country</label><select id="modelMarket"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
+<div><label for="modelMarket">Country</label><select id="modelMarket">{% for region in region_choices %}<option value="{{region.code}}">{{region.name}}{{" (experimental)" if region.experimental else ""}}</option>{% endfor %}</select></div>
 </div>
 <div class="actions"><button id="watchModel" type="button" class="primary">1. Find variants</button><span id="modelStatus" class="catalog-status" role="status" aria-live="polite"></span></div>
 <div id="modelOptions" class="model-filters" hidden>
@@ -267,7 +288,7 @@ body.has-pending{padding-bottom:95px}
 <h2>Discover Apple products — preview</h2>
 <p>Search the live official Apple buying pages on demand. SKU discovery is experimental: model variations and prices can be incomplete or change without notice. You always review the selected entry before saving.</p>
 <div class="fields">
-<div><label for="catalogMarket">Country</label><select id="catalogMarket"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
+<div><label for="catalogMarket">Country</label><select id="catalogMarket">{% for region in region_choices %}<option value="{{region.code}}">{{region.name}}{{" (experimental)" if region.experimental else ""}}</option>{% endfor %}</select></div>
 <div><label for="catalogFamily">Product family</label><select id="catalogFamily">
 <option value="iphone-18-pro">iPhone 18 Pro / Pro Max</option><option value="iphone-17">iPhone 17</option><option value="iphone-air">iPhone Air</option>
 <option value="ipad-pro">iPad Pro</option><option value="ipad-air">iPad Air</option>
@@ -278,16 +299,17 @@ body.has-pending{padding-bottom:95px}
 <div class="actions"><button id="findCatalog" type="button" class="primary">Find Apple SKUs</button><span id="catalogStatus" class="catalog-status" role="status" aria-live="polite"></span></div>
 <label for="catalogFilter">Filter discovered variants</label><input id="catalogFilter" type="search" placeholder="Search model, capacity, colour or SKU" disabled>
 <div id="catalogResults" class="catalog-list"></div>
-<small>One official Apple page request at a time, cached for six hours. Missing prices must be entered manually. Apple's store pickup API does not guarantee availability for all products (especially customised Macs and Watch bundles).</small>
+<small>One official Apple page request at a time, cached for six hours. Missing prices may stay unknown; enter only independently verified regional prices. Apple's store pickup API does not guarantee availability for all products (especially customised Macs and Watch bundles).</small>
 </div>
 </details>
 <section>
-<div class="toolbar"><div><h2>2. Monitoring areas</h2><p>Select a country and postal code or city for each area. US currently requires a five-digit ZIP; Canada also accepts a city, but postal codes are recommended. Countries beyond US/Canada will be added as validated.</p></div>
+<div class="toolbar"><div><h2>2. Monitoring areas</h2><p>Select a country and postal code or city for each area. US currently requires a five-digit ZIP; Canada also accepts a city, but postal codes are recommended. Additional markets require experimental opt-in and regional SKUs; a nearby query may not return every selected store.</p></div>
 <div class="toolbar"><button id="addRegion" type="button">+ Add area</button><button id="renameAreas" type="button">Rename area IDs from locations</button></div></div>
 <div id="regions"></div>
 <div class="info" id="areaEstimate" role="status" aria-live="polite">Estimated requests: 1 per area per scan.</div>
 <div id="areaWarning" class="area-warning" hidden><strong>⚠ Multiple monitoring areas</strong><p>More areas mean more Apple requests. Monitoring may become slower, return partial results, or be temporarily interrupted by rate limits. The app spaces requests, stops a scan when Apple throttles it, and never reports missed checks as confirmed out-of-stock.</p></div>
 </section>
+
 <div class="grid">
 <section><h2>3. United States</h2><p>Advanced: filter which US states may appear in monitoring results.</p>
 <label for="states">Allowed US states (comma-separated, blank = all)</label><input id="states" placeholder="DE, NY, NJ, PA">
@@ -305,6 +327,7 @@ body.has-pending{padding-bottom:95px}
 </div></div><small>Uncheck and leave a field empty to disable notifications for that dimension.</small>
 </section>
 <div class="actions"><button class="primary" type="button" id="save">3. Save private configuration</button><span id="message" role="status" aria-live="polite"></span></div>
+<div id="configurationIssues" class="info" role="status" aria-live="polite" hidden></div>
 <p>Saved to <code>config.json</code> next to the watcher. Restart the watcher to apply changes. This wizard does not start monitoring or send notifications.</p>
 </main>
 <div class="save-dock" id="saveDock" hidden>
@@ -314,20 +337,28 @@ body.has-pending{padding-bottom:95px}
 <div id="toastZone" class="toast-zone" role="status" aria-live="polite" aria-atomic="true"></div>
 <template id="productTemplate"><article class="entry product-entry"><div class="entry-top"><strong>Product</strong><button type="button" class="remove">Remove</button></div><div class="fields">
 <div><label>Product ID (auto-generated for selected variants)</label><input class="pid" placeholder="iphone_18_pro_max_512gb_silver_ca" maxlength="40"></div>
-<div><label>Market</label><select class="market"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
+<div><label>Market</label><select class="market">{% for region in region_choices %}<option value="{{region.code}}">{{region.name}}{{" (experimental)" if region.experimental else ""}}</option>{% endfor %}</select></div>
 <div class="full"><label>Display name</label><input class="pname" placeholder="iPhone 18 Pro 512GB Silver" maxlength="100"></div>
 <div><label>Apple SKU</label><input class="sku" placeholder="MJQ84LL/A" maxlength="32"></div>
-<div><label>Price before tax</label><input class="price" type="number" min="0" max="100000" step=".01"></div>
+<div><label>Regional price (optional)</label><input class="price" type="number" min="0" max="100000" step=".01"></div>
 </div></article></template>
 <template id="regionTemplate"><article class="entry region-entry"><div class="entry-top"><div class="area-entry-title"><strong class="areaTitle">Monitoring area</strong><span class="area-subtitle">One location can monitor multiple products in this country</span></div><button type="button" class="remove">Remove</button></div><div class="fields">
+<div class="full areaReadiness" role="status"></div><div class="full actions"><button class="areaProducts" type="button">Choose products for this country</button></div>
 <div><label>Area ID (country + postal code / city)</label><input class="areaId" placeholder="us_19702" maxlength="32"></div>
-<div><label>Country</label><select class="country"><option value="US">United States</option><option value="CA">Canada</option><option value="FR">France (experimental)</option><option value="GB">United Kingdom (experimental)</option></select></div>
+<div><label>Country</label><select class="country">{% for region in region_choices %}<option value="{{region.code}}">{{region.name}}{{" (experimental)" if region.experimental else ""}}</option>{% endfor %}</select></div>
 <div><label>ZIP / postal code or city</label><input class="location" placeholder="19702 or M5B 2H1" maxlength="64"></div>
 <div><label>Apple Store IDs (optional; blank = all returned)</label><input class="areaStores" placeholder="R102, R121"></div>
 </div></article></template>
 <script>
 const TOKEN = {{ token | tojson }};
 let original = {};
+let regionInfo = {};
+let directoryRows = [];
+let directoryRequest = 0;
+let pendingStore = null;
+let modelRequest = 0;
+let catalogRequest = 0;
+const storeNames = new Map();
 let isLoadingConfig=true;
 let hasSavedFile=false;
 let hasUnsavedChanges=false;
@@ -415,7 +446,7 @@ function renderCatalog(){
     const row=document.createElement("div");row.className="catalog-entry";
     const info=document.createElement("div");
     const title=document.createElement("strong");title.textContent=item.name;
-    const meta=document.createElement("small");meta.textContent=item.part+" • "+item.currency+" • "+(item.price===null?"Price not supplied by Apple; enter manually":item.price.toFixed(2));
+    const meta=document.createElement("small");meta.textContent=item.part+" • "+item.currency+" • "+(item.price===null?"Price unknown; manual entry optional":item.price.toFixed(2));
     info.append(title,meta);
     const add=document.createElement("button");add.type="button";add.textContent="Add";
     add.addEventListener("click",()=>{
@@ -439,22 +470,26 @@ function renderCatalog(){
 async function discoverCatalog(){
   const button=el("findCatalog");
   const market=el("catalogMarket").value;
-  if(["FR","GB"].includes(market)&&!el("experimentalRegions").checked){
-    el("catalogStatus").textContent="Check the experimental France/UK checkbox above first.";
+  const family=el("catalogFamily").value,requestId=++catalogRequest;
+  catalogRows=[];renderCatalog();
+  if(regionInfo[market]?.experimental&&!el("experimentalRegions").checked){
+    el("catalogStatus").textContent="Enable the experimental markets checkbox above first.";
     return;
   }
   button.disabled=true;el("catalogStatus").textContent="Reading Apple's product page…";
   try{
     const r=await fetch("/api/catalog/discover",{method:"POST",
       headers:{"Content-Type":"application/json","X-Setup-Token":TOKEN},
-      body:JSON.stringify({market,family:el("catalogFamily").value,experimental:el("experimentalRegions").checked})});
+      body:JSON.stringify({market,family,experimental:el("experimentalRegions").checked})});
     const data=await r.json();
+    if(requestId!==catalogRequest||market!==el("catalogMarket").value||family!==el("catalogFamily").value)return;
     if(!r.ok)throw Error(data.error||"Apple catalog unavailable");
+    if((data.items||[]).some(p=>p.market!==market||p.currency!==regionInfo[market]?.currency))throw Error("Regional catalog mismatch; no variants added.");
     catalogRows=data.items||[];
     el("catalogFilter").disabled=false;el("catalogFilter").value="";
     renderCatalog();
     el("catalogStatus").textContent=catalogRows.length+" variants • "+(data.cached?"cached":"fresh")+". Check the SKU and current price on Apple's website.";
-  }catch(e){catalogRows=[];el("catalogResults").replaceChildren();el("catalogFilter").disabled=true;
+  }catch(e){if(requestId!==catalogRequest)return;catalogRows=[];el("catalogResults").replaceChildren();el("catalogFilter").disabled=true;
     el("catalogStatus").textContent=String(e.message||e);
   }finally{button.disabled=false;}
 }
@@ -499,14 +534,17 @@ function renderMonitoredModels(){
     });
     row.append(details,remove);container.append(row);
   }
-  if(manual.length){
+  for(const product of manual){
     const row=document.createElement("div");row.className="watch-group";
     const info=document.createElement("div");
-    const title=document.createElement("strong");title.textContent="Other manually configured products";
+    const title=document.createElement("strong");title.textContent=product.querySelector(".pname").value||"Manual product";
     const detail=document.createElement("small");
-    detail.textContent=manual.length+" SKU variant"+(manual.length===1?"":"s")+
-      " · Edit or remove individually in Advanced";
-    info.append(title,detail);row.append(info);container.append(row);
+    detail.textContent=product.querySelector(".market").value+" · "+product.querySelector(".sku").value+" · manually configured";
+    const edit=document.createElement("button");edit.type="button";edit.textContent="Edit";
+    edit.addEventListener("click",()=>{el("advancedProducts").open=true;product.scrollIntoView({behavior:"smooth",block:"center"});product.querySelector(".pname").focus();});
+    const remove=document.createElement("button");remove.type="button";remove.textContent="Remove";
+    remove.addEventListener("click",()=>product.querySelector(".remove").click());
+    info.append(title,detail);row.append(info,edit,remove);container.append(row);
   }
   if(!roots.length){
     const empty=document.createElement("div");empty.className="watch-empty";
@@ -530,6 +568,7 @@ function renderMonitoredModels(){
 let modelPreview=null;
 
 function clearModelPreview(){
+  modelRequest++;
   modelPreview=null;
   el("modelOptions").hidden=true;
   el("previewWarning").hidden=true;
@@ -601,10 +640,11 @@ function updateModelPreview(){
 async function watchSelectedModel(){
   const btn=el("watchModel"),modelId=el("modelPicker").value,market=el("modelMarket").value;
   clearModelPreview();
+  const requestId=modelRequest;
   const availableMarkets=new Set([...document.querySelectorAll(".region-entry .country")].map(i=>i.value));
-  if(!availableMarkets.has(market)){el("modelStatus").textContent="Add a monitoring area for "+market+" first.";return;}
-  if(["FR","GB"].includes(market)&&!el("experimentalRegions").checked){
-    el("modelStatus").textContent="Enable experimental France/UK first.";return;
+  if(!availableMarkets.has(market)&&pendingStore?.market!==market){el("modelStatus").textContent="Choose a store or add a monitoring area for "+market+" first.";return;}
+  if(regionInfo[market]?.experimental&&!el("experimentalRegions").checked){
+    el("modelStatus").textContent="Enable experimental markets first.";return;
   }
   btn.disabled=true;el("modelStatus").textContent="Finding regional variants from Apple…";
   try{
@@ -612,7 +652,9 @@ async function watchSelectedModel(){
       headers:{"Content-Type":"application/json","X-Setup-Token":TOKEN},
       body:JSON.stringify({market,model_id:modelId,experimental:el("experimentalRegions").checked})});
     const result=await r.json();
+    if(requestId!==modelRequest||market!==el("modelMarket").value||modelId!==el("modelPicker").value)return;
     if(!r.ok)throw Error(result.error||"Unable to resolve model");
+    if(result.market!==market||result.model_id!==modelId||result.products.some(p=>p.market!==market||p.currency!==regionInfo[market]?.currency))throw Error("Regional catalog mismatch; no variants added.");
     modelPreview=result;
     const options=result.options||{colors:[],storages:[],carriers:[],carrier_unknown:result.count};
     fillFacetSelect("modelColor",options.colors||[],"All discovered colours");
@@ -624,12 +666,15 @@ async function watchSelectedModel(){
     refreshSetupState();
     el("modelStatus").textContent=result.count+" variants found ("+
       (result.cached?"cached":"fresh")+"). Select filters, then click Add selected variants.";
-  }catch(error){el("modelStatus").textContent=String(error.message||error);}
+  }catch(error){if(requestId===modelRequest)el("modelStatus").textContent=String(error.message||error);}
   finally{btn.disabled=false;}
 }
 function applyModelSelection(){
   if(!modelPreview){el("modelStatus").textContent="Choose a model before selecting options.";return;}
   const {model_id:modelId,market}=modelPreview;
+  if(market!==el("modelMarket").value||modelId!==el("modelPicker").value){clearModelPreview();return;}
+  if(regionInfo[market]?.experimental&&!el("experimentalRegions").checked){status("Enable experimental markets first.",true);return;}
+  if(pendingStore?.market!==market&&![...document.querySelectorAll(".region-entry .country")].some(n=>n.value===market)){status("Choose a store or area for this country first.",true);return;}
   const wanted=matchingModelRows();
   if(!wanted.length){el("modelCount").textContent="No variants match these options.";return;}
   if(wanted.length>48){el("modelCount").textContent="Narrow the selection to 48 variants or fewer.";return;}
@@ -655,6 +700,7 @@ function applyModelSelection(){
     const market=root.querySelector(".country").value;
     estimated+=Math.ceil((projected.get(market)||0)/12);
   });
+  if(pendingStore&&!matchingPendingArea())estimated+=Math.ceil((projected.get(pendingStore.market)||0)/12);
   if(estimated>24){el("modelCount").textContent=estimated+" Apple requests/scan exceeds the safe limit (24). Remove a model or area.";return;}
   for(const root of current){
     if(root.dataset.watchModel===modelId&&root.querySelector(".market").value===market)root.remove();
@@ -687,14 +733,24 @@ function productRow(id, p) {
   const root=el("productTemplate").content.firstElementChild.cloneNode(true);
   root.querySelector(".pid").value=id||"";
   root.querySelector(".market").value=p.market||"US";
+  // Changing a country cannot convert an existing SKU or its price/currency.
+  root.querySelector(".market").disabled=true;
+  root.querySelector(".market").title="Regional SKU: remove and discover a new variant to change country";
   root.querySelector(".pname").value=p.name||"";
   root.querySelector(".sku").value=p.part||"";
   root.querySelector(".price").value=p.price??"";
+  root.querySelector(".price").max=regionInfo[p.market]?.price_limit??100000;
+  root.querySelector(".market").addEventListener("change",()=>{
+    root.querySelector(".price").max=regionInfo[root.querySelector(".market").value]?.price_limit??100000;
+  });
   root.dataset.watchModel=p.watch_model||"";
   root.dataset.color=p.color||"";
   root.dataset.storage=p.storage||"";
   root.dataset.carrier=p.carrier||"";
-  root.querySelector(".market").addEventListener("change",()=>{if(["FR","GB"].includes(root.querySelector(".market").value)&&!el("experimentalRegions").checked)status("France/UK requires checking the experimental preview box explicitly.",true);});
+  root.querySelector(".sku").addEventListener("input",()=>{
+    for(const attribute of ["watchModel","color","storage","carrier"])root.dataset[attribute]="";
+  });
+  root.querySelector(".market").addEventListener("change",()=>{if(regionInfo[root.querySelector(".market").value]?.experimental&&!el("experimentalRegions").checked)status("This market requires the experimental opt-in checkbox.",true);});
   root.querySelector(".remove").addEventListener("click",()=>{
     const name=root.querySelector(".pname").value||root.querySelector(".pid").value||"product";
     root.remove();markDirty();
@@ -724,7 +780,12 @@ function regionRow(area){
   location.value=area.location||"";
   root.querySelector(".areaStores").value=(area.store_ids||[]).join(", ");
   id.addEventListener("input",()=>{root.dataset.autoAreaId="false";updateAreaWarning()});
-  country.addEventListener("change",()=>refreshAreaRow(root));
+  country.addEventListener("change",()=>{
+    root.querySelector(".areaStores").value="";
+    refreshAreaRow(root);
+    chooseProductsFor(country.value);
+    status("Country changed. Previous store IDs were cleared; choose stores and products for this country.");
+  });
   location.addEventListener("input",()=>refreshAreaRow(root));
   root.querySelector(".remove").addEventListener("click",()=>{
     const label=root.querySelector(".areaTitle").textContent;
@@ -732,6 +793,7 @@ function regionRow(area){
     showToast("Removed area "+label+". Save to apply.");
   });
   root.querySelector(".areaStores").addEventListener("input",updateAreaWarning);
+  root.querySelector(".areaProducts").addEventListener("click",()=>chooseProductsFor(country.value));
   el("regions").appendChild(root);
   refreshAreaRow(root);
   markDirty();
@@ -750,6 +812,8 @@ function updateAreaWarning(){
   });
   el("areaEstimate").textContent=count+" areas • approximately "+budget+
     " pickup requests per scan (limit 24; up to 12 SKUs per request). Estimates exclude retries. Maximum 8 areas.";
+  renderConfigurationIssues();
+  renderStoreSetup();
 }
 function loadForm(cfg){
   isLoadingConfig=true;
@@ -794,7 +858,7 @@ function collect(){
       name:root.querySelector(".pname").value.trim(),
       part:root.querySelector(".sku").value.trim(),
       price:priceInput===""?null:Number(priceInput),
-      currency:({US:"USD",CA:"CAD",FR:"EUR",GB:"GBP"})[market]
+      currency:regionInfo[market]?.currency
     };
     if(root.dataset.watchModel)data.products[id].watch_model=root.dataset.watchModel;
     for(const attribute of ["color","storage","carrier"]){
@@ -820,17 +884,217 @@ function collect(){
   return data;
 }
 function status(message,error=false){el("message").textContent=message;el("message").style.color=error?"#ff7c8b":"#55e29d";}
+function productsFor(market){
+  return [...document.querySelectorAll(".product-entry")].filter(row=>row.querySelector(".market").value===market);
+}
+function incompleteProductField(row){
+  if(!/^[a-zA-Z][a-zA-Z0-9_-]{0,39}$/.test(row.querySelector(".pid").value.trim()))return ".pid";
+  if(!row.querySelector(".pname").value.trim())return ".pname";
+  if(!/^[a-zA-Z0-9/_-]{3,32}$/.test(row.querySelector(".sku").value.trim()))return ".sku";
+  const value=row.querySelector(".price").value,price=Number(value);
+  if(value!==""&&(!Number.isFinite(price)||price<0||price>Number(row.querySelector(".price").max)))return ".price";
+  return null;
+}
+function chooseProductsFor(market){
+  clearModelPreview();
+  el("modelMarket").value=market;
+  el("catalogMarket").value=market;
+  updateModelContext();
+  el("modelHeading").scrollIntoView({behavior:"smooth",block:"center"});
+  el("modelHeading").focus();
+}
+function updateModelContext(){
+  const market=el("modelMarket").value,count=productsFor(market).length;
+  el("modelContext").textContent=market+" · "+(regionInfo[market]?.currency||"currency unavailable")+
+    " · "+count+" regional variants selected. Products from another country are never reused. All areas in this country share this selection.";
+}
+function marketSupportText(market){
+  const region=regionInfo[market];
+  if(!region)return "Directory only — no pickup adapter available.";
+  const evidence=region.validation;
+  const date=String(evidence?.checked_at||evidence?.observed_at||"").slice(0,10)||"date unavailable";
+  if(!region.experimental)return "Live-tested market; individual store/SKU coverage is not guaranteed.";
+  if(evidence?.pickup_observed)return "Experimental market; a limited live check ("+date+") observed "+evidence.distinct_variants_observed+" variants in "+evidence.stores_returned+" returned stores. Other combinations remain unverified.";
+  if(evidence?.catalog_parsed)return "Experimental market; catalog parsed, but pickup coverage was incomplete in the recorded check. "+
+    (market==="BR"?"Brazil returned no store list for the recorded searches.":"Some pickup results were not eligible or remained unknown.");
+  return "Experimental pickup route; no complete live check recorded.";
+}
+function configurationIssues(){
+  const issues=[];
+  const areas=[...document.querySelectorAll(".region-entry")];
+  const counts=new Map();
+  const variants=new Set();
+  for(const row of document.querySelectorAll(".product-entry")){
+    const market=row.querySelector(".market").value;
+    const field=incompleteProductField(row);
+    if(field)issues.push({message:market+" product is incomplete. Enter a valid identifier, name, regional SKU and optional price.",resolve:()=>{el("advancedProducts").open=true;row.querySelector(field).focus();}});
+    counts.set(market,(counts.get(market)||0)+1);
+    const key=market+"|"+row.querySelector(".sku").value.trim().toUpperCase();
+    if(variants.has(key))issues.push({message:"Duplicate regional variant in "+market+". Remove or edit the extra entry.",resolve:()=>{el("advancedProducts").open=true;row.querySelector(".sku").focus();}});
+    variants.add(key);
+  }
+  for(const row of areas){
+    const market=row.querySelector(".country").value;
+    if(!counts.get(market))issues.push({message:market+" store/area needs regional products. Choose products for "+market+" or remove this area.",resolve:()=>chooseProductsFor(market)});
+    if(!validLocationFor(market,row.querySelector(".location").value))issues.push({message:market+" area needs a valid complete local postal code or city.",resolve:()=>row.querySelector(".location").focus()});
+    if(regionInfo[market]?.experimental&&!el("experimentalRegions").checked)issues.push({message:market+" requires explicit experimental opt-in.",resolve:()=>el("experimentalRegions").focus()});
+  }
+  for(const market of counts.keys()){
+    if(!areas.some(row=>row.querySelector(".country").value===market))issues.push({message:market+" products have no store/search area. Choose a store or remove these products.",resolve:()=>{el("directoryMarket").value=market;loadDirectory();el("directoryMarket").focus();}});
+  }
+  if(!counts.size)issues.push({message:"Choose regional products before saving.",resolve:()=>el("modelHeading").focus()});
+  const budget=areas.reduce((sum,row)=>sum+Math.ceil((counts.get(row.querySelector(".country").value)||0)/12),0);
+  if(areas.length>8||budget>24)issues.push({message:"Selection exceeds the 8-area / 24-request budget. Remove products or areas.",resolve:()=>el("areaEstimate").scrollIntoView({block:"center"})});
+  return issues;
+}
+function renderConfigurationIssues(){
+  updateModelContext();
+  const container=el("configurationIssues");container.replaceChildren();
+  const issues=configurationIssues();container.hidden=!issues.length;
+  for(const issue of issues){
+    const row=document.createElement("div");const text=document.createElement("span");text.textContent=issue.message+" ";
+    const fix=document.createElement("button");fix.type="button";fix.textContent="Resolve";fix.addEventListener("click",issue.resolve);row.append(text,fix);container.append(row);
+  }
+  for(const row of document.querySelectorAll(".region-entry")){
+    const market=row.querySelector(".country").value;
+    const ids=splitIds(row.querySelector(".areaStores").value);
+    const count=productsFor(market).length;
+    row.querySelector(".areaReadiness").textContent=market+" · "+(regionInfo[market]?.currency||"unknown currency")+" · "+count+" associated regional products · "+
+      (ids.length?ids.map(id=>storeNames.get(id)||id).join(", "):"all stores returned near this location")+". "+
+      (count?"Configuration only; store/variant coverage is checked by the watcher.":"Incomplete — choose regional products or remove this area.");
+  }
+}
+function matchingPendingArea(){
+  if(!pendingStore)return null;
+  const location=el("storeLocation").value.trim().replace(/\s+/g," ").toLocaleUpperCase();
+  return [...document.querySelectorAll(".region-entry")].find(row=>row.querySelector(".country").value===pendingStore.market&&row.querySelector(".location").value.trim().replace(/\s+/g," ").toLocaleUpperCase()===location);
+}
+function validLocationFor(market,raw){
+  if(/[\x00-\x1f\x7f]/.test(raw))return false;
+  const value=raw.trim().replace(/\s+/g," ");
+  if(value.length<2||value.length>64)return false;
+  if(market==="US")return /^[0-9]{5}$/.test(value);
+  if(market==="FR")return /^[0-9]{5}$/.test(value)||/^[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ'’ .-]{1,63}$/.test(value);
+  if(market==="GB")return /^[A-Za-z0-9][A-Za-z0-9 '’.-]{1,63}$/.test(value);
+  if(market==="CA")return /^[A-Za-z0-9À-ÿ][A-Za-z0-9À-ÿ '’.-]{1,63}$/.test(value);
+  return /^[\p{L}\p{N}\p{M} .’'(),-]+$/u.test(value);
+}
+function pendingLocationValid(){
+  return !!pendingStore&&validLocationFor(pendingStore.market,el("storeLocation").value);
+}
+function renderStoreSetup(){
+  el("storeSetup").hidden=!pendingStore;
+  if(!pendingStore)return;
+  const {market,store}=pendingStore;
+  const products=productsFor(market),count=products.filter(row=>!incompleteProductField(row)).length;
+  const incomplete=count!==products.length||new Set(products.map(row=>row.querySelector(".sku").value.trim().toUpperCase())).size!==products.length;
+  el("storeSetupTitle").textContent=store.city+" · "+store.name+" ("+store.id+") · "+market+" / "+regionInfo[market].currency;
+  el("storeSetupSupport").textContent=marketSupportText(market);
+  const area=matchingPendingArea();
+  const note=area?(splitIds(area.querySelector(".areaStores").value).length?" This store will share the existing nearby search area.":" The existing area currently includes all returned stores; adding this selection will limit it to this store."):" A new targeted area will be added.";
+  const rows=[...document.querySelectorAll(".region-entry")];
+  const budget=rows.reduce((sum,row)=>sum+Math.ceil(productsFor(row.querySelector(".country").value).length/12),0)+(area?0:Math.ceil(products.length/12));
+  const overBudget=budget>24||(!area&&rows.length>=8);
+  el("storeSetupStatus").textContent=count+" regional products associated. "+(!count?"Choose products for "+market+" first. ":"")+
+    (!pendingLocationValid()?"Enter a complete local postal code/city. ":"")+note+
+    (incomplete?" Complete or remove incomplete/duplicate regional product entries.":"")+
+    (overBudget?" This would exceed the 8-area / 24-request budget.":"")+
+    (market==="US"&&el("states").value.trim()?" The advanced US state filter still applies; clear it if it excludes this store.":"")+" Not live checked by setup; Save and restart after adding.";
+  el("commitStore").disabled=!count||incomplete||!pendingLocationValid()||overBudget||(regionInfo[market].experimental&&!el("experimentalRegions").checked);
+}
+el("chooseStoreProducts").addEventListener("click",()=>{if(pendingStore)chooseProductsFor(pendingStore.market)});
+el("storeLocation").addEventListener("input",renderStoreSetup);
+el("cancelStore").addEventListener("click",()=>{pendingStore=null;renderStoreSetup();status("Store setup cancelled; existing areas unchanged.");});
+el("commitStore").addEventListener("click",()=>{
+  renderStoreSetup();if(!pendingStore||el("commitStore").disabled)return;
+  const {market,store}=pendingStore;
+  const roots=[...document.querySelectorAll(".region-entry")];
+  const area=matchingPendingArea();
+  if(!area&&roots.length>=8){status("Eight areas maximum. Use an existing nearby search or remove an area.",true);return;}
+  if(area){
+    const input=area.querySelector(".areaStores"),ids=splitIds(input.value);
+    if(!ids.includes(store.id))ids.push(store.id);
+    if(ids.length>30){status("Maximum 30 selected stores in one area.",true);return;}
+    input.value=ids.join(", ");
+  }else regionRow({market,location:el("storeLocation").value.trim(),store_ids:[store.id],autoId:true});
+  pendingStore=null;renderStoreSetup();markDirty();
+  status("Store and regional products associated. Save, then restart the watcher. Pickup coverage remains unverified until a live scan.");
+});
+function renderDirectory(){
+  const select=el("directoryStore");select.replaceChildren();
+  const phrase=el("directorySearch").value.trim().toLocaleLowerCase();
+  for(const store of directoryRows.filter(s=>(s.city+" "+s.name+" "+s.id).toLocaleLowerCase().includes(phrase))){
+    const option=document.createElement("option");option.value=store.id;
+    option.textContent=store.city+" · "+store.name+" ("+store.id+")";select.append(option);
+  }
+  updateDirectorySelection();
+}
+function updateDirectorySelection(){
+  const market=el("directoryMarket").value;
+  const store=directoryRows.find(s=>s.id===el("directoryStore").value);
+  el("addDirectoryStore").disabled=!store||!regionInfo[market];
+  el("directoryLink").hidden=!store;
+  if(store)el("directoryLink").href=store.url;
+}
+async function loadDirectory(){
+  const requestId=++directoryRequest;
+  const market=el("directoryMarket").value;
+  directoryRows=[];renderDirectory();
+  el("directoryStatus").textContent="Loading store directory…";
+  try{
+    const response=await fetch("/api/stores?market="+encodeURIComponent(market));
+    if(!response.ok)throw Error("Store directory unavailable");
+    const data=await response.json();
+    if(requestId!==directoryRequest)return;
+    directoryRows=data.stores;
+    for(const store of directoryRows)storeNames.set(store.id,store.city+" · "+store.name+" ("+store.id+")");
+    renderDirectory();renderConfigurationIssues();
+    el("directoryStatus").textContent=data.stores.length+" stores · snapshot "+data.observed_at+" · "+marketSupportText(market);
+  }catch(error){
+    if(requestId!==directoryRequest)return;
+    directoryRows=[];renderDirectory();el("directoryStatus").textContent=error.message;
+  }
+}
+el("directoryMarket").addEventListener("change",()=>{el("directorySearch").value="";loadDirectory();});
+el("directorySearch").addEventListener("input",renderDirectory);
+el("directoryStore").addEventListener("change",updateDirectorySelection);
+el("addDirectoryStore").addEventListener("click",()=>{
+  const market=el("directoryMarket").value;
+  const store=directoryRows.find(s=>s.id===el("directoryStore").value);
+  if(!store||!regionInfo[market])return;
+  if(regionInfo[market].experimental&&!el("experimentalRegions").checked){status("Enable experimental markets before adding this country.",true);el("experimentalRegions").focus();return;}
+  const roots=[...document.querySelectorAll(".region-entry")];
+  const duplicate=roots.some(root=>root.querySelector(".country").value===market&&splitIds(root.querySelector(".areaStores").value).includes(store.id));
+  if(duplicate){status("This store is already selected in an area.",true);return;}
+  pendingStore={market,store};el("storeLocation").value="";
+  chooseProductsFor(market);renderStoreSetup();
+  el("storeSetup").scrollIntoView({behavior:"smooth",block:"center"});el("storeLocation").focus();
+  status("Preparing "+store.name+". No area added yet; complete the local search and regional products first.");
+});
+
 async function start(){
   try{
+    const metadata=await fetch("/api/regions",{cache:"no-store"});
+    if(!metadata.ok)throw Error("Cannot load country metadata");
+    regionInfo=await metadata.json();
+    await loadDirectory();
     const r=await fetch("/api/config",{cache:"no-store"});
     const payload=await r.json();if(!r.ok)throw Error(payload.error||"Cannot read configuration");
     hasSavedFile=payload.exists===true;
     loadForm(payload.config);
+    const markets=[...new Set([...document.querySelectorAll(".region-entry .country")].map(input=>input.value))];
+    await Promise.allSettled(markets.map(async market=>{
+      const response=await fetch("/api/stores?market="+encodeURIComponent(market));
+      if(!response.ok)return;
+      const data=await response.json();
+      for(const store of data.stores)storeNames.set(store.id,store.city+" · "+store.name+" ("+store.id+")");
+    }));
+    renderConfigurationIssues();
     status(payload.exists?"Existing private configuration loaded.":"Example configuration loaded; save to create your own.");
   }catch(error){status(String(error),true);}
 }
 el("addProduct").addEventListener("click",()=>{
-  productRow("",{market:"US"});
+  productRow("",{market:el("modelMarket").value||"US"});
   markDirty();
   status("New manual product added to the editor. Fill in its details, then Save.");
 });
@@ -843,6 +1107,10 @@ el("discardPreview").addEventListener("click",()=>{
 ["modelColor","modelStorage","modelCarrier"].forEach(id=>el(id).addEventListener("change",updateModelPreview));
 ["modelPicker","modelMarket","experimentalRegions"].forEach(id=>el(id).addEventListener("change",clearModelPreview));
 el("findCatalog").addEventListener("click",discoverCatalog);
+for(const id of ["catalogMarket","catalogFamily","experimentalRegions"]){
+  el(id).addEventListener("change",()=>{catalogRequest++;catalogRows=[];renderCatalog();el("catalogStatus").textContent="";el("catalogFilter").disabled=true;});
+}
+el("modelMarket").addEventListener("change",updateModelContext);
 el("catalogFilter").addEventListener("input",renderCatalog);
 el("addRegion").addEventListener("click",()=>{
   const count=document.querySelectorAll(".region-entry").length;
@@ -875,6 +1143,9 @@ document.addEventListener("change",onConfigurationEdit);
 el("saveSticky").addEventListener("click",()=>el("save").click());
 el("allProducts").addEventListener("change",toggleAlertFields);
 el("save").addEventListener("click",async()=>{
+  if(pendingStore){status("Complete or cancel the store setup before saving. Your existing areas have not changed.",true);el("storeLocation").focus();return;}
+  const problems=configurationIssues();
+  if(problems.length){status(problems[0].message,true);problems[0].resolve();return;}
   if(modelPreview&&!el("modelOptions").hidden){
     status("You found variants but have not added them. Click Add selected variants or Discard preview before saving.",true);
     el("modelOptions").scrollIntoView({behavior:"smooth",block:"center"});
@@ -927,8 +1198,24 @@ def create_wizard_app(config_path=None, sample_path=None):
     def index():
         return render_template_string(
             WIZARD_HTML, token=csrf_token,
+            region_choices=list(REGIONS.values()),
+            directory_choices=directory_countries(),
             model_choices=[{"id": key, "name": item[0]} for key, item in MODELS.items()],
         )
+
+    @app.get("/api/regions")
+    def read_regions():
+        return jsonify({code: {"currency": r.currency, "experimental": r.experimental,
+                               "price_limit": price_limit_for(r.currency),
+                               "validation": validation_for_country(code)}
+                        for code, r in REGIONS.items()})
+
+    @app.get("/api/stores")
+    def read_stores():
+        try:
+            return jsonify(stores_for_country(request.args.get("market", "US")))
+        except ValueError:
+            return jsonify({"error": "Unknown directory country"}), 422
 
     @app.get("/api/config")
     def read_config():
